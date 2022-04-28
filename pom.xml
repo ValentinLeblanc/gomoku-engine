@@ -10,8 +10,8 @@
 	<groupId>fr.leblanc</groupId>
 	<artifactId>gomoku-engine</artifactId>
 	<version>1.0.0</version>
-	<name>gomoku-engine</name>
-	<description>Artificial Intelligence provider for Gomoku webapp</description>
+	<name>Gomoku Engine Application</name>
+	<description>Artificial Intelligence engine for Gomoku</description>
 	<properties>
 		<java.version>17</java.version>
 	</properties>
