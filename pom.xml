@@ -9,7 +9,7 @@
 	</parent>
 	<groupId>fr.leblanc</groupId>
 	<artifactId>gomoku-engine</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.0</version>
 	<name>gomoku-engine</name>
 	<description>Artificial Intelligence provider for Gomoku webapp</description>
 	<properties>
