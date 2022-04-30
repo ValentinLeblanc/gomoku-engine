@@ -9,14 +9,37 @@ import fr.leblanc.gomoku.engine.model.MoveDto;
 @Service
 public class EngineService {
 
-	private static final int NONE_COLOR = -1;
-	private static final int BLACK_COLOR = 0;
-	private static final int WHITE_COLOR = 1;
+	public static final int NONE_COLOR = -1;
+	public static final int BLACK_COLOR = 0;
+	public static final int WHITE_COLOR = 1;
+	
+	private static final int[] DOWN_VECTOR = {0, 1};
+	private static final int[] RIGHT_VECTOR = {1, 0};
+	private static final int[] DOWN_RIGHT_VECTOR = {1, 1};
+	private static final int[] DOWN_LEFT_VECTOR = {-1, 1};
+	
+	private static final int[][] VECTORS = { DOWN_VECTOR, RIGHT_VECTOR, DOWN_RIGHT_VECTOR, DOWN_LEFT_VECTOR };
+	private static final int[] COLORS = { BLACK_COLOR, WHITE_COLOR };
 	
 	public CheckWinResultDto checkWin(GameDto game) {
 
-		int boardSize = game.getBoardSize();
+		int[][] data = extractData(game);
+		
+		for (int color : COLORS) {
+			int[][] result = new int[5][2];
+			if (checkWin(data, color, result)) {
+				return buildResult(result, color);
+			}
+		}
+		
+		return new CheckWinResultDto();
+		
+	}
 
+	private int[][] extractData(GameDto game) {
+		
+		int boardSize = game.getBoardSize();
+		
 		int[][] data = new int[boardSize][boardSize];
 
 		for (int rowIndex = 0; rowIndex < boardSize; rowIndex++) {
@@ -28,96 +51,58 @@ public class EngineService {
 		for (MoveDto move : game.getMoves()) {
 			data[move.getColumnIndex()][move.getRowIndex()] = move.getColor();
 		}
-		
-		int[][] blackWin = checkWin(data, BLACK_COLOR);
-		
-		if (blackWin != null) {
-			return buildResult(blackWin);
-		}
-		
-		int[][] whiteWin = checkWin(data, WHITE_COLOR);
-		
-		if (whiteWin != null) {
-			return buildResult(whiteWin);
-		}
-		
-		return new CheckWinResultDto();
-		
+		return data;
 	}
 
-	private CheckWinResultDto buildResult(int[][] blackWin) {
+	private CheckWinResultDto buildResult(int[][] win, int color) {
 		
-		CheckWinResultDto result = new CheckWinResultDto();
+		CheckWinResultDto result = new CheckWinResultDto(true);
 		
-		result.setWin(true);
-		
-		for (int i = 0; i < blackWin.length; i++) {
-			MoveDto move = new MoveDto();
-			
-			move.setColumnIndex(blackWin[i][0]);
-			move.setRowIndex(blackWin[i][1]);
-			
-			result.getWinMoves().add(move);
+		for (int i = 0; i < win.length; i++) {
+			result.getWinMoves().add(new MoveDto(win[i][0], win[i][1], color));
 		}
 		
 		return result;
 	}
 	
-	private int[][] checkWin(int[][] data, int color) {
+	private boolean checkWin(int[][] data, int color, int[][] result) {
 		
 		for (int i = 0; i < data[0].length; i++) {
 			for (int j = 0; j < data.length; j++) {
 				if (data[j][i] == color) {
 					
-					int[][] result = checkForWin(data, i, j, color, 0, 1);
-					
-					if (result != null) {
-						return result;
+					for (int[] vector : VECTORS) {
+						if (checkWin(data, i, j, color, vector, result)) {
+							return true;
+						}
 					}
-					
-					result = checkForWin(data, i, j, color, 1, 0);
-					
-					if (result != null) {
-						return result;
-					}
-					
-					result = checkForWin(data, i, j, color, 1, 1);
-					
-					if (result != null) {
-						return result;
-					}
-					
-					result = checkForWin(data, i, j, color, -1, 1);
-					
-					if (result != null) {
-						return result;
-					}
-					
 				}
 			}
 		}
 		
-		return null;
+		return false;
 	}
 
-	private int[][] checkForWin(int[][] data, int i, int j, int color, int vector0, int vector1) {
-		int[][] result = new int[5][2];
+	private boolean checkWin(int[][] data, int i, int j, int color, int[] vector, int[][] result) {
 
 		int k = 1;
 		int linedUpCount = 1;
 		result[0][0] = j;
 		result[0][1] = i;
-		while (j + vector0 * k < data.length && j + vector0 * k > -1 && i + vector1 * k < data[0].length && data[j + vector0 * k][i + vector1 * k] == color) {
+		while (j + vector[0] * k < data.length 
+				&& i + vector[1] * k < data[0].length 
+				&& j + vector[0] * k > -1 
+				&& data[j + vector[0] * k][i + vector[1] * k] == color) {
 			linedUpCount++;
-			result[k][0] = j + vector0 * k;
-			result[k][1] = i + vector1 * k;
+			result[k][0] = j + vector[0] * k;
+			result[k][1] = i + vector[1] * k;
 			if (linedUpCount == 5) {
-				return result;
+				return true;
 			}
 			k++;
 		}
 
-		return null;
+		return false;
 	}
 
 }

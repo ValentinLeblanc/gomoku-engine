@@ -17,9 +17,7 @@ public class EngineController {
 
 	@PostMapping("/checkWin")
 	public CheckWinResultDto checkWin(@RequestBody GameDto game) {
-
 		return engineService.checkWin(game);
-		
 	}
 
 }
