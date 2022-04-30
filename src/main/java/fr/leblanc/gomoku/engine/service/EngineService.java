@@ -1,29 +1,69 @@
 package fr.leblanc.gomoku.engine.service;
 
-import org.springframework.stereotype.Service;import fr.leblanc.gomoku.engine.model.GomokuColor;
+import org.springframework.stereotype.Service;
+
+import fr.leblanc.gomoku.engine.model.CheckWinResultDto;
+import fr.leblanc.gomoku.engine.model.GameDto;
+import fr.leblanc.gomoku.engine.model.MoveDto;
 
 @Service
 public class EngineService {
 
-	public int[][] checkForWin(int[][] data) {
+	private static final int NONE_COLOR = -1;
+	private static final int BLACK_COLOR = 0;
+	private static final int WHITE_COLOR = 1;
+	
+	public CheckWinResultDto checkWin(GameDto game) {
 
-		int[][] blackWin = checkForWin(data, GomokuColor.BLACK.toNumber());
+		int boardSize = game.getBoardSize();
+
+		int[][] data = new int[boardSize][boardSize];
+
+		for (int rowIndex = 0; rowIndex < boardSize; rowIndex++) {
+			for (int columnIndex = 0; columnIndex < boardSize; columnIndex++) {
+				data[columnIndex][rowIndex] = EngineService.NONE_COLOR;
+			}
+		}
+		
+		for (MoveDto move : game.getMoves()) {
+			data[move.getColumnIndex()][move.getRowIndex()] = move.getColor();
+		}
+		
+		int[][] blackWin = checkWin(data, BLACK_COLOR);
 		
 		if (blackWin != null) {
-			return blackWin;
+			return buildResult(blackWin);
 		}
 		
-		int[][] whiteWin = checkForWin(data, GomokuColor.WHITE.toNumber());
+		int[][] whiteWin = checkWin(data, WHITE_COLOR);
 		
 		if (whiteWin != null) {
-			return whiteWin;
+			return buildResult(whiteWin);
 		}
 		
-		return null;
+		return new CheckWinResultDto();
 		
 	}
+
+	private CheckWinResultDto buildResult(int[][] blackWin) {
+		
+		CheckWinResultDto result = new CheckWinResultDto();
+		
+		result.setWin(true);
+		
+		for (int i = 0; i < blackWin.length; i++) {
+			MoveDto move = new MoveDto();
+			
+			move.setColumnIndex(blackWin[i][0]);
+			move.setRowIndex(blackWin[i][1]);
+			
+			result.getWinMoves().add(move);
+		}
+		
+		return result;
+	}
 	
-	private int[][] checkForWin(int[][] data, int color) {
+	private int[][] checkWin(int[][] data, int color) {
 		
 		for (int i = 0; i < data[0].length; i++) {
 			for (int j = 0; j < data.length; j++) {

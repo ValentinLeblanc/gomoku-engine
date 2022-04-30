@@ -6,10 +6,10 @@ import java.util.Set;
 import lombok.Data;
 
 @Data
-public class Game {
+public class GameDto {
 
 	private int boardSize;
 	
-	private Set<Move> moves = new HashSet<Move>();
-
+	private Set<MoveDto> moves = new HashSet<>();
+	
 }

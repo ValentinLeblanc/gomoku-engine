@@ -1,0 +1,1 @@
+call mvn clean verify sonar:sonar -Dsonar.login=6729dfc84b99ad5e4a8948ac9c84bc01711e9faa
