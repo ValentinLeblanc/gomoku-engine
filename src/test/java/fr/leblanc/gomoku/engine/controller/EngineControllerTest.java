@@ -1,5 +1,6 @@
-package fr.leblanc.gomoku.engine;
+package fr.leblanc.gomoku.engine.controller;
 
+import static org.junit.Assert.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -11,6 +12,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import com.google.gson.Gson;
 
@@ -24,13 +26,19 @@ class EngineControllerTest {
 	private MockMvc mockMvc;
 	
 	@Test
-	void shouldReturnDefaultMessage() throws Exception {
-		
+	void checkWinRequestTest() throws Exception {
+
 		GameDto gameDto = new GameDto(15, new HashSet<>());
+
+		Gson gson = new Gson();
+		String json = gson.toJson(gameDto);
+
+		MvcResult result = mockMvc.perform(post("/checkWin")
+				.content(json)
+				.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk())
+				.andReturn();
 		
-	    Gson gson = new Gson();
-	    String json = gson.toJson(gameDto);
-	    
-		this.mockMvc.perform(post("/checkWin").content(json).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk());
+		assertEquals("{\"winMoves\":[],\"win\":false}", result.getResponse().getContentAsString());
 	}
 }

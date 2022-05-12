@@ -8,9 +8,9 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
-public class CheckWinResultDto {
+public class CheckWinResult {
 
-	public CheckWinResultDto(boolean isWin) {
+	public CheckWinResult(boolean isWin) {
 		this.isWin = isWin;
 	}
 

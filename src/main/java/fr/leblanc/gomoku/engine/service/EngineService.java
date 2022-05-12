@@ -2,7 +2,7 @@ package fr.leblanc.gomoku.engine.service;
 
 import org.springframework.stereotype.Service;
 
-import fr.leblanc.gomoku.engine.model.CheckWinResultDto;
+import fr.leblanc.gomoku.engine.model.CheckWinResult;
 import fr.leblanc.gomoku.engine.model.GameDto;
 import fr.leblanc.gomoku.engine.model.MoveDto;
 
@@ -21,7 +21,7 @@ public class EngineService {
 	private static final int[][] VECTORS = { DOWN_VECTOR, RIGHT_VECTOR, DOWN_RIGHT_VECTOR, DOWN_LEFT_VECTOR };
 	private static final int[] COLORS = { BLACK_COLOR, WHITE_COLOR };
 	
-	public CheckWinResultDto checkWin(GameDto game) {
+	public CheckWinResult checkWin(GameDto game) {
 
 		int[][] data = extractData(game);
 		
@@ -32,7 +32,7 @@ public class EngineService {
 			}
 		}
 		
-		return new CheckWinResultDto();
+		return new CheckWinResult();
 		
 	}
 
@@ -54,9 +54,9 @@ public class EngineService {
 		return data;
 	}
 
-	private CheckWinResultDto buildResult(int[][] win, int color) {
+	private CheckWinResult buildResult(int[][] win, int color) {
 		
-		CheckWinResultDto result = new CheckWinResultDto(true);
+		CheckWinResult result = new CheckWinResult(true);
 		
 		for (int i = 0; i < win.length; i++) {
 			result.getWinMoves().add(new MoveDto(win[i][0], win[i][1], color));
@@ -103,6 +103,13 @@ public class EngineService {
 		}
 
 		return false;
+	}
+
+	public MoveDto computeMove(GameDto game) {
+		
+		int[][] data = extractData(game);
+
+		return null;
 	}
 
 }

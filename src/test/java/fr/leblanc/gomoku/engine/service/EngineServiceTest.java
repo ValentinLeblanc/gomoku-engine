@@ -1,4 +1,4 @@
-package fr.leblanc.gomoku.engine;
+package fr.leblanc.gomoku.engine.service;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -7,10 +7,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import fr.leblanc.gomoku.engine.model.CheckWinResultDto;
+import fr.leblanc.gomoku.engine.model.CheckWinResult;
 import fr.leblanc.gomoku.engine.model.GameDto;
 import fr.leblanc.gomoku.engine.model.MoveDto;
-import fr.leblanc.gomoku.engine.service.EngineService;
 
 @SpringBootTest
 class EngineServiceTest {
@@ -37,7 +36,7 @@ class EngineServiceTest {
 		game.getMoves().add(move3);
 		game.getMoves().add(move4);
 		
-		CheckWinResultDto result = engineService.checkWin(game);
+		CheckWinResult result = engineService.checkWin(game);
 		
 		assertFalse(result.isWin());
 		
@@ -119,7 +118,7 @@ class EngineServiceTest {
 		
 		game.getMoves().clear();
 		
-		CheckWinResultDto result;
+		CheckWinResult result;
 		game.getMoves().add(move0);
 		game.getMoves().add(move1);
 		game.getMoves().add(move2);
