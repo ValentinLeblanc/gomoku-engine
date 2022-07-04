@@ -15,7 +15,7 @@ public class EngineController {
 
 	@Autowired
 	private EngineService engineService;
-
+	
 	@PostMapping("/checkWin")
 	public CheckWinResult checkWin(@RequestBody GameDto game) {
 		return engineService.checkWin(game);
@@ -24,6 +24,11 @@ public class EngineController {
 	@PostMapping("/computeMove")
 	public MoveDto computeMove(@RequestBody GameDto game) {
 		return engineService.computeMove(game);
+	}
+	
+	@PostMapping("/computeEvaluation")
+	public Double computeEvaluation(@RequestBody GameDto game) {
+		return engineService.computeEvaluation(game);
 	}
 	
 }
