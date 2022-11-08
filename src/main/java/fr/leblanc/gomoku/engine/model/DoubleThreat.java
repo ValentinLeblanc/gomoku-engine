@@ -41,4 +41,5 @@ public class DoubleThreat extends Threat {
 		
 		return super.equals(obj);
 	}
+	
 }

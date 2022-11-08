@@ -139,7 +139,7 @@ public class StrikeServiceImpl implements StrikeService {
 
 		// check for a double threat4 move
 		if (!doubleThreatMap.get(ThreatType.DOUBLE_THREAT_4).isEmpty()) {
-			return doubleThreatMap.get(ThreatType.DOUBLE_THREAT_4).iterator().next().getEmptyCells().iterator().next();
+			return doubleThreatMap.get(ThreatType.DOUBLE_THREAT_4).iterator().next().getTargetCell();
 		}
 
 		// check for threat4 moves
@@ -189,22 +189,24 @@ public class StrikeServiceImpl implements StrikeService {
 		}
 		
 		if (!opponentDoubleThreatMap.get(ThreatType.DOUBLE_THREAT_4).isEmpty()) {
-			Map<Cell, Map<ThreatType, List<Threat>>> opponentCellThreatMap = opponentThreatContext.getCellToThreatMap();
 			
 			Set<Cell> cells = new HashSet<>();
 			
-			opponentDoubleThreatMap.get(ThreatType.DOUBLE_THREAT_4).stream().forEach(t -> cells.addAll(t.getEmptyCells()));
+			opponentDoubleThreatMap.get(ThreatType.DOUBLE_THREAT_4).stream().forEach(t -> cells.addAll(t.getBlockingCells()));
 			
-			for (Cell doubleThreat4 : cells) {
-				for (Threat threat4 : opponentCellThreatMap.get(doubleThreat4).get(ThreatType.DOUBLE_THREAT_4)) {
-					for (Cell emptyCell : threat4.getEmptyCells()) {
-						dataWrapper.addMove(emptyCell, playingColor);
-						if (directStrike(dataWrapper, -playingColor) == null) {
-							defendingMoves.add(emptyCell);
-						}
-						dataWrapper.removeMove(emptyCell);
+			for (DoubleThreat doubleThreat4 : opponentDoubleThreatMap.get(ThreatType.DOUBLE_THREAT_4)) {
+				for (Cell emptyCell : doubleThreat4.getBlockingCells()) {
+					dataWrapper.addMove(emptyCell, playingColor);
+					if (directStrike(dataWrapper, -playingColor) == null) {
+						defendingMoves.add(emptyCell);
 					}
+					dataWrapper.removeMove(emptyCell);
 				}
+				dataWrapper.addMove(doubleThreat4.getTargetCell(), playingColor);
+				if (directStrike(dataWrapper, -playingColor) == null) {
+					defendingMoves.add(doubleThreat4.getTargetCell());
+				}
+				dataWrapper.removeMove(doubleThreat4.getTargetCell());
 			}
 			return defendingMoves;
 		}

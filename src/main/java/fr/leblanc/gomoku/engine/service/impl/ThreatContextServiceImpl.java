@@ -1,6 +1,7 @@
 package fr.leblanc.gomoku.engine.service.impl;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -72,17 +73,20 @@ public class ThreatContextServiceImpl implements ThreatContextService {
 
 		computeDiagonal2Threats(threatContext, dataLength);
 		
-		computeDoubleThreats(threatContext);
+		computeDoubleThreats(threatContext, ThreatType.THREAT_4);
+		
+		computeDoubleThreats(threatContext, ThreatType.THREAT_3);
+		
+//		computeDoubleThreats(threatContext, ThreatType.THREAT_2);
 	}
 
-	private void computeDoubleThreats(ThreatContext threatContext) {
-		
+	private void computeDoubleThreats(ThreatContext threatContext, ThreatType threatType) {
 		Set<Threat> visitedThreats = new HashSet<>();
 		
-		for (Threat threat : threatContext.getThreatTypeToThreatMap().get(ThreatType.THREAT_3)) {
+		for (Threat threat : threatContext.getThreatTypeToThreatMap().get(threatType)) {
 			
 			if (!visitedThreats.contains(threat)) {
-				List<Threat> similarThreats = threatContext.getThreatTypeToThreatMap().get(ThreatType.THREAT_3).stream().filter(t -> !t.equals(threat) && t.getPlainCells().containsAll(threat.getPlainCells())).toList();
+				List<Threat> similarThreats = threatContext.getThreatTypeToThreatMap().get(threatType).stream().filter(t -> !t.equals(threat) && t.getPlainCells().containsAll(threat.getPlainCells())).toList();
 				
 				similarThreats = new ArrayList<>(similarThreats);
 				
@@ -90,22 +94,11 @@ public class ThreatContextServiceImpl implements ThreatContextService {
 				
 				visitedThreats.addAll(similarThreats);
 				
-				threatContext.getDoubleThreatTypeToThreatMap().get(ThreatType.DOUBLE_THREAT_3).addAll(createDoubleThreats(similarThreats));
-			}
-		}
-		
-		for (Threat threat : threatContext.getThreatTypeToThreatMap().get(ThreatType.THREAT_4)) {
-			
-			if (!visitedThreats.contains(threat)) {
-				List<Threat> similarThreats = threatContext.getThreatTypeToThreatMap().get(ThreatType.THREAT_4).stream().filter(t -> !t.equals(threat) && t.getPlainCells().containsAll(threat.getPlainCells())).toList();
+				Set<DoubleThreat> doubleThreats = createDoubleThreats(similarThreats);
 				
-				similarThreats = new ArrayList<>(similarThreats);
+				threatContext.getDoubleThreatTypeToThreatMap().get(threatType.getDoubleThreatType()).addAll(doubleThreats);
 				
-				similarThreats.add(threat);
-				
-				visitedThreats.addAll(similarThreats);
-				
-				threatContext.getDoubleThreatTypeToThreatMap().get(ThreatType.DOUBLE_THREAT_4).addAll(createDoubleThreats(similarThreats));
+				doubleThreats.stream().forEach(t -> threatContext.getCellToThreatMap().computeIfAbsent(t.getTargetCell(), key -> new EnumMap<>(ThreatType.class)).computeIfAbsent(threatType.getDoubleThreatType(), k -> new ArrayList<>()).add(t));
 			}
 		}
 	}
@@ -121,7 +114,7 @@ public class ThreatContextServiceImpl implements ThreatContextService {
 		for (Cell emptyCell : emptyCells) {
 			List<Threat> threatsContaining = threats.stream().filter(t -> t.getEmptyCells().contains(emptyCell)).toList();
 			
-			if (threatsContaining.size() >= 2) {
+			if (threatsContaining.size() == 2) {
 				DoubleThreat doubleThreat = new DoubleThreat();
 				
 				doubleThreat.setTargetCell(emptyCell);
@@ -130,9 +123,22 @@ public class ThreatContextServiceImpl implements ThreatContextService {
 				
 				Set<Cell> blockingCells = new HashSet<>();
 				
-				threatsContaining.forEach(t -> t.getEmptyCells().stream().forEach(c ->  {if (!c.equals(emptyCell)) {
-					blockingCells.add(c);
-				}}));
+				threatsContaining.forEach(t -> t.getEmptyCells().stream().filter(c -> !c.equals(emptyCell) && threatsContaining.stream().filter(t2 -> t2.getEmptyCells().contains(c)).count() > 0).forEach(blockingCells::add));
+				
+				doubleThreat.setBlockingCells(blockingCells);
+				
+				doubleThreats.add(doubleThreat);
+			}
+			if (threatsContaining.size() == 3) {
+				DoubleThreat doubleThreat = new DoubleThreat();
+				
+				doubleThreat.setTargetCell(emptyCell);
+				
+				doubleThreat.setPlainCells(threatsContaining.get(0).getPlainCells());
+				
+				Set<Cell> blockingCells = new HashSet<>();
+				
+				threatsContaining.forEach(t -> t.getEmptyCells().stream().filter(c -> !c.equals(emptyCell) && threatsContaining.stream().filter(t2 -> t2.getEmptyCells().contains(c)).count() > 1).forEach(blockingCells::add));
 				
 				doubleThreat.setBlockingCells(blockingCells);
 				
@@ -254,33 +260,6 @@ public class ThreatContextServiceImpl implements ThreatContextService {
 			Map<ThreatType, List<Threat>> cellThreatMap = threatContext.getCellToThreatMap().computeIfAbsent(emptyCell, key -> new HashMap<>());
 			
 			List<Threat> threatList = cellThreatMap.computeIfAbsent(threatType, key -> new ArrayList<>());
-			
-//			for (Threat threat : threatList) {
-//				if (!threat.isDouble() && threat.getPlainCells().containsAll(newThreat.getPlainCells()) && threat.getPlainCells().size() > 1) {
-//					ThreatType doubleThreatType = ThreatType.valueDoubleOf(plainCells.size() + 1);
-//					
-//					Threat doubleThreat = new Threat();
-//					
-////					List<Threat> existingDouble = threatContext.getDoubleThreatTypeToThreatMap().get(doubleThreatType).stream().filter(t -> t.getPlainCells().containsAll(newThreat.getPlainCells())).toList();
-////					
-////					if (!existingDouble.isEmpty()) {
-////						doubleThreat = existingDouble.get(0);
-////					}
-//					
-//					doubleThreat.setDouble(true);
-//					
-//					doubleThreat.getPlainCells().addAll(newThreat.getPlainCells());
-//					doubleThreat.getEmptyCells().addAll(newThreat.getEmptyCells().stream().filter(c -> threat.getEmptyCells().contains(c)).toList());
-////					doubleThreat.getEmptyCells().addAll(newThreat.getEmptyCells());
-//					
-//					for (Cell cell : doubleThreat.getEmptyCells()) {
-//						Map<ThreatType, List<Threat>> cellDoubleThreatMap = threatContext.getCellToThreatMap().computeIfAbsent(cell, key -> new HashMap<>());
-//						cellDoubleThreatMap.computeIfAbsent(doubleThreatType, key -> new ArrayList<>()).add(doubleThreat);
-//					}
-//					
-//					threatContext.getDoubleThreatTypeToThreatMap().get(doubleThreatType).add(doubleThreat);
-//				}
-//			}
 			
 			threatList.add(newThreat);
 			

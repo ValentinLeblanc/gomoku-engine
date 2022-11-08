@@ -51,6 +51,10 @@ public class MinMaxServiceImpl implements MinMaxService {
 	
 	private List<Cell> internalComputeMinMax(DataWrapper dataWrapper, int playingColor, List<Cell> analysedMoves) throws Exception {
 
+		if (analysedMoves.size() == 1) {
+			return analysedMoves;
+		}
+		
 		List<Cell> optimalMoves = new ArrayList<>();
 
 		double maxEvaluation = Double.NEGATIVE_INFINITY;
@@ -80,9 +84,6 @@ public class MinMaxServiceImpl implements MinMaxService {
 				if (evaluation < minEvaluation) {
 					minEvaluation = evaluation;
 					opponentMove = subAnalysedMove;
-//					if (log.isDebugEnabled()) {
-//						log.debug("move : " + analysedMove + " | opponentMove : " + opponentMove + " | min : " + minEvaluation);
-//					}
 					if (minEvaluation <= maxEvaluation) {
 						break;
 					}
@@ -96,30 +97,23 @@ public class MinMaxServiceImpl implements MinMaxService {
 				maxEvaluation = minEvaluation;
 				bestMove = analysedMove;
 				bestOpponentMove = opponentMove;
-				if (log.isDebugEnabled()) {
-					log.debug("bestMove : " + bestMove + " | bestOpponentMove : " + bestOpponentMove + " | max : " + maxEvaluation);
-				}
 			}
 			
-//			if (log.isDebugEnabled()) {
-//				log.debug("BREAK");
-//			}
-
 			percentCompleted++;
 
-//			if (log.isDebugEnabled()) {
-//				log.debug("analysis : " + percentCompleted * 100 / analysedMoves.size() + " %");
-//			}
+			if (log.isDebugEnabled()) {
+				log.debug("analysis : " + percentCompleted * 100 / analysedMoves.size() + " %");
+			}
 
 		}
 		
 		optimalMoves.add(bestMove);
 		optimalMoves.add(bestOpponentMove);
 		
-//		if (log.isDebugEnabled()) {
-//			log.debug("bestMove : " + bestMove);
-//			log.debug("opponentMove : " + bestOpponentMove);
-//		}
+		if (log.isDebugEnabled()) {
+			log.debug("bestMove : " + bestMove);
+			log.debug("opponentMove : " + bestOpponentMove);
+		}
 
 		return optimalMoves;
 	}
@@ -141,8 +135,9 @@ public class MinMaxServiceImpl implements MinMaxService {
 		opponentThreatMap.get(ThreatType.THREAT_5).stream().forEach(t -> t.getEmptyCells().stream().filter(c -> !analysedMoves.contains(c)).forEach(analysedMoves::add));
 		
 		doubleThreatMap.get(ThreatType.DOUBLE_THREAT_4).stream().filter(t -> !analysedMoves.contains(t.getTargetCell())).forEach(t -> analysedMoves.add(t.getTargetCell()));
+		opponentDoubleThreatMap.get(ThreatType.DOUBLE_THREAT_4).stream().filter(t -> !analysedMoves.contains(t.getTargetCell())).forEach(t -> analysedMoves.add(t.getTargetCell()));
 		opponentDoubleThreatMap.get(ThreatType.DOUBLE_THREAT_4).stream().forEach(t -> t.getBlockingCells().stream().filter(c -> !analysedMoves.contains(c)).forEach(analysedMoves::add));
-		
+
 		threatMap.get(ThreatType.THREAT_4).stream().forEach(t -> t.getEmptyCells().stream().filter(c -> !analysedMoves.contains(c)).forEach(analysedMoves::add));
 		opponentThreatMap.get(ThreatType.THREAT_4).stream().forEach(t -> t.getEmptyCells().stream().filter(c -> !analysedMoves.contains(c)).forEach(analysedMoves::add));
 		
@@ -150,6 +145,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 		doubleThreat3Targets.stream().filter(c -> doubleThreatMap.get(ThreatType.DOUBLE_THREAT_3).stream().filter(t -> t.getTargetCell().equals(c)).count() > 1).filter(c -> !analysedMoves.contains(c)).forEach(analysedMoves::add);
 		
 		doubleThreatMap.get(ThreatType.DOUBLE_THREAT_3).stream().filter(t -> !analysedMoves.contains(t.getTargetCell())).forEach(t -> analysedMoves.add(t.getTargetCell()));
+		opponentDoubleThreatMap.get(ThreatType.DOUBLE_THREAT_3).stream().filter(t -> !analysedMoves.contains(t.getTargetCell())).forEach(t -> analysedMoves.add(t.getTargetCell()));
 		opponentDoubleThreatMap.get(ThreatType.DOUBLE_THREAT_3).stream().forEach(t -> t.getBlockingCells().stream().filter(c -> !analysedMoves.contains(c)).forEach(analysedMoves::add));
 		
 		threatMap.get(ThreatType.THREAT_3).stream().forEach(t -> t.getEmptyCells().stream().filter(c -> !analysedMoves.contains(c)).forEach(analysedMoves::add));
