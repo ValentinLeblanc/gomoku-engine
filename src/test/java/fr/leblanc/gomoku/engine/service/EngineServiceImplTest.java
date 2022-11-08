@@ -1,6 +1,5 @@
 package fr.leblanc.gomoku.engine.service;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -14,7 +13,7 @@ import fr.leblanc.gomoku.engine.model.GameDto;
 import fr.leblanc.gomoku.engine.model.MoveDto;
 
 @SpringBootTest
-class EngineServiceTest {
+class EngineServiceImplTest {
 
 	@Autowired
 	private EngineService engineService;
@@ -136,71 +135,6 @@ class EngineServiceTest {
 		assertTrue(result.getWinMoves().contains(move2));
 		assertTrue(result.getWinMoves().contains(move3));
 		assertTrue(result.getWinMoves().contains(move4));
-	}
-	
-	@Test
-	void findOrCounterStrikeTest() {
-		
-		GameDto game = new GameDto();
-		
-		game.setBoardSize(15);
-		
-		MoveDto move0 = new MoveDto(9, 7, EngineConstants.WHITE_COLOR);
-		MoveDto move1 = new MoveDto(8, 7, EngineConstants.WHITE_COLOR);
-		MoveDto move2 = new MoveDto(9, 6, EngineConstants.BLACK_COLOR);
-		MoveDto move3 = new MoveDto(10, 5, EngineConstants.BLACK_COLOR);
-		MoveDto move4 = new MoveDto(7, 8, EngineConstants.WHITE_COLOR);
-		MoveDto move5 = new MoveDto(8, 6, EngineConstants.BLACK_COLOR);
-		MoveDto move6 = new MoveDto(9, 5, EngineConstants.BLACK_COLOR);
-		MoveDto move7 = new MoveDto(7, 6, EngineConstants.WHITE_COLOR);
-		MoveDto move8 = new MoveDto(6, 8, EngineConstants.WHITE_COLOR);
-		MoveDto move9 = new MoveDto(7, 7, EngineConstants.BLACK_COLOR);
-		MoveDto move10 = new MoveDto(5, 8, EngineConstants.WHITE_COLOR);
-		MoveDto move11 = new MoveDto(10, 8, EngineConstants.WHITE_COLOR);
-		MoveDto move12 = new MoveDto(10, 7, EngineConstants.BLACK_COLOR);
-		MoveDto move13 = new MoveDto(9, 8, EngineConstants.BLACK_COLOR);
-		MoveDto move14 = new MoveDto(8, 3, EngineConstants.BLACK_COLOR);
-		MoveDto move15 = new MoveDto(8, 5, EngineConstants.WHITE_COLOR);
-
-		game.getMoves().add(move0);
-		game.getMoves().add(move1);
-		game.getMoves().add(move2);
-		game.getMoves().add(move3);
-		game.getMoves().add(move4);
-		game.getMoves().add(move5);
-		game.getMoves().add(move6);
-		game.getMoves().add(move7);
-		game.getMoves().add(move8);
-		game.getMoves().add(move9);
-		game.getMoves().add(move10);
-		game.getMoves().add(move11);
-		game.getMoves().add(move12);
-		game.getMoves().add(move13);
-		game.getMoves().add(move14);
-		game.getMoves().add(move15);
-		
-		assertEquals(new MoveDto(10, 4, EngineConstants.BLACK_COLOR), engineService.computeMove(game));
-		
-		game.getMoves().add(new MoveDto(10, 4, EngineConstants.BLACK_COLOR));
-		
-		assertEquals(new MoveDto(11, 3, EngineConstants.WHITE_COLOR), engineService.computeMove(game));
-		
-		game.getMoves().add(new MoveDto(11, 3, EngineConstants.WHITE_COLOR));
-		
-		assertEquals(new MoveDto(10, 6, EngineConstants.BLACK_COLOR), engineService.computeMove(game));
-		
-		game.getMoves().add(new MoveDto(10, 6, EngineConstants.BLACK_COLOR));
-		
-		assertEquals(new MoveDto(10, 3, EngineConstants.WHITE_COLOR), engineService.computeMove(game));
-		
-		game.getMoves().add(new MoveDto(10, 3, EngineConstants.WHITE_COLOR));
-		
-		assertEquals(new MoveDto(11, 6, EngineConstants.BLACK_COLOR), engineService.computeMove(game));
-		
-		game.getMoves().add(new MoveDto(11, 6, EngineConstants.BLACK_COLOR));
-		
-		assertEquals(new MoveDto(12, 6, EngineConstants.WHITE_COLOR), engineService.computeMove(game));
-		
 	}
 	
 }

@@ -16,6 +16,16 @@ public class DataWrapper {
 		this.data = data;
 	}
 	
+	public DataWrapper(int boardSize) {
+		data = new int[boardSize][boardSize];
+
+		for (int rowIndex = 0; rowIndex < boardSize; rowIndex++) {
+			for (int columnIndex = 0; columnIndex < boardSize; columnIndex++) {
+				data[columnIndex][rowIndex] = EngineConstants.NONE_COLOR;
+			}
+		}
+	}
+
 	public void addMove(Cell cell, int value) {
 		data[cell.getColumnIndex()][cell.getRowIndex()] = value;
 		analysis.push(cell);
@@ -30,4 +40,22 @@ public class DataWrapper {
 		return data[columnIndex][rowIndex];
 	}
 	
+	public static DataWrapper of(GameDto game) {
+
+		int boardSize = game.getBoardSize();
+
+		int[][] data = new int[boardSize][boardSize];
+
+		for (int rowIndex = 0; rowIndex < boardSize; rowIndex++) {
+			for (int columnIndex = 0; columnIndex < boardSize; columnIndex++) {
+				data[columnIndex][rowIndex] = EngineConstants.NONE_COLOR;
+			}
+		}
+
+		for (MoveDto move : game.getMoves()) {
+			data[move.getColumnIndex()][move.getRowIndex()] = move.getColor();
+		}
+
+		return new DataWrapper(data);
+	}
 }

@@ -1,18 +1,53 @@
 package fr.leblanc.gomoku.engine.model;
 
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
-@Data
+@Getter
+@Setter
+@RequiredArgsConstructor
+@ToString
 public class Threat {
 
-	private List<Cell> plainCells;
-	private List<Cell> emptyCells;
+	private Set<Cell> plainCells = new HashSet<>();
+	private Set<Cell> emptyCells = new HashSet<>();
 	
-	public Threat(List<Cell> plainCells, List<Cell> emptyCells) {
+	public Threat(Set<Cell> plainCells, Set<Cell> emptyCells) {
 		this.plainCells = plainCells;
 		this.emptyCells = emptyCells;
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		
+		if (!(obj instanceof Threat)) {
+			return false;
+		}
+		
+		Threat other = (Threat) obj;
+		
+		if (plainCells.size() != other.plainCells.size()) {
+			return false;
+		}
+		
+		if (!plainCells.containsAll(other.plainCells)) {
+			return false;
+		}
+		
+		if (emptyCells.size() != other.emptyCells.size()) {
+			return false;
+		}
+		
+		if (!emptyCells.containsAll(other.emptyCells)) {
+			return false;
+		}
+		
+		return true;
 	}
 
 }

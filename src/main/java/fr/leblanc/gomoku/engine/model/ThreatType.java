@@ -10,16 +10,6 @@ public enum ThreatType {
 	THREAT_3,
 	THREAT_2;
 	
-	private static final double THREAT_5_POTENTIAL = 1000;
-	private static final double DOUBLE_THREAT_4_POTENTIAL = 500;
-	private static final double THREAT_4_DOUBLE_THREAT_3_POTENTIAL = 250;
-	private static final double THREAT_4_POTENTIAL = 4;
-	private static final double DOUBLE_THREAT_3_POTENTIAL = 15;
-	private static final double THREAT_3_POTENTIAL = 3;
-	private static final double DOUBLE_THREAT_2_POTENTIAL = 2;
-	private static final double THREAT_2_POTENTIAL = 2;
-
-
 	public static ThreatType valueOf(int type) {
 		
 		if (type == 2) {
@@ -80,31 +70,27 @@ public enum ThreatType {
 	
 	public double getPotential() {
 		if (this == THREAT_5) {
-			return THREAT_5_POTENTIAL;
+			return EngineConstants.THREAT_5_POTENTIAL;
 		}
 		
 		if (this == DOUBLE_THREAT_4) {
-			return THREAT_4_POTENTIAL * THREAT_4_POTENTIAL;
+			return EngineConstants.DOUBLE_THREAT_4_POTENTIAL;
 		}
 		
 		if (this == THREAT_4) {
-			return THREAT_4_POTENTIAL;
+			return EngineConstants.THREAT_4_POTENTIAL;
 		}
 		
 		if (this == DOUBLE_THREAT_3) {
-			return THREAT_3_POTENTIAL * THREAT_3_POTENTIAL;
+			return EngineConstants.DOUBLE_THREAT_3_POTENTIAL;
 		}
 		
 		if (this == THREAT_3) {
-			return THREAT_3_POTENTIAL;
+			return EngineConstants.THREAT_3_POTENTIAL;
 		}
 		
 		if (this == DOUBLE_THREAT_2) {
-			return THREAT_2_POTENTIAL * THREAT_2_POTENTIAL;
-		}
-		
-		if (this == THREAT_2) {
-			return THREAT_2_POTENTIAL;
+			return EngineConstants.DOUBLE_THREAT_2_POTENTIAL;
 		}
 		
 		return 0;
