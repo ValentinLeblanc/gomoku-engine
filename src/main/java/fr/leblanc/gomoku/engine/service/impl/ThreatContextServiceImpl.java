@@ -77,7 +77,7 @@ public class ThreatContextServiceImpl implements ThreatContextService {
 		
 		computeDoubleThreats(threatContext, ThreatType.THREAT_3);
 		
-//		computeDoubleThreats(threatContext, ThreatType.THREAT_2);
+		computeDoubleThreats(threatContext, ThreatType.THREAT_2);
 	}
 
 	private void computeDoubleThreats(ThreatContext threatContext, ThreatType threatType) {
@@ -114,39 +114,28 @@ public class ThreatContextServiceImpl implements ThreatContextService {
 		for (Cell emptyCell : emptyCells) {
 			List<Threat> threatsContaining = threats.stream().filter(t -> t.getEmptyCells().contains(emptyCell)).toList();
 			
-			if (threatsContaining.size() == 2) {
-				DoubleThreat doubleThreat = new DoubleThreat();
-				
-				doubleThreat.setTargetCell(emptyCell);
-				
-				doubleThreat.setPlainCells(threatsContaining.get(0).getPlainCells());
-				
-				Set<Cell> blockingCells = new HashSet<>();
-				
-				threatsContaining.forEach(t -> t.getEmptyCells().stream().filter(c -> !c.equals(emptyCell) && threatsContaining.stream().filter(t2 -> t2.getEmptyCells().contains(c)).count() > 0).forEach(blockingCells::add));
-				
-				doubleThreat.setBlockingCells(blockingCells);
-				
-				doubleThreats.add(doubleThreat);
-			}
-			if (threatsContaining.size() == 3) {
-				DoubleThreat doubleThreat = new DoubleThreat();
-				
-				doubleThreat.setTargetCell(emptyCell);
-				
-				doubleThreat.setPlainCells(threatsContaining.get(0).getPlainCells());
-				
-				Set<Cell> blockingCells = new HashSet<>();
-				
-				threatsContaining.forEach(t -> t.getEmptyCells().stream().filter(c -> !c.equals(emptyCell) && threatsContaining.stream().filter(t2 -> t2.getEmptyCells().contains(c)).count() > 1).forEach(blockingCells::add));
-				
-				doubleThreat.setBlockingCells(blockingCells);
-				
-				doubleThreats.add(doubleThreat);
+			if (threatsContaining.size() >= 2) {
+				doubleThreats.add(createDoubleThreat(emptyCell, threatsContaining));
 			}
 		}
 		
 		return doubleThreats;
+	}
+
+	private DoubleThreat createDoubleThreat(Cell emptyCell, List<Threat> threatsContaining) {
+		DoubleThreat doubleThreat = new DoubleThreat();
+		
+		doubleThreat.setTargetCell(emptyCell);
+		
+		doubleThreat.setPlainCells(threatsContaining.get(0).getPlainCells());
+		
+		Set<Cell> blockingCells = new HashSet<>();
+		
+		threatsContaining.forEach(t -> t.getEmptyCells().stream().filter(c -> !c.equals(emptyCell) && threatsContaining.stream().filter(t2 -> t2.getEmptyCells().contains(c)).count() >= threatsContaining.size() - 1).forEach(blockingCells::add));
+		
+		doubleThreat.setBlockingCells(blockingCells);
+		
+		return doubleThreat;
 	}
 
 	private void computeDiagonal2Threats(ThreatContext threatContext, int dataLength) {

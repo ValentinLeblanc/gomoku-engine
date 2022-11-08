@@ -142,6 +142,21 @@ public class EvaluationServiceImpl implements EvaluationService {
 						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, true, depth + 1, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2));
 					}
 				}
+			} else if (ThreatType.DOUBLE_THREAT_2.equals(threatType2)) {
+				Map<Threat, Set<Cell>> threats = getEffectiveThreats(playingThreatContext, opponentThreatContext, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2);
+				if (isFreeToAttack) {
+					if (!threats.isEmpty()) {
+						threats.keySet().stream().forEach(t -> threats.get(t).stream().forEach(c -> evaluation.addAndGet(EngineConstants.DOUBLE_THREAT_3_DOUBLE_THREAT_2_POTENTIAL)));
+					} else {
+						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, false, depth + 1, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2));
+					}
+				} else {
+					if (!threats.isEmpty()) {
+						evaluation.addAndGet(-evaluateOpponentThreat(dataWrapper, playingColor, depth + 1, threats));
+					} else {
+						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, true, depth + 1, ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2));
+					}
+				}
 			}
 		}
 		
