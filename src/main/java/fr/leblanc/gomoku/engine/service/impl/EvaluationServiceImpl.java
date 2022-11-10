@@ -252,12 +252,20 @@ public class EvaluationServiceImpl implements EvaluationService {
 				if (!hasT5Counter(playingCell, opponentThreatContext)) {
 					
 					if (threat.getBlockingCells().stream().allMatch(blockingCell -> !hasT4Counter(blockingCell, opponentThreatContext))) {
-						// find double threat 3
 						
-						long count = playingThreatContext.getDoubleThreatTypeToThreatMap().get(ThreatType.DOUBLE_THREAT_3).stream().filter(t -> !threat.getPlainCells().containsAll(t.getPlainCells()) && t.getTargetCell().equals(threat.getTargetCell())).count();
+						if (ThreatType.DOUBLE_THREAT_3.equals(secondThreatType)) {
+							long count = playingThreatContext.getDoubleThreatTypeToThreatMap().get(ThreatType.DOUBLE_THREAT_3).stream().filter(t -> !threat.getPlainCells().containsAll(t.getPlainCells()) && t.getTargetCell().equals(threat.getTargetCell())).count();
+							
+							if (count > 0) {
+								map.put(threat, Set.of(playingCell));
+							}
+						} else if (ThreatType.DOUBLE_THREAT_2.equals(secondThreatType)) {
+								
+							long count = playingThreatContext.getDoubleThreatTypeToThreatMap().get(ThreatType.DOUBLE_THREAT_2).stream().filter(t -> !threat.getPlainCells().containsAll(t.getPlainCells()) && t.getTargetCell().equals(playingCell)).count();
 
-						if (count > 0) {
-							map.put(threat, Set.of(playingCell));
+							if (count > 0) {
+								map.put(threat, Set.of(playingCell));
+							}
 						}
 						
 					}
