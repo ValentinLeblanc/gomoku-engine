@@ -17,24 +17,24 @@ class StrikeServiceTest {
 	private StrikeService strikeService;
 	
 	@Test
-	void findOrCounterStrikeTest() {
+	void findOrCounterStrikeTest() throws InterruptedException {
 		
 		DataWrapper dataWrapper = new DataWrapper(15);
 		
-		dataWrapper.addMove(new Cell(9, 7), EngineConstants.WHITE_COLOR);
-		dataWrapper.addMove(new Cell(8, 7), EngineConstants.WHITE_COLOR);
 		dataWrapper.addMove(new Cell(9, 6), EngineConstants.BLACK_COLOR);
+		dataWrapper.addMove(new Cell(9, 7), EngineConstants.WHITE_COLOR);
 		dataWrapper.addMove(new Cell(10, 5), EngineConstants.BLACK_COLOR);
-		dataWrapper.addMove(new Cell(7, 8), EngineConstants.WHITE_COLOR);
+		dataWrapper.addMove(new Cell(8, 7), EngineConstants.WHITE_COLOR);
 		dataWrapper.addMove(new Cell(8, 6), EngineConstants.BLACK_COLOR);
+		dataWrapper.addMove(new Cell(7, 8), EngineConstants.WHITE_COLOR);
 		dataWrapper.addMove(new Cell(9, 5), EngineConstants.BLACK_COLOR);
 		dataWrapper.addMove(new Cell(7, 6), EngineConstants.WHITE_COLOR);
-		dataWrapper.addMove(new Cell(6, 8), EngineConstants.WHITE_COLOR);
 		dataWrapper.addMove(new Cell(7, 7), EngineConstants.BLACK_COLOR);
-		dataWrapper.addMove(new Cell(5, 8), EngineConstants.WHITE_COLOR);
-		dataWrapper.addMove(new Cell(10, 8), EngineConstants.WHITE_COLOR);
+		dataWrapper.addMove(new Cell(6, 8), EngineConstants.WHITE_COLOR);
 		dataWrapper.addMove(new Cell(10, 7), EngineConstants.BLACK_COLOR);
+		dataWrapper.addMove(new Cell(10, 8), EngineConstants.WHITE_COLOR);
 		dataWrapper.addMove(new Cell(9, 8), EngineConstants.BLACK_COLOR);
+		dataWrapper.addMove(new Cell(5, 8), EngineConstants.WHITE_COLOR);
 		dataWrapper.addMove(new Cell(8, 3), EngineConstants.BLACK_COLOR);
 		dataWrapper.addMove(new Cell(8, 5), EngineConstants.WHITE_COLOR);
 

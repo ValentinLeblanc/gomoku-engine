@@ -9,12 +9,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import fr.leblanc.gomoku.engine.model.Cell;
+import fr.leblanc.gomoku.engine.model.CustomProperties;
 import fr.leblanc.gomoku.engine.model.DataWrapper;
 import fr.leblanc.gomoku.engine.model.DoubleThreat;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
 import fr.leblanc.gomoku.engine.model.Threat;
 import fr.leblanc.gomoku.engine.model.ThreatContext;
 import fr.leblanc.gomoku.engine.model.ThreatType;
+import fr.leblanc.gomoku.engine.service.AnalysisService;
 import fr.leblanc.gomoku.engine.service.EvaluationService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.ThreatContextService;
@@ -30,6 +32,14 @@ public class MinMaxServiceImpl implements MinMaxService {
 	@Autowired
 	private EvaluationService evaluationService;
 
+	@Autowired
+	private CustomProperties customProperties;
+	
+	@Autowired
+	private AnalysisService analysisService;
+	
+	private Boolean stopComputation = false;
+	
 	@Override
 	public Cell computeMinMax(DataWrapper dataWrapper, int playingColor, List<Cell> analyzedMoves) {
 		
@@ -49,6 +59,11 @@ public class MinMaxServiceImpl implements MinMaxService {
 		return null;
 	}
 	
+	@Override
+	public void stopComputation() {
+		stopComputation = true;
+	}
+
 	private List<Cell> internalComputeMinMax(DataWrapper dataWrapper, int playingColor, List<Cell> analysedMoves) throws Exception {
 
 		if (analysedMoves.size() == 1) {
@@ -59,15 +74,24 @@ public class MinMaxServiceImpl implements MinMaxService {
 
 		double maxEvaluation = Double.NEGATIVE_INFINITY;
 
-		int percentCompleted = 0;
+		int advancement = 0;
 		
 		Cell bestMove = null;
 		Cell bestOpponentMove = null;
 
 		for (Cell analysedMove : analysedMoves) {
 
+			if (stopComputation) {
+				stopComputation = false;
+				throw new InterruptedException();
+			}
+			
 			dataWrapper.addMove(analysedMove, playingColor);
 
+			if (customProperties.isDisplayAnalysis()) {
+				analysisService.sendAnalysisCell(analysedMove, playingColor);
+			}
+			
 			List<Cell> subAnalysedMoves = buildAnalyzedMoves(dataWrapper, -playingColor);
 			
 			double minEvaluation = Double.POSITIVE_INFINITY;
@@ -75,6 +99,12 @@ public class MinMaxServiceImpl implements MinMaxService {
 			Cell opponentMove = null;
 			
 			for (Cell subAnalysedMove : subAnalysedMoves) {
+				
+				if (stopComputation) {
+					stopComputation = false;
+					throw new InterruptedException();
+				}
+				
 				dataWrapper.addMove(subAnalysedMove, -playingColor);
 
 				double evaluation = evaluationService.computeEvaluation(dataWrapper, playingColor);
@@ -93,16 +123,22 @@ public class MinMaxServiceImpl implements MinMaxService {
 			
 			dataWrapper.removeMove(analysedMove);
 			
+			if (customProperties.isDisplayAnalysis()) {
+				analysisService.sendAnalysisCell(analysedMove, EngineConstants.NONE_COLOR);
+			}
+			
 			if (minEvaluation > maxEvaluation) {
 				maxEvaluation = minEvaluation;
 				bestMove = analysedMove;
 				bestOpponentMove = opponentMove;
 			}
 			
-			percentCompleted++;
+			advancement++;
 
-			if (log.isDebugEnabled()) {
-				log.debug("analysis : " + percentCompleted * 100 / analysedMoves.size() + " %");
+			Integer percentCompleted = advancement * 100 / analysedMoves.size();
+			
+			if (customProperties.isDisplayAnalysis()) {
+				analysisService.sendPercentCompleted(percentCompleted);
 			}
 
 		}

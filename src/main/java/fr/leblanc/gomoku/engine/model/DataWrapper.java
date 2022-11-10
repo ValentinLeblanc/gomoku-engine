@@ -1,19 +1,29 @@
 package fr.leblanc.gomoku.engine.model;
 
-import java.util.Deque;
-import java.util.LinkedList;
+import java.util.Arrays;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
-@Data
+@Getter
+@Setter
+@ToString
 public class DataWrapper {
 
 	private int[][] data;
 	
-	private Deque<Cell> analysis = new LinkedList<>();
-	
 	public DataWrapper(int[][] data) {
 		this.data = data;
+	}
+	
+	public DataWrapper(DataWrapper dataWrapper) {
+		data = new int[dataWrapper.getData().length][dataWrapper.getData().length];
+		for (int rowIndex = 0; rowIndex < dataWrapper.getData().length; rowIndex++) {
+			for (int columnIndex = 0; columnIndex < dataWrapper.getData().length; columnIndex++) {
+				data[columnIndex][rowIndex] = dataWrapper.getData()[columnIndex][rowIndex];
+			}
+		}
 	}
 	
 	public DataWrapper(int boardSize) {
@@ -28,12 +38,10 @@ public class DataWrapper {
 
 	public void addMove(Cell cell, int value) {
 		data[cell.getColumnIndex()][cell.getRowIndex()] = value;
-		analysis.push(cell);
 	}
 	
 	public void removeMove(Cell cell) {
 		data[cell.getColumnIndex()][cell.getRowIndex()] = 0;
-		analysis.pop();
 	}
 	
 	public int getValue(int columnIndex, int rowIndex) {
@@ -58,4 +66,25 @@ public class DataWrapper {
 
 		return new DataWrapper(data);
 	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + Arrays.deepHashCode(data);
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		DataWrapper other = (DataWrapper) obj;
+		return Arrays.deepEquals(data, other.data);
+	}
+	
 }

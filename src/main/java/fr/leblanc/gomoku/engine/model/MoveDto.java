@@ -13,4 +13,10 @@ public class MoveDto {
     private int rowIndex;
     private int color;
 
+    public MoveDto(Cell cell, int color) {
+    	this.color = color;
+    	this.columnIndex = cell.getColumnIndex();
+    	this.rowIndex = cell.getRowIndex();
+    }
+    
 }

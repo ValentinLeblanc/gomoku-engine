@@ -22,13 +22,18 @@ public class EngineController {
 	}
 	
 	@PostMapping("/computeMove")
-	public MoveDto computeMove(@RequestBody GameDto game) {
+	public MoveDto computeMove(@RequestBody GameDto game) throws InterruptedException {
 		return engineService.computeMove(game);
 	}
 	
 	@PostMapping("/computeEvaluation")
 	public Double computeEvaluation(@RequestBody GameDto game) {
 		return engineService.computeEvaluation(game);
+	}
+	
+	@PostMapping("/stop")
+	public void stopComputation() {
+		engineService.stopComputation();
 	}
 	
 }

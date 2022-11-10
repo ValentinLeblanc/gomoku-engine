@@ -47,7 +47,7 @@ public class EngineServiceImpl implements EngineService {
 	}
 
 	@Override
-	public MoveDto computeMove(GameDto game) {
+	public MoveDto computeMove(GameDto game) throws InterruptedException {
 
 		int playingColor = game.getMoves().size() % 2 == 0 ? EngineConstants.BLACK_COLOR : EngineConstants.WHITE_COLOR;
 		
@@ -57,11 +57,11 @@ public class EngineServiceImpl implements EngineService {
 		
 		DataWrapper dataWrapper = DataWrapper.of(game);
 
-//		Cell strikeOrCounterStrike = strikeService.findOrCounterStrike(dataWrapper, playingColor);
-//
-//		if (strikeOrCounterStrike != null) {
-//			return new MoveDto(strikeOrCounterStrike.getColumnIndex(), strikeOrCounterStrike.getRowIndex(), playingColor);
-//		}
+		Cell strikeOrCounterStrike = strikeService.findOrCounterStrike(dataWrapper, playingColor);
+
+		if (strikeOrCounterStrike != null) {
+			return new MoveDto(strikeOrCounterStrike.getColumnIndex(), strikeOrCounterStrike.getRowIndex(), playingColor);
+		}
 		
 		Cell minMaxMove = minMaxService.computeMinMax(dataWrapper, playingColor, null);
 		
@@ -84,6 +84,12 @@ public class EngineServiceImpl implements EngineService {
 		
 		throw new IllegalArgumentException("Game has no valid playing color");
 		
+	}
+
+	@Override
+	public void stopComputation() {
+		strikeService.stopComputation();
+		minMaxService.stopComputation();
 	}
 
 	private CheckWinResult buildResult(int[][] win, int color) {

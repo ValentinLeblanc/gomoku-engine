@@ -165,11 +165,9 @@ public class EvaluationServiceImpl implements EvaluationService {
 
 	private int evaluateOpponentThreat(DataWrapper dataWrapper, int playingColor, int depth, Map<Threat, Set<Cell>> opponentEffectiveThreats) {
 	
-		int maxEval = Integer.MIN_VALUE;
+		int minEval = Integer.MAX_VALUE;
 		
 		for (Threat threat : opponentEffectiveThreats.keySet()) {
-			
-			int minEval = Integer.MAX_VALUE;
 			
 			Set<Cell> cellsToEval = threat instanceof DoubleThreat doubleThreat ? doubleThreat.getBlockingCells() : threat.getEmptyCells();
 			
@@ -186,18 +184,12 @@ public class EvaluationServiceImpl implements EvaluationService {
 
 				if (eval < minEval) {
 					minEval = eval;
-					if (minEval <= maxEval) {
-						break;
-					}
 				}
 			}
 			
-			if (minEval > maxEval) {
-				maxEval = minEval;
-			}
 		}
 		
-		return maxEval;
+		return minEval;
 	}
 	
 	private Map<Threat, Set<Cell>> getEffectiveThreats(ThreatContext playingThreatContext, ThreatContext opponentThreatContext, ThreatType threatType, ThreatType secondThreatType) {
