@@ -57,11 +57,11 @@ public class EngineServiceImpl implements EngineService {
 		
 		DataWrapper dataWrapper = DataWrapper.of(game);
 
-		Cell strikeOrCounterStrike = strikeService.findOrCounterStrike(dataWrapper, playingColor);
-
-		if (strikeOrCounterStrike != null) {
-			return new MoveDto(strikeOrCounterStrike.getColumnIndex(), strikeOrCounterStrike.getRowIndex(), playingColor);
-		}
+//		Cell strikeOrCounterStrike = strikeService.findOrCounterStrike(dataWrapper, playingColor);
+//
+//		if (strikeOrCounterStrike != null) {
+//			return new MoveDto(strikeOrCounterStrike.getColumnIndex(), strikeOrCounterStrike.getRowIndex(), playingColor);
+//		}
 		
 		Cell minMaxMove = minMaxService.computeMinMax(dataWrapper, playingColor, null);
 		

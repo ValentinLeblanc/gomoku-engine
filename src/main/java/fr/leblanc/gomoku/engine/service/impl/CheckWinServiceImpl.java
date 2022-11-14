@@ -1,9 +1,10 @@
-package fr.leblanc.gomoku.engine.service;
+package fr.leblanc.gomoku.engine.service.impl;
 
 import org.springframework.stereotype.Service;
 
 import fr.leblanc.gomoku.engine.model.DataWrapper;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
+import fr.leblanc.gomoku.engine.service.CheckWinService;
 
 @Service
 public class CheckWinServiceImpl implements CheckWinService {

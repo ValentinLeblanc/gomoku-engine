@@ -362,7 +362,7 @@ public class StrikeServiceImpl implements StrikeService {
 				secondaryFailedTries.put(playingColor, new HashSet<>());
 			}
 			
-			if (depth + 1 != STRIKE_MAX_DEPTH) {
+			if (depth + 1 != maxDepth) {
 				secondaryFailedTries.get(playingColor).add(new DataWrapper(dataWrapper));
 			}
 			
@@ -372,6 +372,12 @@ public class StrikeServiceImpl implements StrikeService {
 		ThreatContext threatContext = threatContextService.computeThreatContext(dataWrapper.getData(), playingColor);
 
 		Cell retry = retrySecondary(dataWrapper, playingColor, threatContextService.findCombinedThreats(threatContext, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3), depth, maxDepth, failedTries, secondaryFailedTries);
+		
+		if (retry != null) {
+			return retry;
+		}
+		
+		retry = retrySecondary(dataWrapper, playingColor, threatContextService.findCombinedThreats(threatContext, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2), depth, maxDepth, failedTries, secondaryFailedTries);
 		
 		if (retry != null) {
 			return retry;
@@ -395,12 +401,6 @@ public class StrikeServiceImpl implements StrikeService {
 			return retry;
 		}
 		
-		retry = retrySecondary(dataWrapper, playingColor, threatContextService.findCombinedThreats(threatContext, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2), depth, maxDepth, failedTries, secondaryFailedTries);
-		
-		if (retry != null) {
-			return retry;
-		}
-		
 		
 		Set<Cell> cells = new HashSet<>();
 		
@@ -416,7 +416,7 @@ public class StrikeServiceImpl implements StrikeService {
 			secondaryFailedTries.put(playingColor, new HashSet<>());
 		}
 		
-		if (depth + 1 != STRIKE_MAX_DEPTH) {
+		if (depth + 1 != maxDepth) {
 			secondaryFailedTries.get(playingColor).add(new DataWrapper(dataWrapper));
 		}
 		

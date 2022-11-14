@@ -133,13 +133,13 @@ public class EvaluationServiceImpl implements EvaluationService {
 					if (!threats.isEmpty()) {
 						threats.keySet().stream().forEach(t -> threats.get(t).stream().forEach(c -> evaluation.addAndGet(EngineConstants.DOUBLE_THREAT_3_DOUBLE_THREAT_3_POTENTIAL)));
 					} else {
-						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, false, depth + 1, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3));
+						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, false, depth, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3));
 					}
 				} else {
 					if (!threats.isEmpty()) {
 						evaluation.addAndGet(-evaluateOpponentThreat(dataWrapper, playingColor, depth + 1, threats));
 					} else {
-						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, true, depth + 1, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2));
+						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, true, depth, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2));
 					}
 				}
 			} else if (ThreatType.DOUBLE_THREAT_2.equals(threatType2)) {
@@ -148,13 +148,13 @@ public class EvaluationServiceImpl implements EvaluationService {
 					if (!threats.isEmpty()) {
 						threats.keySet().stream().forEach(t -> threats.get(t).stream().forEach(c -> evaluation.addAndGet(EngineConstants.DOUBLE_THREAT_3_DOUBLE_THREAT_2_POTENTIAL)));
 					} else {
-						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, false, depth + 1, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2));
+						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, false, depth, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2));
 					}
 				} else {
 					if (!threats.isEmpty()) {
 						evaluation.addAndGet(-evaluateOpponentThreat(dataWrapper, playingColor, depth + 1, threats));
 					} else {
-						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, true, depth + 1, ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2));
+						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, true, depth, ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2));
 					}
 				}
 			}
@@ -165,14 +165,24 @@ public class EvaluationServiceImpl implements EvaluationService {
 
 	private int evaluateOpponentThreat(DataWrapper dataWrapper, int playingColor, int depth, Map<Threat, Set<Cell>> opponentEffectiveThreats) {
 	
-		int minEval = Integer.MAX_VALUE;
-		
+		int maxEval = Integer.MIN_VALUE;
+
 		for (Threat threat : opponentEffectiveThreats.keySet()) {
+		
+			int minEval = Integer.MAX_VALUE;
 			
 			Set<Cell> cellsToEval = threat instanceof DoubleThreat doubleThreat ? doubleThreat.getBlockingCells() : threat.getEmptyCells();
 			
 			if (threat instanceof DoubleThreat doubleThreat) {
-				cellsToEval.add(doubleThreat.getTargetCell());
+				dataWrapper.addMove(doubleThreat.getTargetCell(), playingColor);
+				
+				int eval = internalComputeEvaluation(dataWrapper, -playingColor, depth);
+				
+				dataWrapper.removeMove(doubleThreat.getTargetCell());
+				
+				if (eval < minEval) {
+					minEval = eval;
+				}
 			}
 			
 			for (Cell threatCell : cellsToEval) {
@@ -184,12 +194,18 @@ public class EvaluationServiceImpl implements EvaluationService {
 
 				if (eval < minEval) {
 					minEval = eval;
+					if (minEval <= maxEval) {
+						break;
+					}
 				}
 			}
 			
+			if (minEval > maxEval) {
+				maxEval = minEval;
+			}
 		}
 		
-		return minEval;
+		return maxEval;
 	}
 	
 	private Map<Threat, Set<Cell>> getEffectiveThreats(ThreatContext playingThreatContext, ThreatContext opponentThreatContext, ThreatType threatType, ThreatType secondThreatType) {
@@ -261,11 +277,15 @@ public class EvaluationServiceImpl implements EvaluationService {
 							}
 						} else if (ThreatType.DOUBLE_THREAT_2.equals(secondThreatType)) {
 								
-							long count = playingThreatContext.getDoubleThreatTypeToThreatMap().get(ThreatType.DOUBLE_THREAT_2).stream().filter(t -> !threat.getPlainCells().containsAll(t.getPlainCells()) && t.getTargetCell().equals(playingCell)).count();
-
-							if (count > 0) {
-								map.put(threat, Set.of(playingCell));
+							if (threat.getBlockingCells().stream().allMatch(blockingCell -> !hasDT3Counter(blockingCell, opponentThreatContext))) {
+								
+								long count = playingThreatContext.getDoubleThreatTypeToThreatMap().get(ThreatType.DOUBLE_THREAT_2).stream().filter(t -> !threat.getPlainCells().containsAll(t.getPlainCells()) && t.getTargetCell().equals(playingCell)).count();
+								
+								if (count > 0) {
+									map.put(threat, Set.of(playingCell));
+								}
 							}
+							
 						}
 						
 					}
@@ -275,6 +295,10 @@ public class EvaluationServiceImpl implements EvaluationService {
 		}
 		
 		return map;
+	}
+
+	private boolean hasDT3Counter(Cell blockingCell, ThreatContext opponentThreatContext) {
+		return opponentThreatContext.getDoubleThreatTypeToThreatMap().get(ThreatType.DOUBLE_THREAT_3).stream().anyMatch(t -> t.getTargetCell().equals(blockingCell));
 	}
 
 	private boolean hasT4Counter(Cell blockingCell, ThreatContext opponentThreatContext) {

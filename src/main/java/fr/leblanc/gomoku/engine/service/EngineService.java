@@ -4,7 +4,7 @@ import fr.leblanc.gomoku.engine.model.CheckWinResult;
 import fr.leblanc.gomoku.engine.model.GameDto;
 import fr.leblanc.gomoku.engine.model.MoveDto;
 
-public interface EngineService extends ComputationService {
+public interface EngineService extends StoppableService {
 
 	CheckWinResult checkWin(GameDto game);
 

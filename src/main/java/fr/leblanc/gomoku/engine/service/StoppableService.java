@@ -1,6 +1,6 @@
 package fr.leblanc.gomoku.engine.service;
 
-public interface ComputationService {
+public interface StoppableService {
 
 	void stopComputation();
 	

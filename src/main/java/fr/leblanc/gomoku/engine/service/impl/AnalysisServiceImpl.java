@@ -26,11 +26,16 @@ public class AnalysisServiceImpl implements AnalysisService {
 	}
 
 	@Override
-	public void sendPercentCompleted(Integer percent) {
+	public void sendPercentCompleted(int index, int percent) {
 		JSONObject message = new JSONObject();
 		
+		JSONObject content = new JSONObject();
+		
+		content.put("index", index);
+		content.put("percent", percent);
+		
 		message.put("type", "COMPUTE_PROGRESS");
-		message.put("content", percent.toString());
+		message.put("content", content.toString());
 		
 		engineRepository.sendMessageToWebApp(message);
 

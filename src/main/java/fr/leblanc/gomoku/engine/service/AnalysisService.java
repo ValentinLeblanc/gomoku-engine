@@ -6,6 +6,6 @@ public interface AnalysisService {
 
 	public void sendAnalysisCell(Cell analysisCell, int color);
 	
-	public void sendPercentCompleted(Integer percent);
+	void sendPercentCompleted(int index, int percent);
 
 }
