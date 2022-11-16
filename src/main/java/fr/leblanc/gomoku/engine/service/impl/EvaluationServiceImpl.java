@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import fr.leblanc.gomoku.engine.model.Cell;
@@ -23,8 +24,9 @@ import fr.leblanc.gomoku.engine.service.ThreatContextService;
 @Service
 public class EvaluationServiceImpl implements EvaluationService {
 
-	private static final int MAX_EVALUATION_DEPTH = 3;
-	
+	@Value("${engine.evaluation.depth}")
+	private int evaluationDepth;
+
 	@Autowired
 	private ThreatContextService threatContextService;
 	
@@ -38,7 +40,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 
 	private int internalComputeEvaluation(DataWrapper dataWrapper, int playingColor, int depth) {
 		
-		if (depth >= MAX_EVALUATION_DEPTH) {
+		if (depth >= evaluationDepth) {
 			return 0;
 		}
 		
@@ -155,6 +157,23 @@ public class EvaluationServiceImpl implements EvaluationService {
 						evaluation.addAndGet(-evaluateOpponentThreat(dataWrapper, playingColor, depth + 1, threats));
 					} else {
 						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, true, depth, ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2));
+					}
+				}
+			}
+		} else if (ThreatType.DOUBLE_THREAT_2.equals(threatType1)) {
+			if (ThreatType.DOUBLE_THREAT_2.equals(threatType2)) {
+				Map<Threat, Set<Cell>> threats = getEffectiveThreats(playingThreatContext, opponentThreatContext, ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2);
+				if (isFreeToAttack) {
+					if (!threats.isEmpty()) {
+						threats.keySet().stream().forEach(t -> threats.get(t).stream().forEach(c -> evaluation.addAndGet(EngineConstants.DOUBLE_THREAT_2_DOUBLE_THREAT_2_POTENTIAL)));
+					} else {
+						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, false, depth, ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2));
+					}
+				} else {
+					if (!threats.isEmpty()) {
+						evaluation.addAndGet(-evaluateOpponentThreat(dataWrapper, playingColor, depth + 1, threats));
+					} else {
+//						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, true, depth, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2));
 					}
 				}
 			}
@@ -276,6 +295,33 @@ public class EvaluationServiceImpl implements EvaluationService {
 								map.put(threat, Set.of(playingCell));
 							}
 						} else if (ThreatType.DOUBLE_THREAT_2.equals(secondThreatType)) {
+								
+							if (threat.getBlockingCells().stream().allMatch(blockingCell -> !hasDT3Counter(blockingCell, opponentThreatContext))) {
+								
+								long count = playingThreatContext.getDoubleThreatTypeToThreatMap().get(ThreatType.DOUBLE_THREAT_2).stream().filter(t -> !threat.getPlainCells().containsAll(t.getPlainCells()) && t.getTargetCell().equals(playingCell)).count();
+								
+								if (count > 0) {
+									map.put(threat, Set.of(playingCell));
+								}
+							}
+							
+						}
+						
+					}
+					
+				}
+			}
+		} else if (threatType == ThreatType.DOUBLE_THREAT_2) {
+			Set<Threat> visitedThreats = new HashSet<>();
+			
+			for (DoubleThreat threat : playingThreatContext.getDoubleThreatTypeToThreatMap().get(ThreatType.DOUBLE_THREAT_2)) {
+				visitedThreats.add(threat);
+				Cell playingCell = threat.getTargetCell();
+				if (!hasT5Counter(playingCell, opponentThreatContext)) {
+					
+					if (threat.getBlockingCells().stream().allMatch(blockingCell -> !hasT4Counter(blockingCell, opponentThreatContext))) {
+						
+						if (ThreatType.DOUBLE_THREAT_2.equals(secondThreatType)) {
 								
 							if (threat.getBlockingCells().stream().allMatch(blockingCell -> !hasDT3Counter(blockingCell, opponentThreatContext))) {
 								

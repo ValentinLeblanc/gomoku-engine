@@ -14,8 +14,10 @@ import fr.leblanc.gomoku.engine.service.EngineService;
 import fr.leblanc.gomoku.engine.service.EvaluationService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.StrikeService;
+import lombok.extern.log4j.Log4j2;
 
 @Service
+@Log4j2
 public class EngineServiceImpl implements EngineService {
 
 	@Autowired
@@ -47,7 +49,7 @@ public class EngineServiceImpl implements EngineService {
 	}
 
 	@Override
-	public MoveDto computeMove(GameDto game) throws InterruptedException {
+	public MoveDto computeMove(GameDto game) {
 
 		int playingColor = game.getMoves().size() % 2 == 0 ? EngineConstants.BLACK_COLOR : EngineConstants.WHITE_COLOR;
 		
@@ -57,11 +59,14 @@ public class EngineServiceImpl implements EngineService {
 		
 		DataWrapper dataWrapper = DataWrapper.of(game);
 
-//		Cell strikeOrCounterStrike = strikeService.findOrCounterStrike(dataWrapper, playingColor);
-//
-//		if (strikeOrCounterStrike != null) {
-//			return new MoveDto(strikeOrCounterStrike.getColumnIndex(), strikeOrCounterStrike.getRowIndex(), playingColor);
-//		}
+		try {
+			Cell strikeOrCounterStrike = strikeService.findOrCounterStrike(dataWrapper, playingColor);
+			if (strikeOrCounterStrike != null) {
+				return new MoveDto(strikeOrCounterStrike.getColumnIndex(), strikeOrCounterStrike.getRowIndex(), playingColor);
+			}
+		} catch (InterruptedException e) {
+			log.error("StrikeService stopped");
+		}
 		
 		Cell minMaxMove = minMaxService.computeMinMax(dataWrapper, playingColor, null);
 		
@@ -88,8 +93,11 @@ public class EngineServiceImpl implements EngineService {
 
 	@Override
 	public void stopComputation() {
-		strikeService.stopComputation();
-		minMaxService.stopComputation();
+		if (strikeService.isComputing()) {
+			strikeService.stopComputation();
+		} else if (minMaxService.isComputing()) {
+			minMaxService.stopComputation();
+		}
 	}
 
 	private CheckWinResult buildResult(int[][] win, int color) {

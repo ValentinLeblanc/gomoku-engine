@@ -6,13 +6,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
 
 import fr.leblanc.gomoku.engine.model.Cell;
-import fr.leblanc.gomoku.engine.model.CustomProperties;
 import fr.leblanc.gomoku.engine.model.DataWrapper;
 import fr.leblanc.gomoku.engine.model.DoubleThreat;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
@@ -22,6 +23,7 @@ import fr.leblanc.gomoku.engine.model.ThreatType;
 import fr.leblanc.gomoku.engine.service.AnalysisService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.StrikeService;
+import fr.leblanc.gomoku.engine.service.ThreatContextService;
 import lombok.extern.log4j.Log4j2;
 
 
@@ -29,24 +31,29 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public class StrikeServiceImpl implements StrikeService {
 
-	private static final int STRIKE_MAX_DEPTH = 4;
+	@Value("${engine.strike.depth}")
+	private int strikeDepth;
+	
+	@Value("${engine.display.analysis}")
+	private boolean displayAnalysis;
 
 	@Autowired
-	private ThreatContextServiceImpl threatContextService;
+	private ThreatContextService threatContextService;
 	
 	@Autowired
 	private MinMaxService minMaxService;
 	
 	@Autowired
-	private CustomProperties customProperties;
-	
-	@Autowired
 	private AnalysisService analysisService;
+	
+	private Boolean isComputing = false;
 	
 	private Boolean stopComputation = false;
 	
 	@Override
 	public Cell findOrCounterStrike(DataWrapper dataWrapper, int playingColor) throws InterruptedException {
+		
+		isComputing = true;
 		
 		StopWatch stopWatch = new StopWatch("findOrCounterStrike");
 		stopWatch.start();
@@ -63,6 +70,8 @@ public class StrikeServiceImpl implements StrikeService {
 				log.debug("direct strike found in " + stopWatch.getTotalTimeMillis() + " ms");
 			}
 			
+			isComputing = false;
+			
 			return directThreat;
 		}
 
@@ -72,11 +81,12 @@ public class StrikeServiceImpl implements StrikeService {
 			List<Cell> counterOpponentThreats = counterDirectStrikeMoves(dataWrapper, playingColor, failedTries);
 
 			if (!counterOpponentThreats.isEmpty()) {
+				isComputing = false;
 				return minMaxService.computeMinMax(dataWrapper, playingColor, counterOpponentThreats);
 			}
 		}
 		
-		for (int maxDepth = 1; maxDepth <= STRIKE_MAX_DEPTH; maxDepth++) {
+		for (int maxDepth = 1; maxDepth <= strikeDepth; maxDepth++) {
 			
 			long timeElapsed = System.currentTimeMillis();	
 			
@@ -92,6 +102,8 @@ public class StrikeServiceImpl implements StrikeService {
 					log.debug("secondary strike found in " + stopWatch.getTotalTimeMillis() + " ms for maxDepth = " + maxDepth);
 				}
 				
+				isComputing = false;
+				
 				return secondaryStrike;
 			}
 			
@@ -102,12 +114,20 @@ public class StrikeServiceImpl implements StrikeService {
 			
 		}
 		
+		isComputing = false;
+		
 		return null;
 	}
 	
 	@Override
+	public boolean isComputing() {
+		return isComputing;
+	}
+
+	@Override
 	public void stopComputation() {
 		stopComputation = true;
+		isComputing = false;
 	}
 
 	private Cell directStrike(DataWrapper dataWrapper, int playingColor, Map<Integer, Set<DataWrapper>> failedTries) throws InterruptedException {
@@ -148,7 +168,7 @@ public class StrikeServiceImpl implements StrikeService {
 				// defend
 				dataWrapper.addMove(opponentThreat, playingColor);
 				
-				if (customProperties.isDisplayAnalysis()) {
+				if (displayAnalysis) {
 					analysisService.sendAnalysisCell(opponentThreat, playingColor);
 				}
 				
@@ -161,7 +181,7 @@ public class StrikeServiceImpl implements StrikeService {
 					// opponent defends
 					dataWrapper.addMove(newThreat, -playingColor);
 					
-					if (customProperties.isDisplayAnalysis()) {
+					if (displayAnalysis) {
 						analysisService.sendAnalysisCell(newThreat, -playingColor);
 					}
 					
@@ -170,13 +190,13 @@ public class StrikeServiceImpl implements StrikeService {
 					
 					dataWrapper.removeMove(newThreat);
 					
-					if (customProperties.isDisplayAnalysis()) {
+					if (displayAnalysis) {
 						analysisService.sendAnalysisCell(newThreat, EngineConstants.NONE_COLOR);
 					}
 					
 					if (nextThreat != null) {
 						dataWrapper.removeMove(opponentThreat);
-						if (customProperties.isDisplayAnalysis()) {
+						if (displayAnalysis) {
 							analysisService.sendAnalysisCell(opponentThreat, EngineConstants.NONE_COLOR);
 						}
 						return opponentThreat;
@@ -185,7 +205,7 @@ public class StrikeServiceImpl implements StrikeService {
 				
 				dataWrapper.removeMove(opponentThreat);
 				
-				if (customProperties.isDisplayAnalysis()) {
+				if (displayAnalysis) {
 					analysisService.sendAnalysisCell(opponentThreat, EngineConstants.NONE_COLOR);
 				}
 			}
@@ -215,7 +235,7 @@ public class StrikeServiceImpl implements StrikeService {
 
 			dataWrapper.addMove(threat4Move, playingColor);
 			
-			if (customProperties.isDisplayAnalysis()) {
+			if (displayAnalysis) {
 				analysisService.sendAnalysisCell(threat4Move, playingColor);
 			}
 
@@ -226,7 +246,7 @@ public class StrikeServiceImpl implements StrikeService {
 
 			dataWrapper.addMove(counterMove, -playingColor);
 			
-			if (customProperties.isDisplayAnalysis()) {
+			if (displayAnalysis) {
 				analysisService.sendAnalysisCell(counterMove, -playingColor);
 			}
 
@@ -235,7 +255,7 @@ public class StrikeServiceImpl implements StrikeService {
 			dataWrapper.removeMove(counterMove);
 			dataWrapper.removeMove(threat4Move);
 			
-			if (customProperties.isDisplayAnalysis()) {
+			if (displayAnalysis) {
 				analysisService.sendAnalysisCell(counterMove, EngineConstants.NONE_COLOR);
 				analysisService.sendAnalysisCell(threat4Move, EngineConstants.NONE_COLOR);
 			}
@@ -308,7 +328,7 @@ public class StrikeServiceImpl implements StrikeService {
 				
 				dataWrapper.addMove(defendFromStrike, playingColor);
 				
-				if (customProperties.isDisplayAnalysis()) {
+				if (displayAnalysis) {
 					analysisService.sendAnalysisCell(defendFromStrike, playingColor);
 				}
 				
@@ -324,7 +344,7 @@ public class StrikeServiceImpl implements StrikeService {
 						
 						dataWrapper.addMove(opponentDefendFromStrike, -playingColor);
 						
-						if (customProperties.isDisplayAnalysis()) {
+						if (displayAnalysis) {
 							analysisService.sendAnalysisCell(opponentDefendFromStrike, -playingColor);
 						}
 						
@@ -332,7 +352,7 @@ public class StrikeServiceImpl implements StrikeService {
 						
 						dataWrapper.removeMove(opponentDefendFromStrike);
 						
-						if (customProperties.isDisplayAnalysis()) {
+						if (displayAnalysis) {
 							analysisService.sendAnalysisCell(opponentDefendFromStrike, EngineConstants.NONE_COLOR);
 						}
 						
@@ -344,7 +364,7 @@ public class StrikeServiceImpl implements StrikeService {
 					
 					if (!hasDefense) {
 						dataWrapper.removeMove(defendFromStrike);
-						if (customProperties.isDisplayAnalysis()) {
+						if (displayAnalysis) {
 							analysisService.sendAnalysisCell(defendFromStrike, EngineConstants.NONE_COLOR);
 						}
 						return defendFromStrike;
@@ -353,7 +373,7 @@ public class StrikeServiceImpl implements StrikeService {
 				}
 				
 				dataWrapper.removeMove(defendFromStrike);
-				if (customProperties.isDisplayAnalysis()) {
+				if (displayAnalysis) {
 					analysisService.sendAnalysisCell(defendFromStrike, EngineConstants.NONE_COLOR);
 				}
 			}
@@ -401,12 +421,7 @@ public class StrikeServiceImpl implements StrikeService {
 			return retry;
 		}
 		
-		
-		Set<Cell> cells = new HashSet<>();
-		
-		threatContext.getThreatTypeToThreatMap().get(ThreatType.DOUBLE_THREAT_3).stream().forEach(t -> cells.addAll(t.getEmptyCells()));
-		
-		retry = retrySecondary(dataWrapper, playingColor, cells, depth, maxDepth, failedTries, secondaryFailedTries);
+		retry = retrySecondary(dataWrapper, playingColor, threatContext.getDoubleThreatTypeToThreatMap().get(ThreatType.DOUBLE_THREAT_3).stream().map(DoubleThreat::getTargetCell).collect(Collectors.toSet()), depth, maxDepth, failedTries, secondaryFailedTries);
 		
 		if (retry != null) {
 			return retry;
@@ -428,7 +443,7 @@ public class StrikeServiceImpl implements StrikeService {
 		for (Cell threat : cellsToTry) {
 			dataWrapper.addMove(threat, playingColor);
 			
-			if (customProperties.isDisplayAnalysis()) {
+			if (displayAnalysis) {
 				analysisService.sendAnalysisCell(threat, playingColor);
 			}
 			
@@ -439,7 +454,7 @@ public class StrikeServiceImpl implements StrikeService {
 			for (Cell opponentDefendFromStrike : opponentDefendFromStrikes) {
 				dataWrapper.addMove(opponentDefendFromStrike, -playingColor);
 				
-				if (customProperties.isDisplayAnalysis()) {
+				if (displayAnalysis) {
 					analysisService.sendAnalysisCell(opponentDefendFromStrike, -playingColor);
 				}
 				
@@ -447,7 +462,7 @@ public class StrikeServiceImpl implements StrikeService {
 				
 				dataWrapper.removeMove(opponentDefendFromStrike);
 				
-				if (customProperties.isDisplayAnalysis()) {
+				if (displayAnalysis) {
 					analysisService.sendAnalysisCell(opponentDefendFromStrike, EngineConstants.NONE_COLOR);
 				}
 				
@@ -459,7 +474,7 @@ public class StrikeServiceImpl implements StrikeService {
 			
 			dataWrapper.removeMove(threat);
 			
-			if (customProperties.isDisplayAnalysis()) {
+			if (displayAnalysis) {
 				analysisService.sendAnalysisCell(threat, EngineConstants.NONE_COLOR);
 			}
 			
