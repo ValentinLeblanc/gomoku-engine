@@ -36,6 +36,9 @@ public class StrikeServiceImpl implements StrikeService {
 	
 	@Value("${engine.display.analysis}")
 	private boolean displayAnalysis;
+	
+	@Value("${engine.strike.enable}")
+	private boolean enable;
 
 	@Autowired
 	private ThreatContextService threatContextService;
@@ -52,6 +55,10 @@ public class StrikeServiceImpl implements StrikeService {
 	
 	@Override
 	public Cell findOrCounterStrike(DataWrapper dataWrapper, int playingColor) throws InterruptedException {
+		
+		if (!enable) {
+			return null;
+		}
 		
 		isComputing = true;
 		

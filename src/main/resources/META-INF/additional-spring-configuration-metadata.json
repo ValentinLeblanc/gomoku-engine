@@ -18,5 +18,10 @@
     "name": "engine.display.analysis",
     "type": "java.lang.String",
     "description": "A description for 'engine.display.analysis'"
+  },
+  {
+    "name": "engine.strike.enable",
+    "type": "java.lang.String",
+    "description": "A description for 'engine.strike.enable'"
   }
 ]}

@@ -68,9 +68,9 @@ public class MinMaxServiceImpl implements MinMaxService {
 			
 			stopWatch.start();
 			
-			MinMaxResult result = newMinMax(dataWrapper, playingColor, analyzedMoves, (minMaxDepth % 2 == 0), minMaxDepth - 1, new MinMaxContext());
+			MinMaxResult result = newMinMax(dataWrapper, playingColor, analyzedMoves, (minMaxDepth % 2 == 0), 0, new MinMaxContext());
 			
-			resultCell = result.getOptimalMoves().get(minMaxDepth - 1);
+			resultCell = result.getOptimalMoves().get(0);
 			
 			stopWatch.stop();
 			
@@ -122,7 +122,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			
 			dataWrapper.addMove(analysedMove, playingColor);
 
-			if (displayAnalysis && depth >= minMaxDepth - 2) {
+			if (displayAnalysis && depth <= 1) {
 				analysisService.sendAnalysisCell(analysedMove, playingColor);
 			}
 			
@@ -130,7 +130,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			
 			double currentEvaluation = 0;
 			
-			if (depth == 0) {
+			if (depth == minMaxDepth - 1) {
 				
 				if (!context.getEvaluationCache().containsKey(-playingColor)) {
 					context.getEvaluationCache().put(-playingColor, new HashMap<>());
@@ -144,13 +144,13 @@ public class MinMaxServiceImpl implements MinMaxService {
 				}
 				
 			} else {
-				subResult = newMinMax(dataWrapper, -playingColor, threatContextService.buildAnalyzedMoves(dataWrapper, -playingColor), !findMax, depth - 1, context);
+				subResult = newMinMax(dataWrapper, -playingColor, threatContextService.buildAnalyzedMoves(dataWrapper, -playingColor), !findMax, depth + 1, context);
 				currentEvaluation = subResult.getEvaluation();
 			}
 			
 			dataWrapper.removeMove(analysedMove);
 			
-			if (displayAnalysis && depth >= minMaxDepth - 2) {
+			if (displayAnalysis && depth <= 1) {
 				analysisService.sendAnalysisCell(analysedMove, EngineConstants.NONE_COLOR);
 			}
 			
@@ -170,7 +170,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 					
 					final double eval = optimalEvaluation;
 					
-					if (context.getMinList().entrySet().stream().anyMatch(minEntry -> minEntry.getKey() > depth && eval >= minEntry.getValue())) {
+					if (context.getMinList().entrySet().stream().anyMatch(minEntry -> minEntry.getKey() < depth && eval >= minEntry.getValue())) {
 						break;
 					}
 				}
@@ -190,7 +190,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 					
 					final double eval = optimalEvaluation;
 
-					if (context.getMaxList().entrySet().stream().anyMatch(maxEntry -> maxEntry.getKey() > depth && eval <= maxEntry.getValue())) {
+					if (context.getMaxList().entrySet().stream().anyMatch(maxEntry -> maxEntry.getKey() < depth && eval <= maxEntry.getValue())) {
 						break;
 					}
 				}
@@ -200,9 +200,9 @@ public class MinMaxServiceImpl implements MinMaxService {
 
 			Integer percentCompleted = advancement * 100 / analysedMoves.size();
 			
-			if (depth == minMaxDepth - 1) {
+			if (depth == 0) {
 				analysisService.sendPercentCompleted(1, percentCompleted);
-			} else if (depth == minMaxDepth - 2) {
+			} else if (depth == 1) {
 				analysisService.sendPercentCompleted(2, percentCompleted);
 			}
 		}
