@@ -5,13 +5,13 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
 
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.DataWrapper;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
+import fr.leblanc.gomoku.engine.model.EngineSettings;
 import fr.leblanc.gomoku.engine.model.MinMaxContext;
 import fr.leblanc.gomoku.engine.model.MinMaxResult;
 import fr.leblanc.gomoku.engine.service.AnalysisService;
@@ -25,18 +25,12 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public class MinMaxServiceImpl implements MinMaxService {
 	
-	@Value("${engine.minmax.depth}")
-	private int minMaxDepth;
-	
 	@Autowired
 	private ThreatContextService threatContextService;
 	
 	@Autowired
 	private EvaluationService evaluationService;
 
-	@Value("${engine.display.analysis}")
-	private boolean displayAnalysis;
-	
 	@Autowired
 	private AnalysisService analysisService;
 	
@@ -48,7 +42,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 	private Boolean stopComputation = false;
 	
 	@Override
-	public Cell computeMinMax(DataWrapper dataWrapper, int playingColor, List<Cell> analyzedMoves) {
+	public Cell computeMinMax(DataWrapper dataWrapper, int playingColor, List<Cell> analyzedMoves, EngineSettings engineSettings) {
 		
 		isComputing = true;
 		
@@ -68,7 +62,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			
 			stopWatch.start();
 			
-			MinMaxResult result = newMinMax(dataWrapper, playingColor, analyzedMoves, (minMaxDepth % 2 == 0), 0, new MinMaxContext());
+			MinMaxResult result = internalMinMax(dataWrapper, playingColor, analyzedMoves, (engineSettings.getMinMaxDepth() % 2 == 0), 0, new MinMaxContext(), engineSettings);
 			
 			resultCell = result.getOptimalMoves().get(0);
 			
@@ -100,7 +94,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 		isComputing = false;
 	}
 	
-	private MinMaxResult newMinMax(DataWrapper dataWrapper, int playingColor, List<Cell> analysedMoves, boolean findMax, int depth, MinMaxContext context) throws InterruptedException {
+	private MinMaxResult internalMinMax(DataWrapper dataWrapper, int playingColor, List<Cell> analysedMoves, boolean findMax, int depth, MinMaxContext context, EngineSettings engineSettings) throws InterruptedException {
 		
 		MinMaxResult result = new MinMaxResult();
 		
@@ -122,7 +116,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			
 			dataWrapper.addMove(analysedMove, playingColor);
 
-			if (displayAnalysis && depth <= 1) {
+			if (engineSettings.isDisplayAnalysis() && depth <= 1) {
 				analysisService.sendAnalysisCell(analysedMove, playingColor);
 			}
 			
@@ -130,7 +124,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			
 			double currentEvaluation = 0;
 			
-			if (depth == minMaxDepth - 1) {
+			if (depth == engineSettings.getMinMaxDepth() - 1) {
 				
 				if (!context.getEvaluationCache().containsKey(-playingColor)) {
 					context.getEvaluationCache().put(-playingColor, new HashMap<>());
@@ -139,18 +133,18 @@ public class MinMaxServiceImpl implements MinMaxService {
 				if (context.getEvaluationCache().get(-playingColor).containsKey(dataWrapper)) {
 					currentEvaluation = context.getEvaluationCache().get(-playingColor).get(dataWrapper);
 				} else {
-					currentEvaluation = evaluationService.computeEvaluation(dataWrapper, -playingColor);
+					currentEvaluation = evaluationService.computeEvaluation(dataWrapper, -playingColor, engineSettings);
 					context.getEvaluationCache().get(-playingColor).put(new DataWrapper(dataWrapper), currentEvaluation);
 				}
 				
 			} else {
-				subResult = newMinMax(dataWrapper, -playingColor, threatContextService.buildAnalyzedMoves(dataWrapper, -playingColor), !findMax, depth + 1, context);
+				subResult = internalMinMax(dataWrapper, -playingColor, threatContextService.buildAnalyzedMoves(dataWrapper, -playingColor), !findMax, depth + 1, context, engineSettings);
 				currentEvaluation = subResult.getEvaluation();
 			}
 			
 			dataWrapper.removeMove(analysedMove);
 			
-			if (displayAnalysis && depth <= 1) {
+			if (engineSettings.isDisplayAnalysis() && depth <= 1) {
 				analysisService.sendAnalysisCell(analysedMove, EngineConstants.NONE_COLOR);
 			}
 			

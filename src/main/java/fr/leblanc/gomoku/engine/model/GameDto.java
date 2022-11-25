@@ -16,4 +16,6 @@ public class GameDto {
 	
 	private Set<MoveDto> moves = new HashSet<>();
 	
+	private EngineSettingsDto settings;
+	
 }

@@ -7,6 +7,7 @@ import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.CheckWinResult;
 import fr.leblanc.gomoku.engine.model.DataWrapper;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
+import fr.leblanc.gomoku.engine.model.EngineSettings;
 import fr.leblanc.gomoku.engine.model.GameDto;
 import fr.leblanc.gomoku.engine.model.MoveDto;
 import fr.leblanc.gomoku.engine.service.CheckWinService;
@@ -58,9 +59,11 @@ public class EngineServiceImpl implements EngineService {
 		}
 		
 		DataWrapper dataWrapper = DataWrapper.of(game);
-
+		
+		EngineSettings engineSettings = new EngineSettings(game.getSettings());
+		
 		try {
-			Cell strikeOrCounterStrike = strikeService.findOrCounterStrike(dataWrapper, playingColor);
+			Cell strikeOrCounterStrike = strikeService.findOrCounterStrike(dataWrapper, playingColor, engineSettings);
 			if (strikeOrCounterStrike != null) {
 				return new MoveDto(strikeOrCounterStrike.getColumnIndex(), strikeOrCounterStrike.getRowIndex(), playingColor);
 			}
@@ -68,7 +71,7 @@ public class EngineServiceImpl implements EngineService {
 			log.error("StrikeService stopped");
 		}
 		
-		Cell minMaxMove = minMaxService.computeMinMax(dataWrapper, playingColor, null);
+		Cell minMaxMove = minMaxService.computeMinMax(dataWrapper, playingColor, null, engineSettings);
 		
 		return new MoveDto(minMaxMove.getColumnIndex(), minMaxMove.getRowIndex(), playingColor);
 	}
@@ -81,10 +84,12 @@ public class EngineServiceImpl implements EngineService {
 		
 		DataWrapper dataWrapper = DataWrapper.of(game);
 		
+		EngineSettings engineSettings = new EngineSettings(game.getSettings());
+		
 		if (playingColor == EngineConstants.BLACK_COLOR) {
-			return evaluationService.computeEvaluation(dataWrapper, playingColor);
+			return evaluationService.computeEvaluation(dataWrapper, playingColor, engineSettings);
 		} else if (playingColor == EngineConstants.WHITE_COLOR) {
-			return -evaluationService.computeEvaluation(dataWrapper, playingColor);
+			return -evaluationService.computeEvaluation(dataWrapper, playingColor, engineSettings);
 		}
 		
 		throw new IllegalArgumentException("Game has no valid playing color");

@@ -7,13 +7,13 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.DataWrapper;
 import fr.leblanc.gomoku.engine.model.DoubleThreat;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
+import fr.leblanc.gomoku.engine.model.EngineSettings;
 import fr.leblanc.gomoku.engine.model.Threat;
 import fr.leblanc.gomoku.engine.model.ThreatContext;
 import fr.leblanc.gomoku.engine.model.ThreatType;
@@ -24,9 +24,6 @@ import fr.leblanc.gomoku.engine.service.ThreatContextService;
 @Service
 public class EvaluationServiceImpl implements EvaluationService {
 
-	@Value("${engine.evaluation.depth}")
-	private int evaluationDepth;
-
 	@Autowired
 	private ThreatContextService threatContextService;
 	
@@ -34,13 +31,13 @@ public class EvaluationServiceImpl implements EvaluationService {
 	private CheckWinService checkWinService;
 	
 	@Override
-	public double computeEvaluation(DataWrapper dataWrapper, int playingColor) {
-		return internalComputeEvaluation(dataWrapper, playingColor, 0);
+	public double computeEvaluation(DataWrapper dataWrapper, int playingColor, EngineSettings engineSettings) {
+		return internalComputeEvaluation(dataWrapper, playingColor, 0, engineSettings);
 	}
 
-	private int internalComputeEvaluation(DataWrapper dataWrapper, int playingColor, int depth) {
+	private int internalComputeEvaluation(DataWrapper dataWrapper, int playingColor, int depth, EngineSettings engineSettings) {
 		
-		if (depth >= evaluationDepth) {
+		if (depth >= engineSettings.getEvaluationDepth()) {
 			return 0;
 		}
 		
@@ -56,11 +53,11 @@ public class EvaluationServiceImpl implements EvaluationService {
 		
 		ThreatContext opponentThreatContext = threatContextService.computeThreatContext(dataWrapper.getData(), -playingColor);
 
-		return evaluateThreats(dataWrapper, playingColor, playingThreatContext, opponentThreatContext, true, depth, ThreatType.THREAT_5, null);
+		return evaluateThreats(dataWrapper, playingColor, playingThreatContext, opponentThreatContext, true, depth, ThreatType.THREAT_5, null, engineSettings);
 		
 	}
 
-	private int evaluateThreats(DataWrapper dataWrapper, int playingColor, ThreatContext playingThreatContext, ThreatContext opponentThreatContext, boolean isFreeToAttack, int depth, ThreatType threatType1, ThreatType threatType2) {
+	private int evaluateThreats(DataWrapper dataWrapper, int playingColor, ThreatContext playingThreatContext, ThreatContext opponentThreatContext, boolean isFreeToAttack, int depth, ThreatType threatType1, ThreatType threatType2, EngineSettings engineSettings) {
 			
 		AtomicInteger evaluation = new AtomicInteger(0);
 		
@@ -70,13 +67,13 @@ public class EvaluationServiceImpl implements EvaluationService {
 				if (!threats.isEmpty()) {
 					threats.keySet().stream().forEach(t -> threats.get(t).stream().forEach(c -> evaluation.addAndGet(EngineConstants.THREAT_5_POTENTIAL)));
 				} else {
-					evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, false, depth, ThreatType.THREAT_5, null));
+					evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, false, depth, ThreatType.THREAT_5, null, engineSettings));
 				}
 			} else {
 				if (!threats.isEmpty()) {
-					evaluation.addAndGet(-evaluateOpponentThreat(dataWrapper, playingColor, depth + 1, threats));
+					evaluation.addAndGet(-evaluateOpponentThreat(dataWrapper, playingColor, depth + 1, threats, engineSettings));
 				} else {
-					evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, true, depth , ThreatType.DOUBLE_THREAT_4, null));
+					evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, true, depth , ThreatType.DOUBLE_THREAT_4, null, engineSettings));
 				}
 			}
 		} else if (ThreatType.DOUBLE_THREAT_4.equals(threatType1)) {
@@ -85,13 +82,13 @@ public class EvaluationServiceImpl implements EvaluationService {
 				if (!threats.isEmpty()) {
 					threats.keySet().stream().forEach(t -> threats.get(t).stream().forEach(c -> evaluation.addAndGet(EngineConstants.DOUBLE_THREAT_4_POTENTIAL)));
 				} else {
-					evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, playingThreatContext, opponentThreatContext, true, depth, ThreatType.THREAT_4, ThreatType.THREAT_4));
+					evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, playingThreatContext, opponentThreatContext, true, depth, ThreatType.THREAT_4, ThreatType.THREAT_4, engineSettings));
 				}
 			} else {
 				if (!threats.isEmpty()) {
-					evaluation.addAndGet(-evaluateOpponentThreat(dataWrapper, playingColor, depth + 1, threats));
+					evaluation.addAndGet(-evaluateOpponentThreat(dataWrapper, playingColor, depth + 1, threats, engineSettings));
 				} else {
-					evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, playingThreatContext, opponentThreatContext, false, depth, ThreatType.THREAT_4, ThreatType.THREAT_4));
+					evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, playingThreatContext, opponentThreatContext, false, depth, ThreatType.THREAT_4, ThreatType.THREAT_4, engineSettings));
 				}
 			}
 		} else if (ThreatType.THREAT_4.equals(threatType1)) {
@@ -102,13 +99,13 @@ public class EvaluationServiceImpl implements EvaluationService {
 					if (!threats.isEmpty()) {
 						threats.keySet().stream().forEach(t -> threats.get(t).stream().forEach(c -> evaluation.addAndGet(EngineConstants.DOUBLE_THREAT_4_POTENTIAL)));
 					} else {
-						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, playingThreatContext, opponentThreatContext, true, depth, ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3));
+						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, playingThreatContext, opponentThreatContext, true, depth, ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3, engineSettings));
 					}
 				} else {
 					if (!threats.isEmpty()) {
-						evaluation.addAndGet(-evaluateOpponentThreat(dataWrapper, playingColor, depth + 1, threats));
+						evaluation.addAndGet(-evaluateOpponentThreat(dataWrapper, playingColor, depth + 1, threats, engineSettings));
 					} else {
-						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, playingThreatContext, opponentThreatContext, false, depth, ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3));
+						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, playingThreatContext, opponentThreatContext, false, depth, ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3, engineSettings));
 					}
 				}
 			} else if (ThreatType.DOUBLE_THREAT_3.equals(threatType2)) {
@@ -117,13 +114,13 @@ public class EvaluationServiceImpl implements EvaluationService {
 					if (!threats.isEmpty()) {
 						threats.keySet().stream().forEach(t -> threats.get(t).stream().forEach(c -> evaluation.addAndGet(EngineConstants.THREAT_4_DOUBLE_THREAT_3_POTENTIAL)));
 					} else {
-						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, false, depth, ThreatType.DOUBLE_THREAT_4, null));
+						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, false, depth, ThreatType.DOUBLE_THREAT_4, null, engineSettings));
 					}
 				} else {
 					if (!threats.isEmpty()) {
-						evaluation.addAndGet(-evaluateOpponentThreat(dataWrapper, playingColor, depth + 1, threats));
+						evaluation.addAndGet(-evaluateOpponentThreat(dataWrapper, playingColor, depth + 1, threats, engineSettings));
 					} else {
-						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, true, depth, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3));
+						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, true, depth, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3, engineSettings));
 					}
 				}
 
@@ -135,13 +132,13 @@ public class EvaluationServiceImpl implements EvaluationService {
 					if (!threats.isEmpty()) {
 						threats.keySet().stream().forEach(t -> threats.get(t).stream().forEach(c -> evaluation.addAndGet(EngineConstants.DOUBLE_THREAT_3_DOUBLE_THREAT_3_POTENTIAL)));
 					} else {
-						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, false, depth, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3));
+						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, false, depth, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3, engineSettings));
 					}
 				} else {
 					if (!threats.isEmpty()) {
-						evaluation.addAndGet(-evaluateOpponentThreat(dataWrapper, playingColor, depth + 1, threats));
+						evaluation.addAndGet(-evaluateOpponentThreat(dataWrapper, playingColor, depth + 1, threats, engineSettings));
 					} else {
-						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, true, depth, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2));
+						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, true, depth, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2, engineSettings));
 					}
 				}
 			} else if (ThreatType.DOUBLE_THREAT_2.equals(threatType2)) {
@@ -150,13 +147,13 @@ public class EvaluationServiceImpl implements EvaluationService {
 					if (!threats.isEmpty()) {
 						threats.keySet().stream().forEach(t -> threats.get(t).stream().forEach(c -> evaluation.addAndGet(EngineConstants.DOUBLE_THREAT_3_DOUBLE_THREAT_2_POTENTIAL)));
 					} else {
-						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, false, depth, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2));
+						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, false, depth, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2, engineSettings));
 					}
 				} else {
 					if (!threats.isEmpty()) {
-						evaluation.addAndGet(-evaluateOpponentThreat(dataWrapper, playingColor, depth + 1, threats));
+						evaluation.addAndGet(-evaluateOpponentThreat(dataWrapper, playingColor, depth + 1, threats, engineSettings));
 					} else {
-						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, true, depth, ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2));
+						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, true, depth, ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2, engineSettings));
 					}
 				}
 			}
@@ -167,11 +164,11 @@ public class EvaluationServiceImpl implements EvaluationService {
 					if (!threats.isEmpty()) {
 						threats.keySet().stream().forEach(t -> threats.get(t).stream().forEach(c -> evaluation.addAndGet(EngineConstants.DOUBLE_THREAT_2_DOUBLE_THREAT_2_POTENTIAL)));
 					} else {
-						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, false, depth, ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2));
+						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, false, depth, ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2, engineSettings));
 					}
 				} else {
 					if (!threats.isEmpty()) {
-						evaluation.addAndGet(-evaluateOpponentThreat(dataWrapper, playingColor, depth + 1, threats));
+						evaluation.addAndGet(-evaluateOpponentThreat(dataWrapper, playingColor, depth + 1, threats, engineSettings));
 					} else {
 //						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, true, depth, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2));
 					}
@@ -182,7 +179,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 		return evaluation.intValue();
 	}
 
-	private int evaluateOpponentThreat(DataWrapper dataWrapper, int playingColor, int depth, Map<Threat, Set<Cell>> opponentEffectiveThreats) {
+	private int evaluateOpponentThreat(DataWrapper dataWrapper, int playingColor, int depth, Map<Threat, Set<Cell>> opponentEffectiveThreats, EngineSettings engineSettings) {
 	
 		int maxEval = Integer.MIN_VALUE;
 
@@ -195,7 +192,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 			if (threat instanceof DoubleThreat doubleThreat) {
 				dataWrapper.addMove(doubleThreat.getTargetCell(), playingColor);
 				
-				int eval = internalComputeEvaluation(dataWrapper, -playingColor, depth);
+				int eval = internalComputeEvaluation(dataWrapper, -playingColor, depth, engineSettings);
 				
 				dataWrapper.removeMove(doubleThreat.getTargetCell());
 				
@@ -207,7 +204,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 			for (Cell threatCell : cellsToEval) {
 				dataWrapper.addMove(threatCell, playingColor);
 				
-				int eval = internalComputeEvaluation(dataWrapper, -playingColor, depth);
+				int eval = internalComputeEvaluation(dataWrapper, -playingColor, depth, engineSettings);
 				
 				dataWrapper.removeMove(threatCell);
 
