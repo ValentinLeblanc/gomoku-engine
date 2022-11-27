@@ -11,12 +11,12 @@ import org.springframework.util.StopWatch;
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.DataWrapper;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
-import fr.leblanc.gomoku.engine.model.EngineSettings;
 import fr.leblanc.gomoku.engine.model.MinMaxContext;
 import fr.leblanc.gomoku.engine.model.MinMaxResult;
-import fr.leblanc.gomoku.engine.service.AnalysisService;
+import fr.leblanc.gomoku.engine.model.messaging.EngineSettingsDto;
 import fr.leblanc.gomoku.engine.service.CheckWinService;
 import fr.leblanc.gomoku.engine.service.EvaluationService;
+import fr.leblanc.gomoku.engine.service.MessagingService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.ThreatContextService;
 import lombok.extern.log4j.Log4j2;
@@ -32,7 +32,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 	private EvaluationService evaluationService;
 
 	@Autowired
-	private AnalysisService analysisService;
+	private MessagingService messagingService;
 	
 	@Autowired
 	private CheckWinService checkWinService;
@@ -42,7 +42,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 	private Boolean stopComputation = false;
 	
 	@Override
-	public Cell computeMinMax(DataWrapper dataWrapper, int playingColor, List<Cell> analyzedMoves, EngineSettings engineSettings) {
+	public Cell computeMinMax(DataWrapper dataWrapper, int playingColor, List<Cell> analyzedMoves, EngineSettingsDto engineSettings) throws InterruptedException {
 		
 		isComputing = true;
 		
@@ -76,6 +76,8 @@ public class MinMaxServiceImpl implements MinMaxService {
 			isComputing = false;
 			
 			return resultCell;
+		} catch (InterruptedException e) {
+			throw e;
 		} catch (Exception e) {
 			log.error("Error while computing min/max : " + e.getMessage(), e);
 		}
@@ -94,7 +96,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 		isComputing = false;
 	}
 	
-	private MinMaxResult internalMinMax(DataWrapper dataWrapper, int playingColor, List<Cell> analysedMoves, boolean findMax, int depth, MinMaxContext context, EngineSettings engineSettings) throws InterruptedException {
+	private MinMaxResult internalMinMax(DataWrapper dataWrapper, int playingColor, List<Cell> analysedMoves, boolean findMax, int depth, MinMaxContext context, EngineSettingsDto engineSettings) throws InterruptedException {
 		
 		MinMaxResult result = new MinMaxResult();
 		
@@ -116,8 +118,8 @@ public class MinMaxServiceImpl implements MinMaxService {
 			
 			dataWrapper.addMove(analysedMove, playingColor);
 
-			if (engineSettings.isDisplayAnalysis() && depth <= 1) {
-				analysisService.sendAnalysisCell(analysedMove, playingColor);
+			if (depth <= 1) {
+				messagingService.sendAnalysisCell(analysedMove, playingColor);
 			}
 			
 			MinMaxResult subResult = new MinMaxResult();
@@ -144,8 +146,8 @@ public class MinMaxServiceImpl implements MinMaxService {
 			
 			dataWrapper.removeMove(analysedMove);
 			
-			if (engineSettings.isDisplayAnalysis() && depth <= 1) {
-				analysisService.sendAnalysisCell(analysedMove, EngineConstants.NONE_COLOR);
+			if (depth <= 1) {
+				messagingService.sendAnalysisCell(analysedMove, EngineConstants.NONE_COLOR);
 			}
 			
 			if (findMax) {
@@ -195,9 +197,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			Integer percentCompleted = advancement * 100 / analysedMoves.size();
 			
 			if (depth == 0) {
-				analysisService.sendPercentCompleted(1, percentCompleted);
-			} else if (depth == 1) {
-				analysisService.sendPercentCompleted(2, percentCompleted);
+				messagingService.sendPercentCompleted(1, percentCompleted);
 			}
 		}
 	

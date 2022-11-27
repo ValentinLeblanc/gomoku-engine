@@ -13,10 +13,10 @@ import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.DataWrapper;
 import fr.leblanc.gomoku.engine.model.DoubleThreat;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
-import fr.leblanc.gomoku.engine.model.EngineSettings;
 import fr.leblanc.gomoku.engine.model.Threat;
 import fr.leblanc.gomoku.engine.model.ThreatContext;
 import fr.leblanc.gomoku.engine.model.ThreatType;
+import fr.leblanc.gomoku.engine.model.messaging.EngineSettingsDto;
 import fr.leblanc.gomoku.engine.service.CheckWinService;
 import fr.leblanc.gomoku.engine.service.EvaluationService;
 import fr.leblanc.gomoku.engine.service.ThreatContextService;
@@ -31,11 +31,11 @@ public class EvaluationServiceImpl implements EvaluationService {
 	private CheckWinService checkWinService;
 	
 	@Override
-	public double computeEvaluation(DataWrapper dataWrapper, int playingColor, EngineSettings engineSettings) {
+	public double computeEvaluation(DataWrapper dataWrapper, int playingColor, EngineSettingsDto engineSettings) {
 		return internalComputeEvaluation(dataWrapper, playingColor, 0, engineSettings);
 	}
 
-	private int internalComputeEvaluation(DataWrapper dataWrapper, int playingColor, int depth, EngineSettings engineSettings) {
+	private int internalComputeEvaluation(DataWrapper dataWrapper, int playingColor, int depth, EngineSettingsDto engineSettings) {
 		
 		if (depth >= engineSettings.getEvaluationDepth()) {
 			return 0;
@@ -57,7 +57,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 		
 	}
 
-	private int evaluateThreats(DataWrapper dataWrapper, int playingColor, ThreatContext playingThreatContext, ThreatContext opponentThreatContext, boolean isFreeToAttack, int depth, ThreatType threatType1, ThreatType threatType2, EngineSettings engineSettings) {
+	private int evaluateThreats(DataWrapper dataWrapper, int playingColor, ThreatContext playingThreatContext, ThreatContext opponentThreatContext, boolean isFreeToAttack, int depth, ThreatType threatType1, ThreatType threatType2, EngineSettingsDto engineSettings) {
 			
 		AtomicInteger evaluation = new AtomicInteger(0);
 		
@@ -179,7 +179,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 		return evaluation.intValue();
 	}
 
-	private int evaluateOpponentThreat(DataWrapper dataWrapper, int playingColor, int depth, Map<Threat, Set<Cell>> opponentEffectiveThreats, EngineSettings engineSettings) {
+	private int evaluateOpponentThreat(DataWrapper dataWrapper, int playingColor, int depth, Map<Threat, Set<Cell>> opponentEffectiveThreats, EngineSettingsDto engineSettings) {
 	
 		int maxEval = Integer.MIN_VALUE;
 

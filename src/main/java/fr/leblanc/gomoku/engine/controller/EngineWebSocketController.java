@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
-import fr.leblanc.gomoku.engine.model.EngineWebSocketMessage;
+import fr.leblanc.gomoku.engine.model.messaging.EngineWebSocketMessage;
 
 @Controller
 public class EngineWebSocketController

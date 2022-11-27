@@ -16,11 +16,11 @@ import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.DataWrapper;
 import fr.leblanc.gomoku.engine.model.DoubleThreat;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
-import fr.leblanc.gomoku.engine.model.EngineSettings;
 import fr.leblanc.gomoku.engine.model.Threat;
 import fr.leblanc.gomoku.engine.model.ThreatContext;
 import fr.leblanc.gomoku.engine.model.ThreatType;
-import fr.leblanc.gomoku.engine.service.AnalysisService;
+import fr.leblanc.gomoku.engine.model.messaging.EngineSettingsDto;
+import fr.leblanc.gomoku.engine.service.MessagingService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.StrikeService;
 import fr.leblanc.gomoku.engine.service.ThreatContextService;
@@ -38,14 +38,14 @@ public class StrikeServiceImpl implements StrikeService {
 	private MinMaxService minMaxService;
 	
 	@Autowired
-	private AnalysisService analysisService;
+	private MessagingService messagingService;
 	
 	private Boolean isComputing = false;
 	
 	private Boolean stopComputation = false;
 	
 	@Override
-	public Cell findOrCounterStrike(DataWrapper dataWrapper, int playingColor, EngineSettings engineSettings) throws InterruptedException {
+	public Cell findOrCounterStrike(DataWrapper dataWrapper, int playingColor, EngineSettingsDto engineSettings) throws InterruptedException {
 		
 		if (!engineSettings.isStrikeEnabled()) {
 			return null;
@@ -128,7 +128,7 @@ public class StrikeServiceImpl implements StrikeService {
 		isComputing = false;
 	}
 
-	private Cell directStrike(DataWrapper dataWrapper, int playingColor, Map<Integer, Set<DataWrapper>> failedTries, EngineSettings engineSettings) throws InterruptedException {
+	private Cell directStrike(DataWrapper dataWrapper, int playingColor, Map<Integer, Set<DataWrapper>> failedTries, EngineSettingsDto engineSettings) throws InterruptedException {
 
 		if (failedTries.containsKey(playingColor) && failedTries.get(playingColor).contains(dataWrapper)) {
 			return null;
@@ -166,9 +166,7 @@ public class StrikeServiceImpl implements StrikeService {
 				// defend
 				dataWrapper.addMove(opponentThreat, playingColor);
 				
-				if (engineSettings.isDisplayAnalysis()) {
-					analysisService.sendAnalysisCell(opponentThreat, playingColor);
-				}
+				messagingService.sendAnalysisCell(opponentThreat, playingColor);
 				
 				// check for another threat5
 				threatMap = threatContextService.computeThreatContext(dataWrapper.getData(), playingColor).getThreatTypeToThreatMap();
@@ -179,33 +177,25 @@ public class StrikeServiceImpl implements StrikeService {
 					// opponent defends
 					dataWrapper.addMove(newThreat, -playingColor);
 					
-					if (engineSettings.isDisplayAnalysis()) {
-						analysisService.sendAnalysisCell(newThreat, -playingColor);
-					}
+					messagingService.sendAnalysisCell(newThreat, -playingColor);
 					
 					// check for another strike
 					Cell nextThreat = directStrike(dataWrapper, playingColor, failedTries, engineSettings);
 					
 					dataWrapper.removeMove(newThreat);
 					
-					if (engineSettings.isDisplayAnalysis()) {
-						analysisService.sendAnalysisCell(newThreat, EngineConstants.NONE_COLOR);
-					}
+					messagingService.sendAnalysisCell(newThreat, EngineConstants.NONE_COLOR);
 					
 					if (nextThreat != null) {
 						dataWrapper.removeMove(opponentThreat);
-						if (engineSettings.isDisplayAnalysis()) {
-							analysisService.sendAnalysisCell(opponentThreat, EngineConstants.NONE_COLOR);
-						}
+						messagingService.sendAnalysisCell(opponentThreat, EngineConstants.NONE_COLOR);
 						return opponentThreat;
 					}
 				}
 				
 				dataWrapper.removeMove(opponentThreat);
 				
-				if (engineSettings.isDisplayAnalysis()) {
-					analysisService.sendAnalysisCell(opponentThreat, EngineConstants.NONE_COLOR);
-				}
+				messagingService.sendAnalysisCell(opponentThreat, EngineConstants.NONE_COLOR);
 			}
 			
 			if (!failedTries.containsKey(playingColor)) {
@@ -233,9 +223,7 @@ public class StrikeServiceImpl implements StrikeService {
 
 			dataWrapper.addMove(threat4Move, playingColor);
 			
-			if (engineSettings.isDisplayAnalysis()) {
-				analysisService.sendAnalysisCell(threat4Move, playingColor);
-			}
+			messagingService.sendAnalysisCell(threat4Move, playingColor);
 
 			// opponent defends
 			opponentThreatMap = threatContextService.computeThreatContext(dataWrapper.getData(), playingColor).getThreatTypeToThreatMap();
@@ -244,19 +232,15 @@ public class StrikeServiceImpl implements StrikeService {
 
 			dataWrapper.addMove(counterMove, -playingColor);
 			
-			if (engineSettings.isDisplayAnalysis()) {
-				analysisService.sendAnalysisCell(counterMove, -playingColor);
-			}
+			messagingService.sendAnalysisCell(counterMove, -playingColor);
 
 			Cell nextAttempt = directStrike(dataWrapper, playingColor, failedTries, engineSettings);
 
 			dataWrapper.removeMove(counterMove);
 			dataWrapper.removeMove(threat4Move);
 			
-			if (engineSettings.isDisplayAnalysis()) {
-				analysisService.sendAnalysisCell(counterMove, EngineConstants.NONE_COLOR);
-				analysisService.sendAnalysisCell(threat4Move, EngineConstants.NONE_COLOR);
-			}
+			messagingService.sendAnalysisCell(counterMove, EngineConstants.NONE_COLOR);
+			messagingService.sendAnalysisCell(threat4Move, EngineConstants.NONE_COLOR);
 
 			if (nextAttempt != null) {
 				return threat4Move;
@@ -272,7 +256,7 @@ public class StrikeServiceImpl implements StrikeService {
 		return null;
 	}
 	
-	private List<Cell> counterDirectStrikeMoves(DataWrapper dataWrapper, int playingColor, Map<Integer, Set<DataWrapper>> failedTries, EngineSettings engineSettings) throws InterruptedException {
+	private List<Cell> counterDirectStrikeMoves(DataWrapper dataWrapper, int playingColor, Map<Integer, Set<DataWrapper>> failedTries, EngineSettingsDto engineSettings) throws InterruptedException {
 	
 		List<Cell> defendingMoves = new ArrayList<>();
 		
@@ -298,7 +282,7 @@ public class StrikeServiceImpl implements StrikeService {
 		return defendingMoves;
 	}
 
-	private Cell secondaryStrike(DataWrapper dataWrapper, int playingColor, int depth, final int maxDepth, Map<Integer, Set<DataWrapper>> failedTries, Map<Integer, Set<DataWrapper>> secondaryFailedTries, EngineSettings engineSettings) throws InterruptedException {
+	private Cell secondaryStrike(DataWrapper dataWrapper, int playingColor, int depth, final int maxDepth, Map<Integer, Set<DataWrapper>> failedTries, Map<Integer, Set<DataWrapper>> secondaryFailedTries, EngineSettingsDto engineSettings) throws InterruptedException {
 
 		if (depth == maxDepth) {
 			return null;
@@ -326,9 +310,7 @@ public class StrikeServiceImpl implements StrikeService {
 				
 				dataWrapper.addMove(defendFromStrike, playingColor);
 				
-				if (engineSettings.isDisplayAnalysis()) {
-					analysisService.sendAnalysisCell(defendFromStrike, playingColor);
-				}
+				messagingService.sendAnalysisCell(defendFromStrike, playingColor);
 				
 				// check for a new strike
 				Cell newStrike = directStrike(dataWrapper, playingColor, failedTries, engineSettings);
@@ -342,18 +324,14 @@ public class StrikeServiceImpl implements StrikeService {
 						
 						dataWrapper.addMove(opponentDefendFromStrike, -playingColor);
 						
-						if (engineSettings.isDisplayAnalysis()) {
-							analysisService.sendAnalysisCell(opponentDefendFromStrike, -playingColor);
-						}
+						messagingService.sendAnalysisCell(opponentDefendFromStrike, -playingColor);
 						
 						Cell newAttempt = secondaryStrike(dataWrapper, playingColor, depth + 1, maxDepth, failedTries, secondaryFailedTries, engineSettings);
 						
 						dataWrapper.removeMove(opponentDefendFromStrike);
 						
-						if (engineSettings.isDisplayAnalysis()) {
-							analysisService.sendAnalysisCell(opponentDefendFromStrike, EngineConstants.NONE_COLOR);
-						}
-						
+						messagingService.sendAnalysisCell(opponentDefendFromStrike, EngineConstants.NONE_COLOR);
+							
 						if (newAttempt == null) {
 							hasDefense = true;
 							break;
@@ -362,18 +340,14 @@ public class StrikeServiceImpl implements StrikeService {
 					
 					if (!hasDefense) {
 						dataWrapper.removeMove(defendFromStrike);
-						if (engineSettings.isDisplayAnalysis()) {
-							analysisService.sendAnalysisCell(defendFromStrike, EngineConstants.NONE_COLOR);
-						}
+						messagingService.sendAnalysisCell(defendFromStrike, EngineConstants.NONE_COLOR);
 						return defendFromStrike;
 					}
 					
 				}
 				
 				dataWrapper.removeMove(defendFromStrike);
-				if (engineSettings.isDisplayAnalysis()) {
-					analysisService.sendAnalysisCell(defendFromStrike, EngineConstants.NONE_COLOR);
-				}
+				messagingService.sendAnalysisCell(defendFromStrike, EngineConstants.NONE_COLOR);
 			}
 
 			if (!secondaryFailedTries.containsKey(playingColor)) {
@@ -436,14 +410,12 @@ public class StrikeServiceImpl implements StrikeService {
 		return null;
 	}
 	
-	private Cell retrySecondary(DataWrapper dataWrapper, int playingColor, Set<Cell> cellsToTry, int depth, int maxDepth, Map<Integer, Set<DataWrapper>> failedTries, Map<Integer, Set<DataWrapper>> secondaryFailedTries, EngineSettings engineSettings) throws InterruptedException {
+	private Cell retrySecondary(DataWrapper dataWrapper, int playingColor, Set<Cell> cellsToTry, int depth, int maxDepth, Map<Integer, Set<DataWrapper>> failedTries, Map<Integer, Set<DataWrapper>> secondaryFailedTries, EngineSettingsDto engineSettings) throws InterruptedException {
 		
 		for (Cell threat : cellsToTry) {
 			dataWrapper.addMove(threat, playingColor);
 			
-			if (engineSettings.isDisplayAnalysis()) {
-				analysisService.sendAnalysisCell(threat, playingColor);
-			}
+			messagingService.sendAnalysisCell(threat, playingColor);
 			
 			List<Cell> opponentDefendFromStrikes = counterDirectStrikeMoves(dataWrapper, -playingColor, failedTries, engineSettings);
 			
@@ -452,17 +424,13 @@ public class StrikeServiceImpl implements StrikeService {
 			for (Cell opponentDefendFromStrike : opponentDefendFromStrikes) {
 				dataWrapper.addMove(opponentDefendFromStrike, -playingColor);
 				
-				if (engineSettings.isDisplayAnalysis()) {
-					analysisService.sendAnalysisCell(opponentDefendFromStrike, -playingColor);
-				}
+				messagingService.sendAnalysisCell(opponentDefendFromStrike, -playingColor);
 				
 				Cell newAttempt = secondaryStrike(dataWrapper, playingColor, depth + 1, maxDepth, failedTries, secondaryFailedTries, engineSettings);
 				
 				dataWrapper.removeMove(opponentDefendFromStrike);
 				
-				if (engineSettings.isDisplayAnalysis()) {
-					analysisService.sendAnalysisCell(opponentDefendFromStrike, EngineConstants.NONE_COLOR);
-				}
+				messagingService.sendAnalysisCell(opponentDefendFromStrike, EngineConstants.NONE_COLOR);
 				
 				if (newAttempt == null) {
 					hasDefense = true;
@@ -472,9 +440,7 @@ public class StrikeServiceImpl implements StrikeService {
 			
 			dataWrapper.removeMove(threat);
 			
-			if (engineSettings.isDisplayAnalysis()) {
-				analysisService.sendAnalysisCell(threat, EngineConstants.NONE_COLOR);
-			}
+			messagingService.sendAnalysisCell(threat, EngineConstants.NONE_COLOR);
 			
 			if (!hasDefense) {
 				return threat;

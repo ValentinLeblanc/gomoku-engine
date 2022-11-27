@@ -6,8 +6,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import fr.leblanc.gomoku.engine.model.CheckWinResult;
-import fr.leblanc.gomoku.engine.model.GameDto;
-import fr.leblanc.gomoku.engine.model.MoveDto;
+import fr.leblanc.gomoku.engine.model.messaging.GameDto;
+import fr.leblanc.gomoku.engine.model.messaging.MoveDto;
 import fr.leblanc.gomoku.engine.service.EngineService;
 
 @RestController
@@ -22,7 +22,7 @@ public class EngineController {
 	}
 	
 	@PostMapping("/computeMove")
-	public MoveDto computeMove(@RequestBody GameDto game) throws InterruptedException {
+	public MoveDto computeMove(@RequestBody GameDto game) {
 		return engineService.computeMove(game);
 	}
 	

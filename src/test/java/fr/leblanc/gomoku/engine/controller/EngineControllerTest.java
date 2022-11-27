@@ -16,7 +16,7 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import com.google.gson.Gson;
 
-import fr.leblanc.gomoku.engine.model.GameDto;
+import fr.leblanc.gomoku.engine.model.messaging.GameDto;
 
 @SpringBootTest
 @AutoConfigureMockMvc

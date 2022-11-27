@@ -1,5 +1,6 @@
-package fr.leblanc.gomoku.engine.model;
+package fr.leblanc.gomoku.engine.model.messaging;
 
+import fr.leblanc.gomoku.engine.model.Cell;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

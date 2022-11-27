@@ -4,10 +4,10 @@ import java.util.List;
 
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.DataWrapper;
-import fr.leblanc.gomoku.engine.model.EngineSettings;
+import fr.leblanc.gomoku.engine.model.messaging.EngineSettingsDto;
 
 public interface MinMaxService extends StoppableService {
 
-	Cell computeMinMax(DataWrapper dataWrapper, int playingColor, List<Cell> analyzedMoves, EngineSettings engineSettings);
+	Cell computeMinMax(DataWrapper dataWrapper, int playingColor, List<Cell> analyzedMoves, EngineSettingsDto engineSettings) throws InterruptedException;
 
 }

@@ -9,7 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.DataWrapper;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
-import fr.leblanc.gomoku.engine.model.EngineSettings;
+import fr.leblanc.gomoku.engine.model.messaging.EngineSettingsDto;
 
 @SpringBootTest
 class StrikeServiceTest {
@@ -39,7 +39,7 @@ class StrikeServiceTest {
 		dataWrapper.addMove(new Cell(8, 3), EngineConstants.BLACK_COLOR);
 		dataWrapper.addMove(new Cell(8, 5), EngineConstants.WHITE_COLOR);
 		
-		EngineSettings engineSettings = new EngineSettings();
+		EngineSettingsDto engineSettings = new EngineSettingsDto();
 
 		assertEquals(new Cell(10, 4), strikeService.findOrCounterStrike(dataWrapper, EngineConstants.BLACK_COLOR, engineSettings));
 		

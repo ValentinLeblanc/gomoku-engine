@@ -3,6 +3,7 @@ package fr.leblanc.gomoku.engine.model;
 import java.util.HashSet;
 import java.util.Set;
 
+import fr.leblanc.gomoku.engine.model.messaging.MoveDto;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 

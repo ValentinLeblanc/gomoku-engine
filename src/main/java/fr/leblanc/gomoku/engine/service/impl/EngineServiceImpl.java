@@ -1,5 +1,6 @@
 package fr.leblanc.gomoku.engine.service.impl;
 
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -7,12 +8,12 @@ import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.CheckWinResult;
 import fr.leblanc.gomoku.engine.model.DataWrapper;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
-import fr.leblanc.gomoku.engine.model.EngineSettings;
-import fr.leblanc.gomoku.engine.model.GameDto;
-import fr.leblanc.gomoku.engine.model.MoveDto;
+import fr.leblanc.gomoku.engine.model.messaging.GameDto;
+import fr.leblanc.gomoku.engine.model.messaging.MoveDto;
 import fr.leblanc.gomoku.engine.service.CheckWinService;
 import fr.leblanc.gomoku.engine.service.EngineService;
 import fr.leblanc.gomoku.engine.service.EvaluationService;
+import fr.leblanc.gomoku.engine.service.MessagingService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.StrikeService;
 import lombok.extern.log4j.Log4j2;
@@ -32,6 +33,9 @@ public class EngineServiceImpl implements EngineService {
 	
 	@Autowired
 	private CheckWinService checkWinService;
+	
+	@Autowired
+	private MessagingService messagingService;
 
 	@Override
 	public CheckWinResult checkWin(GameDto game) {
@@ -58,22 +62,35 @@ public class EngineServiceImpl implements EngineService {
 			return new MoveDto(game.getBoardSize() / 2, game.getBoardSize() / 2, playingColor);
 		}
 		
-		DataWrapper dataWrapper = DataWrapper.of(game);
-		
-		EngineSettings engineSettings = new EngineSettings(game.getSettings());
+		MoveDto computedMove = null;
 		
 		try {
-			Cell strikeOrCounterStrike = strikeService.findOrCounterStrike(dataWrapper, playingColor, engineSettings);
+			
+			messagingService.sendIsRunning(true);
+			
+			DataWrapper dataWrapper = DataWrapper.of(game);
+			Cell strikeOrCounterStrike = strikeService.findOrCounterStrike(dataWrapper, playingColor, game.getSettings());
 			if (strikeOrCounterStrike != null) {
-				return new MoveDto(strikeOrCounterStrike.getColumnIndex(), strikeOrCounterStrike.getRowIndex(), playingColor);
+				computedMove = new MoveDto(strikeOrCounterStrike.getColumnIndex(), strikeOrCounterStrike.getRowIndex(), playingColor);
+			} else {
+				Cell minMaxMove = minMaxService.computeMinMax(dataWrapper, playingColor, null, game.getSettings());
+				computedMove = new MoveDto(minMaxMove.getColumnIndex(), minMaxMove.getRowIndex(), playingColor);
 			}
 		} catch (InterruptedException e) {
-			log.error("StrikeService stopped");
+			log.info("Interrupted engine service");
+			Thread.currentThread().interrupt();
+		} finally {
+			messagingService.sendIsRunning(false);
 		}
 		
-		Cell minMaxMove = minMaxService.computeMinMax(dataWrapper, playingColor, null, engineSettings);
+		JSONObject message = new JSONObject();
 		
-		return new MoveDto(minMaxMove.getColumnIndex(), minMaxMove.getRowIndex(), playingColor);
+		message.put("type", "REFRESH_MOVE");
+		message.put("content", computedMove);
+		
+		messagingService.sendRefreshMove(computedMove);
+		
+		return computedMove;
 	}
 
 
@@ -84,12 +101,10 @@ public class EngineServiceImpl implements EngineService {
 		
 		DataWrapper dataWrapper = DataWrapper.of(game);
 		
-		EngineSettings engineSettings = new EngineSettings(game.getSettings());
-		
 		if (playingColor == EngineConstants.BLACK_COLOR) {
-			return evaluationService.computeEvaluation(dataWrapper, playingColor, engineSettings);
+			return evaluationService.computeEvaluation(dataWrapper, playingColor, game.getSettings());
 		} else if (playingColor == EngineConstants.WHITE_COLOR) {
-			return -evaluationService.computeEvaluation(dataWrapper, playingColor, engineSettings);
+			return -evaluationService.computeEvaluation(dataWrapper, playingColor, game.getSettings());
 		}
 		
 		throw new IllegalArgumentException("Game has no valid playing color");

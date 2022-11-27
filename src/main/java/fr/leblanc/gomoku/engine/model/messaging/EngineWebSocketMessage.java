@@ -1,4 +1,4 @@
-package fr.leblanc.gomoku.engine.model;
+package fr.leblanc.gomoku.engine.model.messaging;
 
 
 import lombok.Data;

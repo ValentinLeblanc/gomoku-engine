@@ -2,6 +2,8 @@ package fr.leblanc.gomoku.engine.model;
 
 import java.util.Arrays;
 
+import fr.leblanc.gomoku.engine.model.messaging.GameDto;
+import fr.leblanc.gomoku.engine.model.messaging.MoveDto;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;

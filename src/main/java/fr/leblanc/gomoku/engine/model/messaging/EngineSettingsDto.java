@@ -1,4 +1,4 @@
-package fr.leblanc.gomoku.engine.model;
+package fr.leblanc.gomoku.engine.model.messaging;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -9,9 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class EngineSettingsDto {
 
-	private Boolean displayAnalysis;
-	
-	private Boolean strikeEnabled;
+	private boolean strikeEnabled;
 	
 	private int minMaxDepth;
 	
