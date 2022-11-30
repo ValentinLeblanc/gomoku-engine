@@ -40,6 +40,8 @@ class StrikeServiceTest {
 		dataWrapper.addMove(new Cell(8, 5), EngineConstants.WHITE_COLOR);
 		
 		EngineSettingsDto engineSettings = new EngineSettingsDto();
+		
+		engineSettings.setStrikeEnabled(true);
 
 		assertEquals(new Cell(10, 4), strikeService.findOrCounterStrike(dataWrapper, EngineConstants.BLACK_COLOR, engineSettings));
 		

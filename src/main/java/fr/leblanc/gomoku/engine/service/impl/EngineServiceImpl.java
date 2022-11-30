@@ -102,9 +102,9 @@ public class EngineServiceImpl implements EngineService {
 		DataWrapper dataWrapper = DataWrapper.of(game);
 		
 		if (playingColor == EngineConstants.BLACK_COLOR) {
-			return evaluationService.computeEvaluation(dataWrapper, playingColor, game.getSettings());
+			return evaluationService.computeEvaluation(dataWrapper, playingColor, game.getSettings().getEvaluationDepth());
 		} else if (playingColor == EngineConstants.WHITE_COLOR) {
-			return -evaluationService.computeEvaluation(dataWrapper, playingColor, game.getSettings());
+			return -evaluationService.computeEvaluation(dataWrapper, playingColor, game.getSettings().getEvaluationDepth());
 		}
 		
 		throw new IllegalArgumentException("Game has no valid playing color");

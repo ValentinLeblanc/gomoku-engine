@@ -85,6 +85,43 @@ public enum ThreatType {
 		return 0;
 	}
 	
+	public static  int potentialOf(ThreatType threatType1, ThreatType threatType2) {
+		if (ThreatType.THREAT_5.equals(threatType1)) {
+			return EngineConstants.THREAT_5_POTENTIAL;
+		}
+		
+		if (ThreatType.DOUBLE_THREAT_4.equals(threatType1)) {
+			return EngineConstants.DOUBLE_THREAT_4_POTENTIAL;
+		}
+		
+		if (ThreatType.THREAT_4.equals(threatType1)) {
+			if (ThreatType.THREAT_4.equals(threatType2)) {
+				return EngineConstants.DOUBLE_THREAT_4_POTENTIAL;
+			}
+			if (ThreatType.DOUBLE_THREAT_3.equals(threatType2)) {
+				return EngineConstants.THREAT_4_DOUBLE_THREAT_3_POTENTIAL;
+			}
+			
+		}
+		
+		if (ThreatType.DOUBLE_THREAT_3.equals(threatType1)) {
+			if (ThreatType.DOUBLE_THREAT_3.equals(threatType2)) {
+				return EngineConstants.DOUBLE_THREAT_3_DOUBLE_THREAT_3_POTENTIAL;
+			}
+			if (ThreatType.DOUBLE_THREAT_2.equals(threatType2)) {
+				return EngineConstants.DOUBLE_THREAT_3_DOUBLE_THREAT_2_POTENTIAL;
+			}
+			
+		}
+		if (ThreatType.DOUBLE_THREAT_2.equals(threatType1)) {
+			if (ThreatType.DOUBLE_THREAT_2.equals(threatType2)) {
+				return EngineConstants.DOUBLE_THREAT_2_DOUBLE_THREAT_2_POTENTIAL;
+			}
+		}
+		
+		return 0;
+	}
+	
 	public double getPotential() {
 		if (this == THREAT_5) {
 			return EngineConstants.THREAT_5_POTENTIAL;

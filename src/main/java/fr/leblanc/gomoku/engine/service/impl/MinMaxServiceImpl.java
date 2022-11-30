@@ -44,6 +44,10 @@ public class MinMaxServiceImpl implements MinMaxService {
 	@Override
 	public Cell computeMinMax(DataWrapper dataWrapper, int playingColor, List<Cell> analyzedMoves, EngineSettingsDto engineSettings) throws InterruptedException {
 		
+		if (log.isDebugEnabled()) {
+			log.debug("starting minMax...");
+		}
+		
 		isComputing = true;
 		
 		if (analyzedMoves == null) {
@@ -53,6 +57,10 @@ public class MinMaxServiceImpl implements MinMaxService {
 		if (analyzedMoves.size() == 1) {
 			return analyzedMoves.get(0);
 		}
+		
+//		if (analyzedMoves.size() < 4) {
+//			engineSettings.setMinMaxDepth(engineSettings.getMinMaxDepth() + 1);    
+//		}
 
 		try {
 			
@@ -135,7 +143,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 				if (context.getEvaluationCache().get(-playingColor).containsKey(dataWrapper)) {
 					currentEvaluation = context.getEvaluationCache().get(-playingColor).get(dataWrapper);
 				} else {
-					currentEvaluation = evaluationService.computeEvaluation(dataWrapper, -playingColor, engineSettings);
+					currentEvaluation = evaluationService.computeEvaluation(dataWrapper, -playingColor, engineSettings.getEvaluationDepth());
 					context.getEvaluationCache().get(-playingColor).put(new DataWrapper(dataWrapper), currentEvaluation);
 				}
 				

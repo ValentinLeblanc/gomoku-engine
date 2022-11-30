@@ -58,6 +58,10 @@ public class StrikeServiceImpl implements StrikeService {
 		
 		Map<Integer, Set<DataWrapper>> failedTries = new HashMap<>();
 		
+		if (log.isDebugEnabled()) {
+			log.debug("find direct strike...");
+		}
+		
 		Cell directThreat = directStrike(dataWrapper, playingColor, failedTries, engineSettings);
 
 		if (directThreat != null) {
@@ -72,10 +76,17 @@ public class StrikeServiceImpl implements StrikeService {
 			
 			return directThreat;
 		}
+		
+		if (log.isDebugEnabled()) {
+			log.debug("strike not found");
+		}
 
 		Cell opponentDirectThreat = directStrike(dataWrapper, -playingColor, failedTries, engineSettings);
 
 		if (opponentDirectThreat != null) {
+			if (log.isDebugEnabled()) {
+				log.debug("defend from opponent direct strike...");
+			}
 			List<Cell> counterOpponentThreats = counterDirectStrikeMoves(dataWrapper, playingColor, failedTries, engineSettings);
 
 			if (!counterOpponentThreats.isEmpty()) {
