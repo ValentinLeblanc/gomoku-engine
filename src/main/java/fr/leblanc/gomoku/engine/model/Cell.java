@@ -7,7 +7,7 @@ import lombok.Data;
 @AllArgsConstructor
 public class Cell {
 
-	private int columnIndex;
-	private int rowIndex;
+	private int column;
+	private int row;
 	
 }

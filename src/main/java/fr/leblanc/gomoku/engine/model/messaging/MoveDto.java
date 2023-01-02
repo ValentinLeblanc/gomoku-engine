@@ -16,8 +16,8 @@ public class MoveDto {
 
     public MoveDto(Cell cell, int color) {
     	this.color = color;
-    	this.columnIndex = cell.getColumnIndex();
-    	this.rowIndex = cell.getRowIndex();
+    	this.columnIndex = cell.getColumn();
+    	this.rowIndex = cell.getRow();
     }
     
 }

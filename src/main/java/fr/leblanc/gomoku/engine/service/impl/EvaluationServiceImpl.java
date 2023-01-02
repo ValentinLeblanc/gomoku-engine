@@ -1,25 +1,26 @@
 package fr.leblanc.gomoku.engine.service.impl;
 
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.DataWrapper;
 import fr.leblanc.gomoku.engine.model.DoubleThreat;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
+import fr.leblanc.gomoku.engine.model.EvaluationContext;
 import fr.leblanc.gomoku.engine.model.Threat;
 import fr.leblanc.gomoku.engine.model.ThreatContext;
+import fr.leblanc.gomoku.engine.model.CompoThreatType;
 import fr.leblanc.gomoku.engine.model.ThreatType;
 import fr.leblanc.gomoku.engine.service.CheckWinService;
 import fr.leblanc.gomoku.engine.service.EvaluationService;
 import fr.leblanc.gomoku.engine.service.ThreatContextService;
 
-//@Service
+@Service
 public class EvaluationServiceImpl implements EvaluationService {
 
 	@Autowired
@@ -30,154 +31,63 @@ public class EvaluationServiceImpl implements EvaluationService {
 	
 	@Override
 	public double computeEvaluation(DataWrapper dataWrapper, int playingColor, int maxDepth) {
-		return internalComputeEvaluation(dataWrapper, playingColor, 0, maxDepth);
+		return internalComputeEvaluation(new EvaluationContext(dataWrapper, playingColor, maxDepth, 0));
 	}
 
-	private int internalComputeEvaluation(DataWrapper dataWrapper, int playingColor, int depth, int maxDepth) {
+	private int internalComputeEvaluation(EvaluationContext context) {
 		
-		if (depth >= maxDepth) {
+		if (context.getDepth() >= context.getMaxDepth()) {
 			return 0;
 		}
 		
-		if (checkWinService.checkWin(dataWrapper, playingColor, new int[5][2])) {
+		if (checkWinService.checkWin(context.getDataWrapper(), context.getPlayingColor(), new int[5][2])) {
 			return EngineConstants.WIN_EVALUATION;
 		}
 		
-		if (checkWinService.checkWin(dataWrapper, -playingColor, new int[5][2])) {
+		if (checkWinService.checkWin(context.getDataWrapper(), -context.getPlayingColor(), new int[5][2])) {
 			return -EngineConstants.WIN_EVALUATION;
 		}
 		
-		ThreatContext playingThreatContext = threatContextService.computeThreatContext(dataWrapper.getData(), playingColor);
+		ThreatContext playingThreatContext = threatContextService.computeThreatContext(context.getDataWrapper().getData(), context.getPlayingColor());
 		
-		ThreatContext opponentThreatContext = threatContextService.computeThreatContext(dataWrapper.getData(), -playingColor);
+		ThreatContext opponentThreatContext = threatContextService.computeThreatContext(context.getDataWrapper().getData(), -context.getPlayingColor());
 
-		return evaluateThreats(dataWrapper, playingColor, playingThreatContext, opponentThreatContext, true, depth, ThreatType.THREAT_5, null, maxDepth);
+		return evaluateThreats(context, playingThreatContext, opponentThreatContext, new CompoThreatType(ThreatType.THREAT_5, null, true));
 		
 	}
 
-	private int evaluateThreats(DataWrapper dataWrapper, int playingColor, ThreatContext playingThreatContext, ThreatContext opponentThreatContext, boolean isFreeToAttack, int depth, ThreatType threatType1, ThreatType threatType2, int maxDepth) {
-			
+	private int evaluateThreats(EvaluationContext context, ThreatContext playingThreatContext, ThreatContext opponentThreatContext, CompoThreatType tryContext) {
+		
+		if (tryContext == null) {
+			return 0;
+		}
+		
 		AtomicInteger evaluation = new AtomicInteger(0);
 		
-		if (ThreatType.THREAT_5.equals(threatType1)) {
-			Map<Threat, Set<Cell>> threats = getEffectiveThreats(playingThreatContext, opponentThreatContext, ThreatType.THREAT_5, null);
-			if (isFreeToAttack) {
-				if (!threats.isEmpty()) {
-					threats.keySet().stream().forEach(t -> threats.get(t).stream().forEach(c -> evaluation.addAndGet(EngineConstants.THREAT_5_POTENTIAL)));
-				} else {
-					evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, !isFreeToAttack, depth, ThreatType.THREAT_5, null, maxDepth));
-				}
+		boolean change = tryContext.getNext() != null && tryContext.isPlaying() != tryContext.getNext().isPlaying();
+		
+		Map<Threat, Integer> threats = threatContextService.getEffectiveThreats(playingThreatContext, opponentThreatContext, tryContext.getThreatType1(), tryContext.getThreatType2());
+		
+		if (!threats.isEmpty()) {
+			if (tryContext.isPlaying()) {
+				threats.keySet().stream()
+				.forEach(t -> evaluation.addAndGet(threats.get(t) * tryContext.getPotential()));
 			} else {
-				if (!threats.isEmpty()) {
-					evaluation.addAndGet(-evaluateOpponentThreat(dataWrapper, playingColor, depth + 1, threats, maxDepth));
-				} else {
-					evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, !isFreeToAttack, depth , ThreatType.DOUBLE_THREAT_4, null, maxDepth));
-				}
+				int evaluateOpponentThreat = evaluateOpponentThreat(context, threats);
+				evaluation.addAndGet(-evaluateOpponentThreat);
 			}
-		} else if (ThreatType.DOUBLE_THREAT_4.equals(threatType1)) {
-			Map<Threat, Set<Cell>> threats = getEffectiveThreats(playingThreatContext, opponentThreatContext, ThreatType.DOUBLE_THREAT_4, null);
-			if (isFreeToAttack) {
-				if (!threats.isEmpty()) {
-					threats.keySet().stream().forEach(t -> threats.get(t).stream().forEach(c -> evaluation.addAndGet(EngineConstants.DOUBLE_THREAT_4_POTENTIAL)));
-				} else {
-					evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, playingThreatContext, opponentThreatContext, isFreeToAttack, depth, ThreatType.THREAT_4, ThreatType.THREAT_4, maxDepth));
-				}
+		} else {
+			if (change) {
+				evaluation.addAndGet(evaluateThreats(context, opponentThreatContext, playingThreatContext, tryContext.getNext()));
 			} else {
-				if (!threats.isEmpty()) {
-					evaluation.addAndGet(-evaluateOpponentThreat(dataWrapper, playingColor, depth + 1, threats, maxDepth));
-				} else {
-					evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, playingThreatContext, opponentThreatContext, isFreeToAttack, depth, ThreatType.THREAT_4, ThreatType.THREAT_4, maxDepth));
-				}
-			}
-		} else if (ThreatType.THREAT_4.equals(threatType1)) {
-			if (ThreatType.THREAT_4.equals(threatType2)) {
-				Map<Threat, Set<Cell>> threats = getEffectiveThreats(playingThreatContext, opponentThreatContext, ThreatType.THREAT_4, ThreatType.THREAT_4);
-				if (isFreeToAttack) {
-					
-					if (!threats.isEmpty()) {
-						threats.keySet().stream().forEach(t -> threats.get(t).stream().forEach(c -> evaluation.addAndGet(EngineConstants.DOUBLE_THREAT_4_POTENTIAL)));
-					} else {
-						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, playingThreatContext, opponentThreatContext, isFreeToAttack, depth, ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3, maxDepth));
-					}
-				} else {
-					if (!threats.isEmpty()) {
-						evaluation.addAndGet(-evaluateOpponentThreat(dataWrapper, playingColor, depth + 1, threats, maxDepth));
-					} else {
-						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, playingThreatContext, opponentThreatContext, isFreeToAttack, depth, ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3, maxDepth));
-					}
-				}
-			} else if (ThreatType.DOUBLE_THREAT_3.equals(threatType2)) {
-				Map<Threat, Set<Cell>> threats = getEffectiveThreats(playingThreatContext, opponentThreatContext, ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3);
-				if (isFreeToAttack) {
-					if (!threats.isEmpty()) {
-						threats.keySet().stream().forEach(t -> threats.get(t).stream().forEach(c -> evaluation.addAndGet(EngineConstants.THREAT_4_DOUBLE_THREAT_3_POTENTIAL)));
-					} else {
-						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, !isFreeToAttack, depth, ThreatType.DOUBLE_THREAT_4, null, maxDepth));
-					}
-				} else {
-					if (!threats.isEmpty()) {
-						evaluation.addAndGet(-evaluateOpponentThreat(dataWrapper, playingColor, depth + 1, threats, maxDepth));
-					} else {
-						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, !isFreeToAttack, depth, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3, maxDepth));
-					}
-				}
-
-			}
-		} else if (ThreatType.DOUBLE_THREAT_3.equals(threatType1)) {
-			if (ThreatType.DOUBLE_THREAT_3.equals(threatType2)) {
-				Map<Threat, Set<Cell>> threats = getEffectiveThreats(playingThreatContext, opponentThreatContext, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3);
-				if (isFreeToAttack) {
-					if (!threats.isEmpty()) {
-						threats.keySet().stream().forEach(t -> threats.get(t).stream().forEach(c -> evaluation.addAndGet(EngineConstants.DOUBLE_THREAT_3_DOUBLE_THREAT_3_POTENTIAL)));
-					} else {
-						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, playingThreatContext, opponentThreatContext, isFreeToAttack, depth, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2, maxDepth));
-					}
-				} else {
-					if (!threats.isEmpty()) {
-						evaluation.addAndGet(-evaluateOpponentThreat(dataWrapper, playingColor, depth + 1, threats, maxDepth));
-					} else {
-						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, isFreeToAttack, depth, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2, maxDepth));
-					}
-				}
-			} else if (ThreatType.DOUBLE_THREAT_2.equals(threatType2)) {
-				Map<Threat, Set<Cell>> threats = getEffectiveThreats(playingThreatContext, opponentThreatContext, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2);
-				if (isFreeToAttack) {
-					if (!threats.isEmpty()) {
-						threats.keySet().stream().forEach(t -> threats.get(t).stream().forEach(c -> evaluation.addAndGet(EngineConstants.DOUBLE_THREAT_3_DOUBLE_THREAT_2_POTENTIAL)));
-					} else {
-						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, !isFreeToAttack, depth, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3, maxDepth));
-					}
-				} else {
-					if (!threats.isEmpty()) {
-						evaluation.addAndGet(-evaluateOpponentThreat(dataWrapper, playingColor, depth + 1, threats, maxDepth));
-					} else {
-						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, !isFreeToAttack, depth, ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2, maxDepth));
-					}
-				}
-			}
-		} else if (ThreatType.DOUBLE_THREAT_2.equals(threatType1)) {
-			if (ThreatType.DOUBLE_THREAT_2.equals(threatType2)) {
-				Map<Threat, Set<Cell>> threats = getEffectiveThreats(playingThreatContext, opponentThreatContext, ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2);
-				if (isFreeToAttack) {
-					if (!threats.isEmpty()) {
-						threats.keySet().stream().forEach(t -> threats.get(t).stream().forEach(c -> evaluation.addAndGet(EngineConstants.DOUBLE_THREAT_2_DOUBLE_THREAT_2_POTENTIAL)));
-					} else {
-						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, !isFreeToAttack, depth, ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2, maxDepth));
-					}
-				} else {
-					if (!threats.isEmpty()) {
-						evaluation.addAndGet(-evaluateOpponentThreat(dataWrapper, playingColor, depth + 1, threats, maxDepth));
-					} else {
-//						evaluation.addAndGet(evaluateThreats(dataWrapper, playingColor, opponentThreatContext, playingThreatContext, true, depth, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2));
-					}
-				}
+				evaluation.addAndGet(evaluateThreats(context, playingThreatContext, opponentThreatContext, tryContext.getNext()));
 			}
 		}
 		
 		return evaluation.intValue();
 	}
 
-	private int evaluateOpponentThreat(DataWrapper dataWrapper, int playingColor, int depth, Map<Threat, Set<Cell>> opponentEffectiveThreats, int maxDepth) {
+	private int evaluateOpponentThreat(EvaluationContext context, Map<Threat, Integer> opponentEffectiveThreats) {
 	
 		int maxEval = Integer.MIN_VALUE;
 
@@ -188,23 +98,19 @@ public class EvaluationServiceImpl implements EvaluationService {
 			Set<Cell> cellsToEval = threat instanceof DoubleThreat doubleThreat ? doubleThreat.getBlockingCells() : threat.getEmptyCells();
 			
 			if (threat instanceof DoubleThreat doubleThreat) {
-				dataWrapper.addMove(doubleThreat.getTargetCell(), playingColor);
-				
-				int eval = internalComputeEvaluation(dataWrapper, -playingColor, depth, maxDepth);
-				
-				dataWrapper.removeMove(doubleThreat.getTargetCell());
-				
-				if (eval < minEval) {
-					minEval = eval;
-				}
+				cellsToEval.add(doubleThreat.getTargetCell());
 			}
 			
 			for (Cell threatCell : cellsToEval) {
-				dataWrapper.addMove(threatCell, playingColor);
+				context.getDataWrapper().addMove(threatCell, context.getPlayingColor());
 				
-				int eval = internalComputeEvaluation(dataWrapper, -playingColor, depth, maxDepth);
+				context.increaseDepth();
+				context.reversePlayingColor();
+				int eval = internalComputeEvaluation(context);
+				context.reversePlayingColor();
+				context.decreaseDepth();
 				
-				dataWrapper.removeMove(threatCell);
+				context.getDataWrapper().removeMove(threatCell);
 
 				if (eval < minEval) {
 					minEval = eval;
@@ -222,132 +128,4 @@ public class EvaluationServiceImpl implements EvaluationService {
 		return maxEval;
 	}
 	
-	private Map<Threat, Set<Cell>> getEffectiveThreats(ThreatContext playingThreatContext, ThreatContext opponentThreatContext, ThreatType threatType, ThreatType secondThreatType) {
-		Map<Threat, Set<Cell>> map = new HashMap<>();
-		
-		if (threatType == ThreatType.THREAT_5) {
-			
-			if (!playingThreatContext.getThreatTypeToThreatMap().get(ThreatType.THREAT_5).isEmpty()) {
-				map.put(playingThreatContext.getThreatTypeToThreatMap().get(ThreatType.THREAT_5).get(0), playingThreatContext.getThreatTypeToThreatMap().get(ThreatType.THREAT_5).get(0).getEmptyCells());
-			}
-			
-		} else if (threatType == ThreatType.DOUBLE_THREAT_4) {
-			for (DoubleThreat threat : playingThreatContext.getDoubleThreatTypeToThreatMap().get(ThreatType.DOUBLE_THREAT_4)) {
-				Cell playingCell = threat.getTargetCell();
-				if (!hasT5Counter(playingCell, opponentThreatContext)) {
-					map.put(threat, Set.of(threat.getTargetCell()));
-				}
-			}
-		} else if (threatType == ThreatType.THREAT_4) {
-			
-			Set<Threat> visitedThreats = new HashSet<>();
-			
-			for (Threat threat : playingThreatContext.getThreatTypeToThreatMap().get(ThreatType.THREAT_4)) {
-				visitedThreats.add(threat);
-				for (Cell playingCell : threat.getEmptyCells()) {
-					
-					if (!hasT5Counter(playingCell, opponentThreatContext)) {
-						
-						if (ThreatType.THREAT_4.equals(secondThreatType)) {
-							
-							// find threat 4
-							if (playingThreatContext.getCellToThreatMap().get(playingCell).get(ThreatType.THREAT_4) != null) {
-								
-								if (playingThreatContext.getCellToThreatMap().get(playingCell).get(ThreatType.THREAT_4).stream().anyMatch(t -> !visitedThreats.contains(t)  && !threat.getPlainCells().containsAll(t.getPlainCells()) && !threat.getEmptyCells().containsAll(t.getEmptyCells()))) {
-									map.put(threat, Set.of(playingCell));
-								}
-								
-							}
-						} else if (ThreatType.DOUBLE_THREAT_3.equals(secondThreatType)) {
-							Cell blockingCell = threat.getEmptyCells().stream().filter(c -> !c.equals(playingCell)).findFirst().orElseThrow();
-							
-							if (!hasT4Counter(blockingCell, opponentThreatContext)) {
-								
-								long count = playingThreatContext.getDoubleThreatTypeToThreatMap().get(ThreatType.DOUBLE_THREAT_3).stream().filter(t -> !threat.getPlainCells().containsAll(t.getPlainCells()) && t.getTargetCell().equals(playingCell)).count();
-
-								if (count > 0) {
-									map.put(threat, Set.of(playingCell));
-								}
-							}
-						}
-					}
-				}
-			}
-		} else if (threatType == ThreatType.DOUBLE_THREAT_3) {
-			Set<Threat> visitedThreats = new HashSet<>();
-			
-			for (DoubleThreat threat : playingThreatContext.getDoubleThreatTypeToThreatMap().get(ThreatType.DOUBLE_THREAT_3)) {
-				visitedThreats.add(threat);
-				Cell playingCell = threat.getTargetCell();
-				if (!hasT5Counter(playingCell, opponentThreatContext)) {
-					
-					if (threat.getBlockingCells().stream().allMatch(blockingCell -> !hasT4Counter(blockingCell, opponentThreatContext))) {
-						
-						if (ThreatType.DOUBLE_THREAT_3.equals(secondThreatType)) {
-							long count = playingThreatContext.getDoubleThreatTypeToThreatMap().get(ThreatType.DOUBLE_THREAT_3).stream().filter(t -> !threat.getPlainCells().containsAll(t.getPlainCells()) && t.getTargetCell().equals(threat.getTargetCell())).count();
-							
-							if (count > 0) {
-								map.put(threat, Set.of(playingCell));
-							}
-						} else if (ThreatType.DOUBLE_THREAT_2.equals(secondThreatType)) {
-								
-							if (threat.getBlockingCells().stream().allMatch(blockingCell -> !hasDT3Counter(blockingCell, opponentThreatContext))) {
-								
-								long count = playingThreatContext.getDoubleThreatTypeToThreatMap().get(ThreatType.DOUBLE_THREAT_2).stream().filter(t -> !threat.getPlainCells().containsAll(t.getPlainCells()) && t.getTargetCell().equals(playingCell)).count();
-								
-								if (count > 0) {
-									map.put(threat, Set.of(playingCell));
-								}
-							}
-							
-						}
-						
-					}
-					
-				}
-			}
-		} else if (threatType == ThreatType.DOUBLE_THREAT_2) {
-			Set<Threat> visitedThreats = new HashSet<>();
-			
-			for (DoubleThreat threat : playingThreatContext.getDoubleThreatTypeToThreatMap().get(ThreatType.DOUBLE_THREAT_2)) {
-				visitedThreats.add(threat);
-				Cell playingCell = threat.getTargetCell();
-				if (!hasT5Counter(playingCell, opponentThreatContext)) {
-					
-					if (threat.getBlockingCells().stream().allMatch(blockingCell -> !hasT4Counter(blockingCell, opponentThreatContext))) {
-						
-						if (ThreatType.DOUBLE_THREAT_2.equals(secondThreatType)) {
-								
-							if (threat.getBlockingCells().stream().allMatch(blockingCell -> !hasDT3Counter(blockingCell, opponentThreatContext))) {
-								
-								long count = playingThreatContext.getDoubleThreatTypeToThreatMap().get(ThreatType.DOUBLE_THREAT_2).stream().filter(t -> !threat.getPlainCells().containsAll(t.getPlainCells()) && t.getTargetCell().equals(playingCell)).count();
-								
-								if (count > 0) {
-									map.put(threat, Set.of(playingCell));
-								}
-							}
-							
-						}
-						
-					}
-					
-				}
-			}
-		}
-		
-		return map;
-	}
-
-	private boolean hasDT3Counter(Cell blockingCell, ThreatContext opponentThreatContext) {
-		return opponentThreatContext.getDoubleThreatTypeToThreatMap().get(ThreatType.DOUBLE_THREAT_3).stream().anyMatch(t -> t.getTargetCell().equals(blockingCell));
-	}
-
-	private boolean hasT4Counter(Cell blockingCell, ThreatContext opponentThreatContext) {
-		return opponentThreatContext.getThreatTypeToThreatMap().get(ThreatType.THREAT_4).stream().anyMatch(t -> t.getEmptyCells().contains(blockingCell));
-	}
-
-	private boolean hasT5Counter(Cell playingCell, ThreatContext opponentThreatContext) {
-		return opponentThreatContext.getThreatTypeToThreatMap().get(ThreatType.THREAT_5).stream().anyMatch(t -> !t.getEmptyCells().contains(playingCell));
-	}
-
 }

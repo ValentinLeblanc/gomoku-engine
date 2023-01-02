@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class ThreatTryContext {
+public class CompoThreatType {
 	
 	private ThreatType threatType1;
 	
@@ -13,48 +13,52 @@ public class ThreatTryContext {
 	
 	private boolean isPlaying;
 	
-	public ThreatTryContext getNext() {
+	public static CompoThreatType of(ThreatType type1, ThreatType type2, boolean isPlaying) {
+		return new CompoThreatType(type1, type2, isPlaying);
+	}
+	
+	public CompoThreatType getNext() {
 		
 		if (ThreatType.THREAT_5.equals(threatType1)) {
 			if (isPlaying) {
-				return new ThreatTryContext(ThreatType.THREAT_5, null, !isPlaying);
+				return new CompoThreatType(ThreatType.THREAT_5, null, !isPlaying);
 			}
-			return new ThreatTryContext(ThreatType.DOUBLE_THREAT_4, null, !isPlaying);
+			return new CompoThreatType(ThreatType.DOUBLE_THREAT_4, null, !isPlaying);
 		}
 		
 		if (ThreatType.DOUBLE_THREAT_4.equals(threatType1)) {
-			return new ThreatTryContext(ThreatType.THREAT_4, ThreatType.THREAT_4, isPlaying);
+			return new CompoThreatType(ThreatType.THREAT_4, ThreatType.THREAT_4, isPlaying);
 		}
 		
 		if (ThreatType.THREAT_4.equals(threatType1)) {
 			if (ThreatType.THREAT_4.equals(threatType2)) {
-				return new ThreatTryContext(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3, isPlaying);
+				return new CompoThreatType(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3, isPlaying);
 			}
 			if (ThreatType.DOUBLE_THREAT_3.equals(threatType2)) {
 				
 				if (isPlaying) {
-					return new ThreatTryContext(ThreatType.DOUBLE_THREAT_4, null, !isPlaying);
+					return new CompoThreatType(ThreatType.DOUBLE_THREAT_4, null, !isPlaying);
 				}
 				
-				return new ThreatTryContext(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3, !isPlaying);
+				return new CompoThreatType(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3, !isPlaying);
 			}
 		}
 		
 		if (ThreatType.DOUBLE_THREAT_3.equals(threatType1)) {
 			if (ThreatType.DOUBLE_THREAT_3.equals(threatType2)) {
-				return new ThreatTryContext(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2, isPlaying);
+				return new CompoThreatType(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2, isPlaying);
 			}
 			if (ThreatType.DOUBLE_THREAT_2.equals(threatType2)) {
 				if (isPlaying) {
-					return new ThreatTryContext(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3, !isPlaying);
+					return new CompoThreatType(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3, !isPlaying);
 				}
-				return new ThreatTryContext(ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2, !isPlaying);
+				return new CompoThreatType(ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2, !isPlaying);
 			}
 		}
 		if (ThreatType.DOUBLE_THREAT_2.equals(threatType1)) {
 			if (ThreatType.DOUBLE_THREAT_2.equals(threatType2)) {
 				if (isPlaying) {
-					return new ThreatTryContext(ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2, !isPlaying);
+					return new CompoThreatType(ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2, !isPlaying);
 				}
 			}
 		}

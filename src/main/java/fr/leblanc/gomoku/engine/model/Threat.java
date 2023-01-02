@@ -16,10 +16,16 @@ public class Threat {
 
 	private Set<Cell> plainCells = new HashSet<>();
 	private Set<Cell> emptyCells = new HashSet<>();
+	private ThreatType threatType;
 	
-	public Threat(Set<Cell> plainCells, Set<Cell> emptyCells) {
+	public Threat(Set<Cell> plainCells, Set<Cell> emptyCells, ThreatType threatType) {
 		this.plainCells = plainCells;
 		this.emptyCells = emptyCells;
+		this.threatType = threatType;
+	}
+	
+	public Set<Cell> getKillingCells() {
+		return emptyCells;
 	}
 	
 	@Override

@@ -48,6 +48,10 @@ public enum ThreatType {
 		return null;
 	}
 	
+	public boolean isDoubleType() {
+		return this == DOUBLE_THREAT_2 || this == DOUBLE_THREAT_3 || this == DOUBLE_THREAT_4;
+	}
+	
 	public ThreatType getDoubleThreatType() {
 		
 		if (this == THREAT_4) {

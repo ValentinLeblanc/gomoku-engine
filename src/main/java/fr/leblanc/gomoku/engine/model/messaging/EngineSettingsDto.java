@@ -17,4 +17,6 @@ public class EngineSettingsDto {
 	
 	private int evaluationDepth;
 	
+	private int strikeTimeout;
+	
 }

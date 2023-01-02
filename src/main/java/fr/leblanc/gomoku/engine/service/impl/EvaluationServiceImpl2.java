@@ -1,26 +1,30 @@
 package fr.leblanc.gomoku.engine.service.impl;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Map.Entry;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import fr.leblanc.gomoku.engine.model.Cell;
+import fr.leblanc.gomoku.engine.model.CompoThreatType;
 import fr.leblanc.gomoku.engine.model.DataWrapper;
-import fr.leblanc.gomoku.engine.model.DoubleThreat;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
 import fr.leblanc.gomoku.engine.model.EvaluationContext;
 import fr.leblanc.gomoku.engine.model.Threat;
 import fr.leblanc.gomoku.engine.model.ThreatContext;
-import fr.leblanc.gomoku.engine.model.ThreatTryContext;
 import fr.leblanc.gomoku.engine.model.ThreatType;
 import fr.leblanc.gomoku.engine.service.CheckWinService;
 import fr.leblanc.gomoku.engine.service.EvaluationService;
 import fr.leblanc.gomoku.engine.service.ThreatContextService;
+import fr.leblanc.gomoku.engine.util.Pair;
+import lombok.extern.apachecommons.CommonsLog;
 
-@Service
+//@Service
+@CommonsLog
 public class EvaluationServiceImpl2 implements EvaluationService {
 
 	@Autowired
@@ -52,80 +56,62 @@ public class EvaluationServiceImpl2 implements EvaluationService {
 		
 		ThreatContext opponentThreatContext = threatContextService.computeThreatContext(context.getDataWrapper().getData(), -context.getPlayingColor());
 
-		return evaluateThreats(context, playingThreatContext, opponentThreatContext, new ThreatTryContext(ThreatType.THREAT_5, null, true));
+		return evaluateThreats(context, playingThreatContext, opponentThreatContext);
 		
 	}
 
-	private int evaluateThreats(EvaluationContext context, ThreatContext playingThreatContext, ThreatContext opponentThreatContext, ThreatTryContext tryContext) {
+	private int evaluateThreats(EvaluationContext context, ThreatContext playingThreatContext, ThreatContext opponentThreatContext) {
 		
-		if (tryContext == null) {
-			return 0;
+		Map<CompoThreatType, Map<Cell, List<Pair<Threat>>>> visitedMap = new HashMap<>();
+		
+		Map<CompoThreatType, List<Cell>> result = new HashMap<>();
+		
+		CompoThreatType currentContext = CompoThreatType.of(ThreatType.THREAT_5, null, true);
+		
+		Map<Cell, List<Pair<Threat>>> currentThreats = threatContextService.findCompositeThreats(playingThreatContext, currentContext);
+		
+		visitedMap.put(currentContext, currentThreats);
+		
+		for (Entry<Cell, List<Pair<Threat>>> current : currentThreats.entrySet()) {
+			
+			Cell newTargetCell = current.getKey();
+			List<Pair<Threat>> newThreatPairs = current.getValue();
+			
+			if (currentContext.isPlaying()) {
+				
+			}
+			
+			for (Entry<Cell, List<Pair<Threat>>> previous : visitedMap.get(currentContext).entrySet()) {
+				
+				if (!newTargetCell.equals(previous.getKey())) {
+					result.computeIfAbsent(currentContext, k -> new ArrayList<>()).add(newTargetCell);
+				}
+			}
 		}
 		
-		AtomicInteger evaluation = new AtomicInteger(0);
 		
-		boolean change = tryContext.getNext() != null && tryContext.isPlaying() != tryContext.getNext().isPlaying();
+		int evaluation = 0;
 		
-		Map<Threat, Integer> threats = threatContextService.getEffectiveThreats(playingThreatContext, opponentThreatContext, tryContext.getThreatType1(), tryContext.getThreatType2());
-		
-		if (!threats.isEmpty()) {
-			if (tryContext.isPlaying()) {
-				threats.keySet().stream()
-				.forEach(t -> evaluation.addAndGet(threats.get(t) * tryContext.getPotential()));
-			} else {
-				int evaluateOpponentThreat = evaluateOpponentThreat(context, threats);
-				evaluation.addAndGet(-evaluateOpponentThreat);
-			}
-		} else {
-			if (change) {
-				evaluation.addAndGet(evaluateThreats(context, opponentThreatContext, playingThreatContext, tryContext.getNext()));
-			} else {
-				evaluation.addAndGet(evaluateThreats(context, playingThreatContext, opponentThreatContext, tryContext.getNext()));
-			}
-		}
-		
-		return evaluation.intValue();
-	}
-
-	private int evaluateOpponentThreat(EvaluationContext context, Map<Threat, Integer> opponentEffectiveThreats) {
-	
-		int maxEval = Integer.MIN_VALUE;
-
-		for (Threat threat : opponentEffectiveThreats.keySet()) {
-		
-			int minEval = Integer.MAX_VALUE;
+		for (CompoThreatType tryContext : EngineConstants.TRY_CONTEXTS) {
+			Map<Cell, List<Pair<Threat>>> efficientThreats = threatContextService.findEfficientThreats(playingThreatContext, opponentThreatContext, tryContext);
 			
-			Set<Cell> cellsToEval = threat instanceof DoubleThreat doubleThreat ? doubleThreat.getBlockingCells() : threat.getEmptyCells();
-			
-			if (threat instanceof DoubleThreat doubleThreat) {
-				cellsToEval.add(doubleThreat.getTargetCell());
-			}
-			
-			for (Cell threatCell : cellsToEval) {
-				context.getDataWrapper().addMove(threatCell, context.getPlayingColor());
+			if (!efficientThreats.isEmpty() && tryContext.getThreatType1() != ThreatType.DOUBLE_THREAT_2) {
 				
-				context.increaseDepth();
-				context.reversePlayingColor();
-				int eval = internalComputeEvaluation(context);
-				context.reversePlayingColor();
-				context.decreaseDepth();
+				if (log.isDebugEnabled()) {
+					log.debug(tryContext + " | " + efficientThreats.keySet());
+				}
 				
-				context.getDataWrapper().removeMove(threatCell);
-
-				if (eval < minEval) {
-					minEval = eval;
-					if (minEval <= maxEval) {
-						break;
+				for (Entry<Cell, List<Pair<Threat>>> entry : efficientThreats.entrySet()) {
+					if (tryContext.isPlaying()) {
+						evaluation += entry.getValue().size() * tryContext.getPotential();
+					} else {
+						evaluation -= tryContext.getPotential();
 					}
 				}
 			}
-			
-			if (minEval > maxEval) {
-				maxEval = minEval;
-			}
 		}
 		
-		return maxEval;
+		return evaluation;
 	}
 	
 }

@@ -1,5 +1,7 @@
 package fr.leblanc.gomoku.engine.model;
 
+import fr.leblanc.gomoku.engine.util.Pair;
+
 public class EngineConstants {
 
 	public static final int NONE_COLOR = 0;
@@ -32,7 +34,32 @@ public class EngineConstants {
 	public static final int DOUBLE_THREAT_3_POTENTIAL = 15;
 	public static final int THREAT_3_POTENTIAL = 5;
 	public static final int DOUBLE_THREAT_2_POTENTIAL = 2;
-
+	public static final CompoThreatType[] TRY_CONTEXTS = {
+			new CompoThreatType(ThreatType.THREAT_5, null, true),
+			new CompoThreatType(ThreatType.DOUBLE_THREAT_4, null, true),
+			new CompoThreatType(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3, true),
+			new CompoThreatType(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_2, true),
+			new CompoThreatType(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3, true),
+			new CompoThreatType(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2, true),
+			new CompoThreatType(ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2, true),
+			new CompoThreatType(ThreatType.THREAT_5, null, false),
+			new CompoThreatType(ThreatType.DOUBLE_THREAT_4, null, false),
+			new CompoThreatType(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3, false),
+			new CompoThreatType(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_2, false),
+			new CompoThreatType(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3, false),
+			new CompoThreatType(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2, false),
+			new CompoThreatType(ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2, false),
+			};
+	
+	public static final Pair<?>[] TREATTYPE_PAIRS = {
+			new Pair(ThreatType.THREAT_5, null),
+			new Pair(ThreatType.DOUBLE_THREAT_4, null),
+			new Pair(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3),
+			new Pair(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_2),
+			new Pair(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3),
+			new Pair(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2),
+			new Pair(ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2)
+	};
 
 	private EngineConstants() {
 		

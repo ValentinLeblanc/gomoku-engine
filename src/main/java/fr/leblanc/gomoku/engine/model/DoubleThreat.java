@@ -18,6 +18,8 @@ public class DoubleThreat extends Threat {
 	
 	private Set<Cell> blockingCells = new HashSet<>();
 	
+	private Set<Cell> killingCells = new HashSet<>();
+	
 	@Override
 	public boolean equals(Object obj) {
 		

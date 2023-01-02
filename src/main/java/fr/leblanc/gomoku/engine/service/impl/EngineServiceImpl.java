@@ -16,10 +16,10 @@ import fr.leblanc.gomoku.engine.service.EvaluationService;
 import fr.leblanc.gomoku.engine.service.MessagingService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.StrikeService;
-import lombok.extern.log4j.Log4j2;
+import lombok.extern.apachecommons.CommonsLog;
 
 @Service
-@Log4j2
+@CommonsLog
 public class EngineServiceImpl implements EngineService {
 
 	@Autowired
@@ -71,10 +71,10 @@ public class EngineServiceImpl implements EngineService {
 			DataWrapper dataWrapper = DataWrapper.of(game);
 			Cell strikeOrCounterStrike = strikeService.findOrCounterStrike(dataWrapper, playingColor, game.getSettings());
 			if (strikeOrCounterStrike != null) {
-				computedMove = new MoveDto(strikeOrCounterStrike.getColumnIndex(), strikeOrCounterStrike.getRowIndex(), playingColor);
+				computedMove = new MoveDto(strikeOrCounterStrike.getColumn(), strikeOrCounterStrike.getRow(), playingColor);
 			} else {
 				Cell minMaxMove = minMaxService.computeMinMax(dataWrapper, playingColor, null, game.getSettings());
-				computedMove = new MoveDto(minMaxMove.getColumnIndex(), minMaxMove.getRowIndex(), playingColor);
+				computedMove = new MoveDto(minMaxMove.getColumn(), minMaxMove.getRow(), playingColor);
 			}
 		} catch (InterruptedException e) {
 			log.info("Interrupted engine service");

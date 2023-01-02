@@ -39,11 +39,11 @@ public class DataWrapper {
 	}
 
 	public void addMove(Cell cell, int value) {
-		data[cell.getColumnIndex()][cell.getRowIndex()] = value;
+		data[cell.getColumn()][cell.getRow()] = value;
 	}
 	
 	public void removeMove(Cell cell) {
-		data[cell.getColumnIndex()][cell.getRowIndex()] = 0;
+		data[cell.getColumn()][cell.getRow()] = 0;
 	}
 	
 	public int getValue(int columnIndex, int rowIndex) {

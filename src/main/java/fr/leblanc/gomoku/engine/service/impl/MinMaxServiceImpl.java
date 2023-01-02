@@ -19,10 +19,10 @@ import fr.leblanc.gomoku.engine.service.EvaluationService;
 import fr.leblanc.gomoku.engine.service.MessagingService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.ThreatContextService;
-import lombok.extern.log4j.Log4j2;
+import lombok.extern.apachecommons.CommonsLog;
 
 @Service
-@Log4j2
+@CommonsLog
 public class MinMaxServiceImpl implements MinMaxService {
 	
 	@Autowired

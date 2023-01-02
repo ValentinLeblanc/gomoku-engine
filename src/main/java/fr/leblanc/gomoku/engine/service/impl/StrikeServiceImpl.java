@@ -6,6 +6,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,11 +30,10 @@ import fr.leblanc.gomoku.engine.service.MessagingService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.StrikeService;
 import fr.leblanc.gomoku.engine.service.ThreatContextService;
-import lombok.extern.log4j.Log4j2;
-
+import lombok.extern.apachecommons.CommonsLog;
 
 @Service
-@Log4j2
+@CommonsLog
 public class StrikeServiceImpl implements StrikeService {
 
 	@Autowired
@@ -44,88 +49,24 @@ public class StrikeServiceImpl implements StrikeService {
 	
 	private Boolean stopComputation = false;
 	
+	private ExecutorService executor = Executors.newSingleThreadExecutor();
+
 	@Override
 	public Cell findOrCounterStrike(DataWrapper dataWrapper, int playingColor, EngineSettingsDto engineSettings) throws InterruptedException {
 		
-		if (!engineSettings.isStrikeEnabled()) {
-			return null;
+		StrikeCommand command = new StrikeCommand(dataWrapper, playingColor, engineSettings);
+		
+		Cell result = null;
+		
+		try {
+			result = executor.invokeAny(List.of(command), engineSettings.getStrikeTimeout(), TimeUnit.SECONDS);
+		} catch (TimeoutException e) {
+			log.info("Strike command timeout (" + engineSettings.getStrikeTimeout() + "s)");
+		} catch (ExecutionException e) {
+			log.error("Error while executing strike command : " + e.getMessage(), e);
 		}
 		
-		isComputing = true;
-		
-		StopWatch stopWatch = new StopWatch("findOrCounterStrike");
-		stopWatch.start();
-		
-		Map<Integer, Set<DataWrapper>> failedTries = new HashMap<>();
-		
-		if (log.isDebugEnabled()) {
-			log.debug("find direct strike...");
-		}
-		
-		Cell directThreat = directStrike(dataWrapper, playingColor, failedTries, engineSettings);
-
-		if (directThreat != null) {
-			
-			stopWatch.stop();
-			
-			if (log.isDebugEnabled()) {
-				log.debug("direct strike found in " + stopWatch.getTotalTimeMillis() + " ms");
-			}
-			
-			isComputing = false;
-			
-			return directThreat;
-		}
-		
-		if (log.isDebugEnabled()) {
-			log.debug("strike not found");
-		}
-
-		Cell opponentDirectThreat = directStrike(dataWrapper, -playingColor, failedTries, engineSettings);
-
-		if (opponentDirectThreat != null) {
-			if (log.isDebugEnabled()) {
-				log.debug("defend from opponent direct strike...");
-			}
-			List<Cell> counterOpponentThreats = counterDirectStrikeMoves(dataWrapper, playingColor, failedTries, engineSettings);
-
-			if (!counterOpponentThreats.isEmpty()) {
-				isComputing = false;
-				return minMaxService.computeMinMax(dataWrapper, playingColor, counterOpponentThreats, engineSettings);
-			}
-		}
-		
-		for (int maxDepth = 1; maxDepth <= engineSettings.getStrikeDepth(); maxDepth++) {
-			
-			long timeElapsed = System.currentTimeMillis();	
-			
-			Map<Integer, Set<DataWrapper>> secondaryFailedTries = new HashMap<>();
-			
-			Cell secondaryStrike = secondaryStrike(dataWrapper, playingColor, 0, maxDepth, failedTries, secondaryFailedTries, engineSettings);
-			
-			if (secondaryStrike != null) {
-				
-				stopWatch.stop();
-				
-				if (log.isDebugEnabled()) {
-					log.debug("secondary strike found in " + stopWatch.getTotalTimeMillis() + " ms for maxDepth = " + maxDepth);
-				}
-				
-				isComputing = false;
-				
-				return secondaryStrike;
-			}
-			
-			if (log.isDebugEnabled()) {
-				timeElapsed = System.currentTimeMillis() - timeElapsed;
-				log.debug("secondary strike failed for maxDepth = " + maxDepth + " (" + timeElapsed +" ms)");
-			}
-			
-		}
-		
-		isComputing = false;
-		
-		return null;
+		return result;
 	}
 	
 	@Override
@@ -138,14 +79,121 @@ public class StrikeServiceImpl implements StrikeService {
 		stopComputation = true;
 		isComputing = false;
 	}
+	
+	private class StrikeCommand implements Callable<Cell> {
 
-	private Cell directStrike(DataWrapper dataWrapper, int playingColor, Map<Integer, Set<DataWrapper>> failedTries, EngineSettingsDto engineSettings) throws InterruptedException {
+		private DataWrapper dataWrapper;
+		private int playingColor;
+		private EngineSettingsDto engineSettings;
+		
+		private StrikeCommand(DataWrapper dataWrapper, int playingColor, EngineSettingsDto engineSettings) {
+			this.dataWrapper = dataWrapper;
+			this.playingColor = playingColor;
+			this.engineSettings = engineSettings;
+		}
+		
+		@Override
+		public Cell call() throws Exception {
+			
+			if (!engineSettings.isStrikeEnabled()) {
+				return null;
+			}
+			
+			isComputing = true;
+			
+			StopWatch stopWatch = new StopWatch("findOrCounterStrike");
+			stopWatch.start();
+			
+			Map<Integer, Set<DataWrapper>> failedTries = new HashMap<>();
+			
+			if (log.isDebugEnabled()) {
+				log.debug("find direct strike...");
+			}
+			
+			Cell directThreat = directStrike(dataWrapper, playingColor, failedTries);
+
+			if (directThreat != null) {
+				
+				stopWatch.stop();
+				
+				if (log.isDebugEnabled()) {
+					log.debug("direct strike found in " + stopWatch.getTotalTimeMillis() + " ms");
+				}
+				
+				isComputing = false;
+				
+				return directThreat;
+			}
+			
+			if (log.isDebugEnabled()) {
+				log.debug("strike not found");
+			}
+
+			Cell opponentDirectThreat = directStrike(dataWrapper, -playingColor, failedTries);
+
+			if (opponentDirectThreat != null) {
+				if (log.isDebugEnabled()) {
+					log.debug("defend from opponent direct strike...");
+				}
+				List<Cell> counterOpponentThreats = counterDirectStrikeMoves(dataWrapper, playingColor, failedTries);
+
+				if (!counterOpponentThreats.isEmpty()) {
+					isComputing = false;
+					
+					Cell defense = minMaxService.computeMinMax(dataWrapper, playingColor, counterOpponentThreats, engineSettings);
+					
+					stopWatch.stop();
+					
+					if (log.isDebugEnabled()) {
+						log.debug("best defense found in " + stopWatch.getTotalTimeMillis() + " ms");
+					}
+					
+					return defense;
+				}
+			}
+			
+			for (int maxDepth = 1; maxDepth <= engineSettings.getStrikeDepth(); maxDepth++) {
+				
+				long timeElapsed = System.currentTimeMillis();	
+				
+				Map<Integer, Set<DataWrapper>> secondaryFailedTries = new HashMap<>();
+				
+				Cell secondaryStrike = secondaryStrike(dataWrapper, playingColor, 0, maxDepth, failedTries, secondaryFailedTries);
+				
+				if (secondaryStrike != null) {
+					
+					stopWatch.stop();
+					
+					if (log.isDebugEnabled()) {
+						log.debug("secondary strike found in " + stopWatch.getTotalTimeMillis() + " ms for maxDepth = " + maxDepth);
+					}
+					
+					isComputing = false;
+					
+					return secondaryStrike;
+				}
+				
+				if (log.isDebugEnabled()) {
+					timeElapsed = System.currentTimeMillis() - timeElapsed;
+					log.debug("secondary strike failed for maxDepth = " + maxDepth + " (" + timeElapsed +" ms)");
+				}
+				
+			}
+			
+			isComputing = false;
+			
+			return null;
+		}
+		
+	}
+
+	private Cell directStrike(DataWrapper dataWrapper, int playingColor, Map<Integer, Set<DataWrapper>> failedTries) throws InterruptedException {
 
 		if (failedTries.containsKey(playingColor) && failedTries.get(playingColor).contains(dataWrapper)) {
 			return null;
 		}
 		
-		if (stopComputation) {
+		if (Boolean.TRUE.equals(stopComputation)) {
 			stopComputation = false;
 			throw new InterruptedException();
 		}
@@ -191,7 +239,7 @@ public class StrikeServiceImpl implements StrikeService {
 					messagingService.sendAnalysisCell(newThreat, -playingColor);
 					
 					// check for another strike
-					Cell nextThreat = directStrike(dataWrapper, playingColor, failedTries, engineSettings);
+					Cell nextThreat = directStrike(dataWrapper, playingColor, failedTries);
 					
 					dataWrapper.removeMove(newThreat);
 					
@@ -245,7 +293,7 @@ public class StrikeServiceImpl implements StrikeService {
 			
 			messagingService.sendAnalysisCell(counterMove, -playingColor);
 
-			Cell nextAttempt = directStrike(dataWrapper, playingColor, failedTries, engineSettings);
+			Cell nextAttempt = directStrike(dataWrapper, playingColor, failedTries);
 
 			dataWrapper.removeMove(counterMove);
 			dataWrapper.removeMove(threat4Move);
@@ -267,7 +315,7 @@ public class StrikeServiceImpl implements StrikeService {
 		return null;
 	}
 	
-	private List<Cell> counterDirectStrikeMoves(DataWrapper dataWrapper, int playingColor, Map<Integer, Set<DataWrapper>> failedTries, EngineSettingsDto engineSettings) throws InterruptedException {
+	private List<Cell> counterDirectStrikeMoves(DataWrapper dataWrapper, int playingColor, Map<Integer, Set<DataWrapper>> failedTries) throws InterruptedException {
 	
 		List<Cell> defendingMoves = new ArrayList<>();
 		
@@ -284,7 +332,7 @@ public class StrikeServiceImpl implements StrikeService {
 		
 		for (Cell analysedMove : analysedMoves) {
 			dataWrapper.addMove(analysedMove, playingColor);
-			if (directStrike(dataWrapper, -playingColor, failedTries, engineSettings) == null) {
+			if (directStrike(dataWrapper, -playingColor, failedTries) == null) {
 				defendingMoves.add(analysedMove);
 			}
 			dataWrapper.removeMove(analysedMove);
@@ -293,7 +341,7 @@ public class StrikeServiceImpl implements StrikeService {
 		return defendingMoves;
 	}
 
-	private Cell secondaryStrike(DataWrapper dataWrapper, int playingColor, int depth, final int maxDepth, Map<Integer, Set<DataWrapper>> failedTries, Map<Integer, Set<DataWrapper>> secondaryFailedTries, EngineSettingsDto engineSettings) throws InterruptedException {
+	private Cell secondaryStrike(DataWrapper dataWrapper, int playingColor, int depth, final int maxDepth, Map<Integer, Set<DataWrapper>> failedTries, Map<Integer, Set<DataWrapper>> secondaryFailedTries) throws InterruptedException {
 
 		if (depth == maxDepth) {
 			return null;
@@ -304,17 +352,17 @@ public class StrikeServiceImpl implements StrikeService {
 		}
 		
 		// check for a strike
-		Cell directStrike = directStrike(dataWrapper, playingColor, failedTries, engineSettings);
+		Cell directStrike = directStrike(dataWrapper, playingColor, failedTries);
 
 		if (directStrike != null) {
 			return directStrike;
 		}
 		
 		// check for an opponent strike
-		Cell opponentDirectStrike = directStrike(dataWrapper, -playingColor, failedTries, engineSettings);
+		Cell opponentDirectStrike = directStrike(dataWrapper, -playingColor, failedTries);
 
 		if (opponentDirectStrike != null) {
-			List<Cell> defendFromStrikes = counterDirectStrikeMoves(dataWrapper, playingColor, failedTries, engineSettings);
+			List<Cell> defendFromStrikes = counterDirectStrikeMoves(dataWrapper, playingColor, failedTries);
 
 			// defend
 			for (Cell defendFromStrike : defendFromStrikes) {
@@ -324,10 +372,10 @@ public class StrikeServiceImpl implements StrikeService {
 				messagingService.sendAnalysisCell(defendFromStrike, playingColor);
 				
 				// check for a new strike
-				Cell newStrike = directStrike(dataWrapper, playingColor, failedTries, engineSettings);
+				Cell newStrike = directStrike(dataWrapper, playingColor, failedTries);
 
 				if (newStrike != null) {
-					List<Cell> opponentDefendFromStrikes = counterDirectStrikeMoves(dataWrapper, -playingColor, failedTries, engineSettings);
+					List<Cell> opponentDefendFromStrikes = counterDirectStrikeMoves(dataWrapper, -playingColor, failedTries);
 
 					boolean hasDefense = false;
 					
@@ -337,7 +385,7 @@ public class StrikeServiceImpl implements StrikeService {
 						
 						messagingService.sendAnalysisCell(opponentDefendFromStrike, -playingColor);
 						
-						Cell newAttempt = secondaryStrike(dataWrapper, playingColor, depth + 1, maxDepth, failedTries, secondaryFailedTries, engineSettings);
+						Cell newAttempt = secondaryStrike(dataWrapper, playingColor, depth + 1, maxDepth, failedTries, secondaryFailedTries);
 						
 						dataWrapper.removeMove(opponentDefendFromStrike);
 						
@@ -374,37 +422,37 @@ public class StrikeServiceImpl implements StrikeService {
 		
 		ThreatContext threatContext = threatContextService.computeThreatContext(dataWrapper.getData(), playingColor);
 
-		Cell retry = retrySecondary(dataWrapper, playingColor, threatContextService.findCombinedThreats(threatContext, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3), depth, maxDepth, failedTries, secondaryFailedTries, engineSettings);
+		Cell retry = retrySecondary(dataWrapper, playingColor, threatContextService.findCombinedThreats(threatContext, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3), depth, maxDepth, failedTries, secondaryFailedTries);
 		
 		if (retry != null) {
 			return retry;
 		}
 		
-		retry = retrySecondary(dataWrapper, playingColor, threatContextService.findCombinedThreats(threatContext, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2), depth, maxDepth, failedTries, secondaryFailedTries, engineSettings);
+		retry = retrySecondary(dataWrapper, playingColor, threatContextService.findCombinedThreats(threatContext, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2), depth, maxDepth, failedTries, secondaryFailedTries);
 		
 		if (retry != null) {
 			return retry;
 		}
 		
-		retry = retrySecondary(dataWrapper, playingColor, threatContextService.findCombinedThreats(threatContext, ThreatType.DOUBLE_THREAT_3, ThreatType.THREAT_3), depth, maxDepth, failedTries, secondaryFailedTries, engineSettings);
+		retry = retrySecondary(dataWrapper, playingColor, threatContextService.findCombinedThreats(threatContext, ThreatType.DOUBLE_THREAT_3, ThreatType.THREAT_3), depth, maxDepth, failedTries, secondaryFailedTries);
 		
 		if (retry != null) {
 			return retry;
 		}
 		
-		retry = retrySecondary(dataWrapper, playingColor, threatContextService.findCombinedThreats(threatContext, ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3), depth, maxDepth, failedTries, secondaryFailedTries, engineSettings);
+		retry = retrySecondary(dataWrapper, playingColor, threatContextService.findCombinedThreats(threatContext, ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3), depth, maxDepth, failedTries, secondaryFailedTries);
 		
 		if (retry != null) {
 			return retry;
 		}
 		
-		retry = retrySecondary(dataWrapper, playingColor, threatContextService.findCombinedThreats(threatContext, ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_2), depth, maxDepth, failedTries, secondaryFailedTries, engineSettings);
+		retry = retrySecondary(dataWrapper, playingColor, threatContextService.findCombinedThreats(threatContext, ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_2), depth, maxDepth, failedTries, secondaryFailedTries);
 		
 		if (retry != null) {
 			return retry;
 		}
 		
-		retry = retrySecondary(dataWrapper, playingColor, threatContext.getDoubleThreatTypeToThreatMap().get(ThreatType.DOUBLE_THREAT_3).stream().map(DoubleThreat::getTargetCell).collect(Collectors.toSet()), depth, maxDepth, failedTries, secondaryFailedTries, engineSettings);
+		retry = retrySecondary(dataWrapper, playingColor, threatContext.getDoubleThreatTypeToThreatMap().get(ThreatType.DOUBLE_THREAT_3).stream().map(DoubleThreat::getTargetCell).collect(Collectors.toSet()), depth, maxDepth, failedTries, secondaryFailedTries);
 		
 		if (retry != null) {
 			return retry;
@@ -421,14 +469,14 @@ public class StrikeServiceImpl implements StrikeService {
 		return null;
 	}
 	
-	private Cell retrySecondary(DataWrapper dataWrapper, int playingColor, Set<Cell> cellsToTry, int depth, int maxDepth, Map<Integer, Set<DataWrapper>> failedTries, Map<Integer, Set<DataWrapper>> secondaryFailedTries, EngineSettingsDto engineSettings) throws InterruptedException {
+	private Cell retrySecondary(DataWrapper dataWrapper, int playingColor, Set<Cell> cellsToTry, int depth, int maxDepth, Map<Integer, Set<DataWrapper>> failedTries, Map<Integer, Set<DataWrapper>> secondaryFailedTries) throws InterruptedException {
 		
 		for (Cell threat : cellsToTry) {
 			dataWrapper.addMove(threat, playingColor);
 			
 			messagingService.sendAnalysisCell(threat, playingColor);
 			
-			List<Cell> opponentDefendFromStrikes = counterDirectStrikeMoves(dataWrapper, -playingColor, failedTries, engineSettings);
+			List<Cell> opponentDefendFromStrikes = counterDirectStrikeMoves(dataWrapper, -playingColor, failedTries);
 			
 			boolean hasDefense = false;
 			
@@ -437,7 +485,7 @@ public class StrikeServiceImpl implements StrikeService {
 				
 				messagingService.sendAnalysisCell(opponentDefendFromStrike, -playingColor);
 				
-				Cell newAttempt = secondaryStrike(dataWrapper, playingColor, depth + 1, maxDepth, failedTries, secondaryFailedTries, engineSettings);
+				Cell newAttempt = secondaryStrike(dataWrapper, playingColor, depth + 1, maxDepth, failedTries, secondaryFailedTries);
 				
 				dataWrapper.removeMove(opponentDefendFromStrike);
 				
