@@ -43,6 +43,8 @@ class StrikeServiceTest {
 		
 		engineSettings.setStrikeEnabled(true);
 
+		engineSettings.setStrikeTimeout(-1);
+		
 		assertEquals(new Cell(10, 4), strikeService.findOrCounterStrike(dataWrapper, EngineConstants.BLACK_COLOR, engineSettings));
 		
 		dataWrapper.addMove(new Cell(10, 4), EngineConstants.BLACK_COLOR);

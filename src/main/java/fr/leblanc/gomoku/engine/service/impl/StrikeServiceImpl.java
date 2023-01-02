@@ -59,11 +59,17 @@ public class StrikeServiceImpl implements StrikeService {
 		Cell result = null;
 		
 		try {
-			result = executor.invokeAny(List.of(command), engineSettings.getStrikeTimeout(), TimeUnit.SECONDS);
-		} catch (TimeoutException e) {
-			log.info("Strike command timeout (" + engineSettings.getStrikeTimeout() + "s)");
+			
+			if (engineSettings.getStrikeTimeout() == -1) {
+				result = command.call();
+			} else {
+				result = executor.invokeAny(List.of(command), engineSettings.getStrikeTimeout(), TimeUnit.SECONDS);
+			}
+			
 		} catch (ExecutionException e) {
 			log.error("Error while executing strike command : " + e.getMessage(), e);
+		} catch (TimeoutException e) {
+			log.info("Strike command timeout (" + engineSettings.getStrikeTimeout() + "s)");
 		}
 		
 		return result;
@@ -93,7 +99,7 @@ public class StrikeServiceImpl implements StrikeService {
 		}
 		
 		@Override
-		public Cell call() throws Exception {
+		public Cell call() throws InterruptedException {
 			
 			if (!engineSettings.isStrikeEnabled()) {
 				return null;
