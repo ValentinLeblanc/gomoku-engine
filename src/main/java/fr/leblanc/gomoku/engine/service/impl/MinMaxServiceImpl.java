@@ -13,10 +13,9 @@ import fr.leblanc.gomoku.engine.model.DataWrapper;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
 import fr.leblanc.gomoku.engine.model.MinMaxContext;
 import fr.leblanc.gomoku.engine.model.MinMaxResult;
-import fr.leblanc.gomoku.engine.model.messaging.EngineSettingsDto;
 import fr.leblanc.gomoku.engine.service.CheckWinService;
 import fr.leblanc.gomoku.engine.service.EvaluationService;
-import fr.leblanc.gomoku.engine.service.MessagingService;
+import fr.leblanc.gomoku.engine.service.MessageService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.ThreatContextService;
 import lombok.extern.apachecommons.CommonsLog;
@@ -32,7 +31,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 	private EvaluationService evaluationService;
 
 	@Autowired
-	private MessagingService messagingService;
+	private MessageService messagingService;
 	
 	@Autowired
 	private CheckWinService checkWinService;
@@ -42,7 +41,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 	private Boolean stopComputation = false;
 	
 	@Override
-	public Cell computeMinMax(DataWrapper dataWrapper, int playingColor, List<Cell> analyzedMoves, EngineSettingsDto engineSettings) throws InterruptedException {
+	public MinMaxResult computeMinMax(DataWrapper dataWrapper, int playingColor, List<Cell> analyzedMoves, int minMaxDepth) throws InterruptedException {
 		
 		if (log.isDebugEnabled()) {
 			log.debug("starting minMax...");
@@ -50,44 +49,44 @@ public class MinMaxServiceImpl implements MinMaxService {
 		
 		isComputing = true;
 		
-		if (analyzedMoves == null) {
-			analyzedMoves = threatContextService.buildAnalyzedMoves(dataWrapper, playingColor);
-		}
-		
-		if (analyzedMoves.size() == 1) {
-			return analyzedMoves.get(0);
-		}
-		
-//		if (analyzedMoves.size() < 4) {
-//			engineSettings.setMinMaxDepth(engineSettings.getMinMaxDepth() + 1);    
-//		}
-
 		try {
-			
-			Cell resultCell = null;
-			
-			StopWatch stopWatch = new StopWatch();
-			
-			stopWatch.start();
-			
-			MinMaxResult result = internalMinMax(dataWrapper, playingColor, analyzedMoves, (engineSettings.getMinMaxDepth() % 2 == 0), 0, new MinMaxContext(), engineSettings);
-			
-			resultCell = result.getOptimalMoves().get(0);
-			
-			stopWatch.stop();
-			
-			if (log.isDebugEnabled()) {
-				log.debug("minMax elpased time : " + stopWatch.getTotalTimeMillis() + " ms");
-				log.debug("result = " + result);
+			if (analyzedMoves == null) {
+				analyzedMoves = threatContextService.buildAnalyzedMoves(dataWrapper, playingColor);
 			}
 			
-			isComputing = false;
+			if (analyzedMoves.size() == 1) {
+				
+				MinMaxResult result = new MinMaxResult();
+				
+				result.getOptimalMoves().put(0, analyzedMoves.get(0));
+				
+				return result;
+			}
 			
-			return resultCell;
-		} catch (InterruptedException e) {
-			throw e;
-		} catch (Exception e) {
-			log.error("Error while computing min/max : " + e.getMessage(), e);
+			try {
+				
+				StopWatch stopWatch = new StopWatch();
+				
+				stopWatch.start();
+				
+				MinMaxResult result = internalMinMax(dataWrapper, playingColor, analyzedMoves, (minMaxDepth % 2 == 0), 0, new MinMaxContext(), minMaxDepth);
+				
+				stopWatch.stop();
+				
+				if (log.isDebugEnabled()) {
+					log.debug("minMax elpased time : " + stopWatch.getTotalTimeMillis() + " ms");
+					log.debug("result = " + result);
+				}
+				
+				
+				return result;
+			} catch (InterruptedException e) {
+				throw e;
+			} catch (Exception e) {
+				log.error("Error while computing min/max : " + e.getMessage(), e);
+			}
+		} finally {
+			isComputing = false;
 		}
 
 		return null;
@@ -104,7 +103,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 		isComputing = false;
 	}
 	
-	private MinMaxResult internalMinMax(DataWrapper dataWrapper, int playingColor, List<Cell> analysedMoves, boolean findMax, int depth, MinMaxContext context, EngineSettingsDto engineSettings) throws InterruptedException {
+	private MinMaxResult internalMinMax(DataWrapper dataWrapper, int playingColor, List<Cell> analysedMoves, boolean findMax, int depth, MinMaxContext context, int minMaxDepth) throws InterruptedException {
 		
 		MinMaxResult result = new MinMaxResult();
 		
@@ -134,7 +133,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			
 			double currentEvaluation = 0;
 			
-			if (depth == engineSettings.getMinMaxDepth() - 1) {
+			if (depth == minMaxDepth - 1) {
 				
 				if (!context.getEvaluationCache().containsKey(-playingColor)) {
 					context.getEvaluationCache().put(-playingColor, new HashMap<>());
@@ -143,12 +142,12 @@ public class MinMaxServiceImpl implements MinMaxService {
 				if (context.getEvaluationCache().get(-playingColor).containsKey(dataWrapper)) {
 					currentEvaluation = context.getEvaluationCache().get(-playingColor).get(dataWrapper);
 				} else {
-					currentEvaluation = evaluationService.computeEvaluation(dataWrapper, -playingColor, engineSettings.getEvaluationDepth());
+					currentEvaluation = evaluationService.computeEvaluation(dataWrapper, -playingColor);
 					context.getEvaluationCache().get(-playingColor).put(new DataWrapper(dataWrapper), currentEvaluation);
 				}
 				
 			} else {
-				subResult = internalMinMax(dataWrapper, -playingColor, threatContextService.buildAnalyzedMoves(dataWrapper, -playingColor), !findMax, depth + 1, context, engineSettings);
+				subResult = internalMinMax(dataWrapper, -playingColor, threatContextService.buildAnalyzedMoves(dataWrapper, -playingColor), !findMax, depth + 1, context, minMaxDepth);
 				currentEvaluation = subResult.getEvaluation();
 			}
 			

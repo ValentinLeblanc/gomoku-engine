@@ -1,11 +1,10 @@
 package fr.leblanc.gomoku.engine.service;
 
-import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.DataWrapper;
-import fr.leblanc.gomoku.engine.model.messaging.EngineSettingsDto;
+import fr.leblanc.gomoku.engine.model.StrikeResult;
 
 public interface StrikeService extends StoppableService {
 
-	Cell findOrCounterStrike(DataWrapper dataWrapper, int playingColor, EngineSettingsDto engineSettings) throws InterruptedException;
+	StrikeResult processStrike(DataWrapper dataWrapper, int playingColor, int strikeDepth, int minMaxDepth, int strikeTimeout) throws InterruptedException;
 
 }

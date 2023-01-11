@@ -9,10 +9,10 @@ import fr.leblanc.gomoku.engine.model.messaging.EngineMessageType;
 import fr.leblanc.gomoku.engine.model.messaging.EngineWebSocketMessage;
 import fr.leblanc.gomoku.engine.model.messaging.MoveDto;
 import fr.leblanc.gomoku.engine.model.messaging.PercentCompleted;
-import fr.leblanc.gomoku.engine.service.MessagingService;
+import fr.leblanc.gomoku.engine.service.MessageService;
 
 @Service
-public class MessageServiceImpl implements MessagingService {
+public class MessageServiceImpl implements MessageService {
 
 	@Autowired
 	private EngineWebSocketController webSocketController;

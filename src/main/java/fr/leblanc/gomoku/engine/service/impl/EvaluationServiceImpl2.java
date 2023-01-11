@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.CompoThreatType;
@@ -34,8 +33,8 @@ public class EvaluationServiceImpl2 implements EvaluationService {
 	private CheckWinService checkWinService;
 	
 	@Override
-	public double computeEvaluation(DataWrapper dataWrapper, int playingColor, int maxDepth) {
-		return internalComputeEvaluation(new EvaluationContext(dataWrapper, playingColor, maxDepth, 0));
+	public double computeEvaluation(DataWrapper dataWrapper, int playingColor) {
+		return internalComputeEvaluation(new EvaluationContext(dataWrapper, playingColor, -1, 0));
 	}
 
 	private int internalComputeEvaluation(EvaluationContext context) {

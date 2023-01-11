@@ -8,12 +8,14 @@ import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.CheckWinResult;
 import fr.leblanc.gomoku.engine.model.DataWrapper;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
+import fr.leblanc.gomoku.engine.model.MinMaxResult;
+import fr.leblanc.gomoku.engine.model.StrikeResult;
 import fr.leblanc.gomoku.engine.model.messaging.GameDto;
 import fr.leblanc.gomoku.engine.model.messaging.MoveDto;
 import fr.leblanc.gomoku.engine.service.CheckWinService;
 import fr.leblanc.gomoku.engine.service.EngineService;
 import fr.leblanc.gomoku.engine.service.EvaluationService;
-import fr.leblanc.gomoku.engine.service.MessagingService;
+import fr.leblanc.gomoku.engine.service.MessageService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.StrikeService;
 import lombok.extern.apachecommons.CommonsLog;
@@ -35,7 +37,7 @@ public class EngineServiceImpl implements EngineService {
 	private CheckWinService checkWinService;
 	
 	@Autowired
-	private MessagingService messagingService;
+	private MessageService messagingService;
 
 	@Override
 	public CheckWinResult checkWin(GameDto game) {
@@ -68,13 +70,24 @@ public class EngineServiceImpl implements EngineService {
 			
 			messagingService.sendIsRunning(true);
 			
-			DataWrapper dataWrapper = DataWrapper.of(game);
-			Cell strikeOrCounterStrike = strikeService.findOrCounterStrike(dataWrapper, playingColor, game.getSettings());
-			if (strikeOrCounterStrike != null) {
-				computedMove = new MoveDto(strikeOrCounterStrike.getColumn(), strikeOrCounterStrike.getRow(), playingColor);
-			} else {
-				Cell minMaxMove = minMaxService.computeMinMax(dataWrapper, playingColor, null, game.getSettings());
-				computedMove = new MoveDto(minMaxMove.getColumn(), minMaxMove.getRow(), playingColor);
+			if (game.getSettings().isStrikeEnabled()) {
+				// STRIKE
+				StrikeResult strikeOrCounterStrike = strikeService.processStrike(DataWrapper.of(game), playingColor, game.getSettings().getStrikeDepth(), game.getSettings().getMinMaxDepth(), game.getSettings().getStrikeTimeout());
+				if (strikeOrCounterStrike.hasResult()) {
+					computedMove = new MoveDto(strikeOrCounterStrike.getResultCell().getColumn(), strikeOrCounterStrike.getResultCell().getRow(), playingColor);
+				}
+			}
+				
+			//MINMAX
+			if (computedMove == null) {
+				
+				MinMaxResult minMaxResult = minMaxService.computeMinMax(DataWrapper.of(game), playingColor, null, game.getSettings().getMinMaxDepth());
+				
+				if (!minMaxResult.getOptimalMoves().isEmpty()) {
+					Cell minMaxMove = minMaxResult.getOptimalMoves().get(0);
+					computedMove = new MoveDto(minMaxMove.getColumn(), minMaxMove.getRow(), playingColor);
+				}
+				
 			}
 		} catch (InterruptedException e) {
 			log.info("Interrupted engine service");
@@ -102,9 +115,9 @@ public class EngineServiceImpl implements EngineService {
 		DataWrapper dataWrapper = DataWrapper.of(game);
 		
 		if (playingColor == EngineConstants.BLACK_COLOR) {
-			return evaluationService.computeEvaluation(dataWrapper, playingColor, game.getSettings().getEvaluationDepth());
+			return evaluationService.computeEvaluation(dataWrapper, playingColor);
 		} else if (playingColor == EngineConstants.WHITE_COLOR) {
-			return -evaluationService.computeEvaluation(dataWrapper, playingColor, game.getSettings().getEvaluationDepth());
+			return -evaluationService.computeEvaluation(dataWrapper, playingColor);
 		}
 		
 		throw new IllegalArgumentException("Game has no valid playing color");

@@ -3,7 +3,7 @@ package fr.leblanc.gomoku.engine.service;
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.messaging.MoveDto;
 
-public interface MessagingService {
+public interface MessageService {
 
 	public void sendAnalysisCell(Cell analysisCell, int color);
 	

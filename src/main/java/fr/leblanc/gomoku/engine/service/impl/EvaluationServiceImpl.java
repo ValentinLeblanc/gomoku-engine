@@ -23,6 +23,8 @@ import fr.leblanc.gomoku.engine.service.ThreatContextService;
 @Service
 public class EvaluationServiceImpl implements EvaluationService {
 
+	private static final int EVALUATION_DEPTH = 2;
+	
 	@Autowired
 	private ThreatContextService threatContextService;
 	
@@ -30,8 +32,8 @@ public class EvaluationServiceImpl implements EvaluationService {
 	private CheckWinService checkWinService;
 	
 	@Override
-	public double computeEvaluation(DataWrapper dataWrapper, int playingColor, int maxDepth) {
-		return internalComputeEvaluation(new EvaluationContext(dataWrapper, playingColor, maxDepth, 0));
+	public double computeEvaluation(DataWrapper dataWrapper, int playingColor) {
+		return internalComputeEvaluation(new EvaluationContext(dataWrapper, playingColor, EVALUATION_DEPTH, 0));
 	}
 
 	private int internalComputeEvaluation(EvaluationContext context) {
