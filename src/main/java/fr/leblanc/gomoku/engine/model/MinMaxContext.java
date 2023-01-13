@@ -12,6 +12,4 @@ public class MinMaxContext {
 	
 	private Map<Integer, Double> maxList = new HashMap<>();
 	
-	private Map<Integer, Map<DataWrapper, Double>> evaluationCache = new HashMap<>();
-	
 }

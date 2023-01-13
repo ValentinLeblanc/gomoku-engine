@@ -32,6 +32,8 @@ import fr.leblanc.gomoku.engine.service.MessageService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.StrikeService;
 import fr.leblanc.gomoku.engine.service.ThreatContextService;
+import fr.leblanc.gomoku.engine.util.cache.GomokuCache;
+import fr.leblanc.gomoku.engine.util.cache.L2CacheSupport;
 import lombok.extern.apachecommons.CommonsLog;
 
 @Service
@@ -126,7 +128,7 @@ public class StrikeServiceImpl implements StrikeService {
 	}
 
 	private Cell executeSecondaryStrikeCommand(DataWrapper dataWrapper, int playingColor, StrikeContext strikeContext) throws InterruptedException {
-		SecondaryStrikeCommand command = new SecondaryStrikeCommand(dataWrapper, playingColor, strikeContext);
+		SecondaryStrikeCommand command = new SecondaryStrikeCommand(dataWrapper, playingColor, strikeContext, L2CacheSupport.getCurrentCache());
 		
 		Cell secondaryStrike = null;
 		
@@ -167,40 +169,47 @@ public class StrikeServiceImpl implements StrikeService {
 		private DataWrapper dataWrapper;
 		private int playingColor;
 		private StrikeContext strikeContext;
+		private GomokuCache gomokuCache;
 		
-		private SecondaryStrikeCommand(DataWrapper dataWrapper, int playingColor, StrikeContext strikeContext) {
+		private SecondaryStrikeCommand(DataWrapper dataWrapper, int playingColor, StrikeContext strikeContext, GomokuCache gomokuCache) {
 			this.dataWrapper = dataWrapper;
 			this.playingColor = playingColor;
 			this.strikeContext = strikeContext;
+			this.gomokuCache = gomokuCache;
 		}
 		
 		@Override
 		public Cell call() throws InterruptedException {
 
-			StopWatch stopWatch = new StopWatch("findOrCounterStrike");
-			stopWatch.start();
-			
-			for (int maxDepth = 1; maxDepth <= strikeContext.getStrikeDepth(); maxDepth++) {
-				
-				long timeElapsed = System.currentTimeMillis();	
-				
-				Cell secondaryStrike = secondaryStrike(dataWrapper, playingColor, 0, strikeContext);
-				
-				if (secondaryStrike != null) {
-					stopWatch.stop();
-					if (log.isDebugEnabled()) {
-						log.debug("secondary strike found in " + stopWatch.getTotalTimeMillis() + " ms for maxDepth = " + maxDepth);
+			return L2CacheSupport.doInCacheContext(() -> {
+
+				StopWatch stopWatch = new StopWatch("findOrCounterStrike");
+				stopWatch.start();
+
+				for (int maxDepth = 1; maxDepth <= strikeContext.getStrikeDepth(); maxDepth++) {
+
+					long timeElapsed = System.currentTimeMillis();
+
+					Cell secondaryStrike;
+					secondaryStrike = secondaryStrike(dataWrapper, playingColor, 0, strikeContext);
+
+					if (secondaryStrike != null) {
+						stopWatch.stop();
+						if (log.isDebugEnabled()) {
+							log.debug("secondary strike found in " + stopWatch.getTotalTimeMillis() + " ms for maxDepth = " + maxDepth);
+						}
+						return secondaryStrike;
 					}
-					return secondaryStrike;
+
+					if (log.isDebugEnabled()) {
+						timeElapsed = System.currentTimeMillis() - timeElapsed;
+						log.debug("secondary strike failed for maxDepth = " + maxDepth + " (" + timeElapsed + " ms)");
+					}
 				}
-				
-				if (log.isDebugEnabled()) {
-					timeElapsed = System.currentTimeMillis() - timeElapsed;
-					log.debug("secondary strike failed for maxDepth = " + maxDepth + " (" + timeElapsed +" ms)");
-				}
-			}
+
+				return null;
+			}, gomokuCache);
 			
-			return null;
 		}
 		
 	}
@@ -212,13 +221,17 @@ public class StrikeServiceImpl implements StrikeService {
 			throw new InterruptedException();
 		}
 		
-		Map<Integer, Set<DataWrapper>> strikeAttempts = strikeContext.getDirectStrikeAttempts();
-		
-		if (strikeAttempts.containsKey(playingColor) && strikeAttempts.get(playingColor).contains(dataWrapper)) {
-			return null;
+		if (L2CacheSupport.isCacheEnabled()) {
+			if (!L2CacheSupport.getDirectStrikeAttempts().containsKey(playingColor)) {
+				L2CacheSupport.getDirectStrikeAttempts().put(playingColor, new HashMap<>());
+			}
+			
+			if (L2CacheSupport.getDirectStrikeAttempts().containsKey(playingColor) && L2CacheSupport.getDirectStrikeAttempts().get(playingColor).containsKey(dataWrapper)) {
+				return L2CacheSupport.getDirectStrikeAttempts().get(playingColor).get(dataWrapper);
+			}
 		}
 		
-		ThreatContext computeThreatContext = threatContextService.computeThreatContext(dataWrapper.getData(), playingColor);
+		ThreatContext computeThreatContext = threatContextService.computeThreatContext(dataWrapper, playingColor);
 		
 		Map<ThreatType, List<Threat>> threatMap = computeThreatContext.getThreatTypeToThreatMap();
 		
@@ -226,10 +239,17 @@ public class StrikeServiceImpl implements StrikeService {
 
 		// check for a threat5
 		if (!threatMap.get(ThreatType.THREAT_5).isEmpty()) {
-			return threatMap.get(ThreatType.THREAT_5).iterator().next().getEmptyCells().iterator().next();
+			
+			Cell move = threatMap.get(ThreatType.THREAT_5).iterator().next().getEmptyCells().iterator().next();
+			
+			if (L2CacheSupport.isCacheEnabled()) {
+				L2CacheSupport.getDirectStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), move);
+			}
+			
+			return move;
 		}
 
-		Map<ThreatType, List<Threat>> opponentThreatMap = threatContextService.computeThreatContext(dataWrapper.getData(), -playingColor).getThreatTypeToThreatMap();
+		Map<ThreatType, List<Threat>> opponentThreatMap = threatContextService.computeThreatContext(dataWrapper, -playingColor).getThreatTypeToThreatMap();
 
 		// check for an opponent threat5
 		if (!opponentThreatMap.get(ThreatType.THREAT_5).isEmpty()) {
@@ -242,52 +262,55 @@ public class StrikeServiceImpl implements StrikeService {
 				
 				Cell opponentThreat = opponentThreats.iterator().next();
 				
-				// defend
-				dataWrapper.addMove(opponentThreat, playingColor);
-				
-				messagingService.sendAnalysisCell(opponentThreat, playingColor);
-				
-				// check for another threat5
-				threatMap = threatContextService.computeThreatContext(dataWrapper.getData(), playingColor).getThreatTypeToThreatMap();
-				if (!threatMap.get(ThreatType.THREAT_5).isEmpty()) {
+				try {
+					// defend
+					dataWrapper.addMove(opponentThreat, playingColor);
 					
-					Cell newThreat = threatMap.get(ThreatType.THREAT_5).iterator().next().getEmptyCells().iterator().next();
+					messagingService.sendAnalysisCell(opponentThreat, playingColor);
 					
-					// opponent defends
-					dataWrapper.addMove(newThreat, -playingColor);
-					
-					messagingService.sendAnalysisCell(newThreat, -playingColor);
-					
-					// check for another strike
-					Cell nextThreat = directStrike(dataWrapper, playingColor, strikeContext);
-					
-					dataWrapper.removeMove(newThreat);
-					
-					messagingService.sendAnalysisCell(newThreat, EngineConstants.NONE_COLOR);
-					
-					if (nextThreat != null) {
-						dataWrapper.removeMove(opponentThreat);
-						messagingService.sendAnalysisCell(opponentThreat, EngineConstants.NONE_COLOR);
-						return opponentThreat;
+					// check for another threat5
+					threatMap = threatContextService.computeThreatContext(dataWrapper, playingColor).getThreatTypeToThreatMap();
+					if (!threatMap.get(ThreatType.THREAT_5).isEmpty()) {
+						
+						Cell newThreat = threatMap.get(ThreatType.THREAT_5).iterator().next().getEmptyCells().iterator().next();
+						
+						// opponent defends
+						dataWrapper.addMove(newThreat, -playingColor);
+						
+						messagingService.sendAnalysisCell(newThreat, -playingColor);
+						
+						// check for another strike
+						Cell nextThreat = directStrike(dataWrapper, playingColor, strikeContext);
+						
+						dataWrapper.removeMove(newThreat);
+						
+						messagingService.sendAnalysisCell(newThreat, EngineConstants.NONE_COLOR);
+						
+						if (nextThreat != null) {
+							if (L2CacheSupport.isCacheEnabled()) {
+								L2CacheSupport.getDirectStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), opponentThreat);
+							}
+							return opponentThreat;
+						}
 					}
+				} finally {
+					dataWrapper.removeMove(opponentThreat);
+					messagingService.sendAnalysisCell(opponentThreat, EngineConstants.NONE_COLOR);
 				}
-				
-				dataWrapper.removeMove(opponentThreat);
-				
-				messagingService.sendAnalysisCell(opponentThreat, EngineConstants.NONE_COLOR);
 			}
 			
-			if (!strikeAttempts.containsKey(playingColor)) {
-				strikeAttempts.put(playingColor, new HashSet<>());
+			if (L2CacheSupport.isCacheEnabled()) {
+				L2CacheSupport.getDirectStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), null);
 			}
-			
-			strikeAttempts.get(playingColor).add(new DataWrapper(dataWrapper));
 			
 			return null;
 		}
 
 		// check for a double threat4 move
 		if (!doubleThreatMap.get(ThreatType.DOUBLE_THREAT_4).isEmpty()) {
+			if (L2CacheSupport.isCacheEnabled()) {
+				L2CacheSupport.getDirectStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), doubleThreatMap.get(ThreatType.DOUBLE_THREAT_4).iterator().next().getTargetCell());
+			}
 			return doubleThreatMap.get(ThreatType.DOUBLE_THREAT_4).iterator().next().getTargetCell();
 		}
 
@@ -305,7 +328,7 @@ public class StrikeServiceImpl implements StrikeService {
 			messagingService.sendAnalysisCell(threat4Move, playingColor);
 
 			// opponent defends
-			opponentThreatMap = threatContextService.computeThreatContext(dataWrapper.getData(), playingColor).getThreatTypeToThreatMap();
+			opponentThreatMap = threatContextService.computeThreatContext(dataWrapper, playingColor).getThreatTypeToThreatMap();
 
 			Cell counterMove = opponentThreatMap.get(ThreatType.THREAT_5).iterator().next().getEmptyCells().iterator().next();
 
@@ -322,28 +345,35 @@ public class StrikeServiceImpl implements StrikeService {
 			messagingService.sendAnalysisCell(threat4Move, EngineConstants.NONE_COLOR);
 
 			if (nextAttempt != null) {
+				if (L2CacheSupport.isCacheEnabled()) {
+					L2CacheSupport.getDirectStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), threat4Move);
+				}
 				return threat4Move;
 			}
 		}
 		
-		if (!strikeAttempts.containsKey(playingColor)) {
-			strikeAttempts.put(playingColor, new HashSet<>());
+		if (L2CacheSupport.isCacheEnabled()) {
+			L2CacheSupport.getDirectStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), null);
 		}
-		
-		strikeAttempts.get(playingColor).add(new DataWrapper(dataWrapper));
 
 		return null;
 	}
 	
 	private List<Cell> counterDirectStrikeMoves(DataWrapper dataWrapper, int playingColor, StrikeContext strikeContext, boolean onlyOne) throws InterruptedException {
 	
-		if (strikeContext.getRecordedCounterMoves().containsKey(playingColor) && strikeContext.getRecordedCounterMoves().get(playingColor).containsKey(dataWrapper)) {
-			return strikeContext.getRecordedCounterMoves().get(playingColor).get(dataWrapper);
+		if (L2CacheSupport.isCacheEnabled()) {
+			if (!L2CacheSupport.getRecordedCounterMoves().containsKey(playingColor)) {
+				L2CacheSupport.getRecordedCounterMoves().put(playingColor, new HashMap<>());
+			}
+			
+			if (L2CacheSupport.getRecordedCounterMoves().containsKey(playingColor) && L2CacheSupport.getRecordedCounterMoves().get(playingColor).containsKey(dataWrapper)) {
+				return L2CacheSupport.getRecordedCounterMoves().get(playingColor).get(dataWrapper);
+			}
 		}
 		
 		List<Cell> defendingMoves = new ArrayList<>();
 		
-		ThreatContext opponentThreatContext = threatContextService.computeThreatContext(dataWrapper.getData(), -playingColor);
+		ThreatContext opponentThreatContext = threatContextService.computeThreatContext(dataWrapper, -playingColor);
 		
 		Map<ThreatType, List<Threat>> opponentThreatMap = opponentThreatContext.getThreatTypeToThreatMap();
 		
@@ -357,54 +387,49 @@ public class StrikeServiceImpl implements StrikeService {
 		for (Cell analysedMove : analysedMoves) {
 			messagingService.sendAnalysisCell(analysedMove, playingColor);
 			
-			dataWrapper.addMove(analysedMove, playingColor);
-			if (directStrike(dataWrapper, -playingColor, strikeContext) == null) {
-				
-				Map<ThreatType, List<Threat>> newThreatContext = threatContextService.computeThreatContext(dataWrapper.getData(), playingColor).getThreatTypeToThreatMap();
-				
-				if (!newThreatContext.get(ThreatType.THREAT_5).isEmpty()) {
+			try {
+				dataWrapper.addMove(analysedMove, playingColor);
+				if (directStrike(dataWrapper, -playingColor, strikeContext) == null) {
 					
-					Cell counter = newThreatContext.get(ThreatType.THREAT_5).iterator().next().getEmptyCells().iterator().next();
+					Map<ThreatType, List<Threat>> newThreatContext = threatContextService.computeThreatContext(dataWrapper, playingColor).getThreatTypeToThreatMap();
 					
-					dataWrapper.addMove(counter, -playingColor);
-					messagingService.sendAnalysisCell(counter, -playingColor);
-					
-					List<Cell> nextCounters = counterDirectStrikeMoves(dataWrapper, playingColor, strikeContext, true);
-					
-					if (!nextCounters.isEmpty()) {
-						defendingMoves.add(analysedMove);
-						if (onlyOne) {
+					if (!newThreatContext.get(ThreatType.THREAT_5).isEmpty()) {
+						
+						Cell counter = newThreatContext.get(ThreatType.THREAT_5).iterator().next().getEmptyCells().iterator().next();
+						
+						try {
+							dataWrapper.addMove(counter, -playingColor);
+							messagingService.sendAnalysisCell(counter, -playingColor);
+							
+							List<Cell> nextCounters = counterDirectStrikeMoves(dataWrapper, playingColor, strikeContext, true);
+							
+							if (!nextCounters.isEmpty()) {
+								defendingMoves.add(analysedMove);
+								if (onlyOne) {
+									return defendingMoves;
+								}
+							}
+						} finally {
 							dataWrapper.removeMove(counter);
 							messagingService.sendAnalysisCell(counter, EngineConstants.NONE_COLOR);
-							dataWrapper.removeMove(analysedMove);
-							messagingService.sendAnalysisCell(analysedMove, EngineConstants.NONE_COLOR);
+						}
+						
+					} else {
+						defendingMoves.add(analysedMove);
+						if (onlyOne) {
 							return defendingMoves;
 						}
 					}
-					
-					dataWrapper.removeMove(counter);
-					messagingService.sendAnalysisCell(counter, EngineConstants.NONE_COLOR);
-					
-				} else {
-					defendingMoves.add(analysedMove);
-					if (onlyOne) {
-						dataWrapper.removeMove(analysedMove);
-						messagingService.sendAnalysisCell(analysedMove, EngineConstants.NONE_COLOR);
-						return defendingMoves;
-					}
 				}
-				
+			} finally {
+				messagingService.sendAnalysisCell(analysedMove, EngineConstants.NONE_COLOR);
+				dataWrapper.removeMove(analysedMove);
 			}
-			
-			messagingService.sendAnalysisCell(analysedMove, EngineConstants.NONE_COLOR);
-			dataWrapper.removeMove(analysedMove);
 		}
 		
-		if (!strikeContext.getRecordedCounterMoves().containsKey(playingColor)) {
-			strikeContext.getRecordedCounterMoves().put(playingColor, new HashMap<>());
+		if (L2CacheSupport.isCacheEnabled()) {
+			L2CacheSupport.getRecordedCounterMoves().get(playingColor).put(new DataWrapper(dataWrapper), defendingMoves);
 		}
-		
-		strikeContext.getRecordedCounterMoves().get(playingColor).put(dataWrapper, defendingMoves);
 		
 		return defendingMoves;
 	}
@@ -419,8 +444,14 @@ public class StrikeServiceImpl implements StrikeService {
 			return null;
 		}
 		
-		if (strikeContext.getSecondaryStrikeAttempts().containsKey(playingColor) && strikeContext.getSecondaryStrikeAttempts().get(playingColor).contains(dataWrapper)) {
-			return null;
+		if (L2CacheSupport.isCacheEnabled()) {
+			if (!L2CacheSupport.getSecondaryStrikeAttempts().containsKey(playingColor)) {
+				L2CacheSupport.getSecondaryStrikeAttempts().put(playingColor, new HashMap<>());
+			}
+			
+			if (L2CacheSupport.getSecondaryStrikeAttempts().containsKey(playingColor) && L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).containsKey(dataWrapper)) {
+				return L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).get(dataWrapper);
+			}
 		}
 		
 		// check for a strike
@@ -434,53 +465,75 @@ public class StrikeServiceImpl implements StrikeService {
 		Cell opponentDirectStrike = directStrike(dataWrapper, -playingColor, strikeContext);
 
 		if (opponentDirectStrike != null) {
-			return defendFromStrike(dataWrapper, playingColor, depth, strikeContext);
+			
+			Cell defend = defendFromStrike(dataWrapper, playingColor, depth, strikeContext);
+			
+			if (L2CacheSupport.isCacheEnabled() && depth + 1 != strikeContext.getStrikeDepth()) {
+				L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), defend);
+			}
+			
+			return defend;
+			
 		}
 		
-		ThreatContext threatContext = threatContextService.computeThreatContext(dataWrapper.getData(), playingColor);
+		ThreatContext threatContext = threatContextService.computeThreatContext(dataWrapper, playingColor);
 
 		Cell retry = retrySecondary(dataWrapper, playingColor, threatContextService.findCombinedThreats(threatContext, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3), depth, strikeContext);
 		
 		if (retry != null) {
+			if (L2CacheSupport.isCacheEnabled() && depth + 1 != strikeContext.getStrikeDepth()) {
+				L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), retry);
+			}
 			return retry;
 		}
 		
 		retry = retrySecondary(dataWrapper, playingColor, threatContextService.findCombinedThreats(threatContext, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2), depth, strikeContext);
 		
 		if (retry != null) {
+			if (L2CacheSupport.isCacheEnabled() && depth + 1 != strikeContext.getStrikeDepth()) {
+				L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), retry);
+			}
 			return retry;
 		}
 		
 		retry = retrySecondary(dataWrapper, playingColor, threatContextService.findCombinedThreats(threatContext, ThreatType.DOUBLE_THREAT_3, ThreatType.THREAT_3), depth, strikeContext);
 		
 		if (retry != null) {
+			if (L2CacheSupport.isCacheEnabled() && depth + 1 != strikeContext.getStrikeDepth()) {
+				L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), retry);
+			}
 			return retry;
 		}
 		
 		retry = retrySecondary(dataWrapper, playingColor, threatContextService.findCombinedThreats(threatContext, ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3), depth, strikeContext);
 		
 		if (retry != null) {
+			if (L2CacheSupport.isCacheEnabled() && depth + 1 != strikeContext.getStrikeDepth()) {
+				L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), retry);
+			}
 			return retry;
 		}
 		
 		retry = retrySecondary(dataWrapper, playingColor, threatContextService.findCombinedThreats(threatContext, ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_2), depth, strikeContext);
 		
 		if (retry != null) {
+			if (L2CacheSupport.isCacheEnabled() && depth + 1 != strikeContext.getStrikeDepth()) {
+				L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), retry);
+			}
 			return retry;
 		}
 		
 		retry = retrySecondary(dataWrapper, playingColor, threatContext.getDoubleThreatTypeToThreatMap().get(ThreatType.DOUBLE_THREAT_3).stream().map(DoubleThreat::getTargetCell).collect(Collectors.toSet()), depth, strikeContext);
 		
 		if (retry != null) {
+			if (L2CacheSupport.isCacheEnabled() && depth + 1 != strikeContext.getStrikeDepth()) {
+				L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), retry);
+			}
 			return retry;
 		}
 		
-		if (!strikeContext.getSecondaryStrikeAttempts().containsKey(playingColor)) {
-			strikeContext.getSecondaryStrikeAttempts().put(playingColor, new HashSet<>());
-		}
-		
-		if (depth + 1 != strikeContext.getStrikeDepth()) {
-			strikeContext.getSecondaryStrikeAttempts().get(playingColor).add(new DataWrapper(dataWrapper));
+		if (L2CacheSupport.isCacheEnabled() && depth + 1 != strikeContext.getStrikeDepth()) {
+			L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), null);
 		}
 		
 		return null;
@@ -493,56 +546,49 @@ public class StrikeServiceImpl implements StrikeService {
 		// defend
 		for (Cell defendFromStrike : defendFromStrikes) {
 			
-			dataWrapper.addMove(defendFromStrike, playingColor);
-			
-			messagingService.sendAnalysisCell(defendFromStrike, playingColor);
-			
-			// check for a new strike
-			Cell newStrike = directStrike(dataWrapper, playingColor, strikeContext);
-
-			if (newStrike != null) {
-				List<Cell> opponentDefendFromStrikes = counterDirectStrikeMoves(dataWrapper, -playingColor, strikeContext, false);
-
-				boolean hasDefense = false;
+			try  {
 				
-				for (Cell opponentDefendFromStrike : opponentDefendFromStrikes) {
+				dataWrapper.addMove(defendFromStrike, playingColor);
+				
+				messagingService.sendAnalysisCell(defendFromStrike, playingColor);
+				
+				// check for a new strike
+				Cell newStrike = directStrike(dataWrapper, playingColor, strikeContext);
+				
+				if (newStrike != null) {
+					List<Cell> opponentDefendFromStrikes = counterDirectStrikeMoves(dataWrapper, -playingColor, strikeContext, false);
 					
-					dataWrapper.addMove(opponentDefendFromStrike, -playingColor);
+					boolean hasDefense = false;
 					
-					messagingService.sendAnalysisCell(opponentDefendFromStrike, -playingColor);
-					
-					Cell newAttempt = secondaryStrike(dataWrapper, playingColor, depth + 1, strikeContext);
-					
-					dataWrapper.removeMove(opponentDefendFromStrike);
-					
-					messagingService.sendAnalysisCell(opponentDefendFromStrike, EngineConstants.NONE_COLOR);
+					for (Cell opponentDefendFromStrike : opponentDefendFromStrikes) {
 						
-					if (newAttempt == null) {
-						hasDefense = true;
-						break;
+						dataWrapper.addMove(opponentDefendFromStrike, -playingColor);
+						
+						messagingService.sendAnalysisCell(opponentDefendFromStrike, -playingColor);
+						
+						Cell newAttempt = secondaryStrike(dataWrapper, playingColor, depth + 1, strikeContext);
+						
+						dataWrapper.removeMove(opponentDefendFromStrike);
+						
+						messagingService.sendAnalysisCell(opponentDefendFromStrike, EngineConstants.NONE_COLOR);
+						
+						if (newAttempt == null) {
+							hasDefense = true;
+							break;
+						}
+					}
+					
+					if (!hasDefense) {
+						return defendFromStrike;
 					}
 				}
 				
-				if (!hasDefense) {
-					dataWrapper.removeMove(defendFromStrike);
-					messagingService.sendAnalysisCell(defendFromStrike, EngineConstants.NONE_COLOR);
-					return defendFromStrike;
-				}
-				
+			} finally {
+				dataWrapper.removeMove(defendFromStrike);
+				messagingService.sendAnalysisCell(defendFromStrike, EngineConstants.NONE_COLOR);
 			}
-			
-			dataWrapper.removeMove(defendFromStrike);
-			messagingService.sendAnalysisCell(defendFromStrike, EngineConstants.NONE_COLOR);
 		}
 
-		if (!strikeContext.getSecondaryStrikeAttempts().containsKey(playingColor)) {
-			strikeContext.getSecondaryStrikeAttempts().put(playingColor, new HashSet<>());
-		}
-		
-		if (depth + 1 != strikeContext.getStrikeDepth()) {
-			strikeContext.getSecondaryStrikeAttempts().get(playingColor).add(new DataWrapper(dataWrapper));
-		}
-		
 		return null;
 	}
 	

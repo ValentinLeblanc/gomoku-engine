@@ -1,6 +1,5 @@
 package fr.leblanc.gomoku.engine.service.impl;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
@@ -134,18 +133,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			double currentEvaluation = 0;
 			
 			if (depth == minMaxDepth - 1) {
-				
-				if (!context.getEvaluationCache().containsKey(-playingColor)) {
-					context.getEvaluationCache().put(-playingColor, new HashMap<>());
-				}
-				
-				if (context.getEvaluationCache().get(-playingColor).containsKey(dataWrapper)) {
-					currentEvaluation = context.getEvaluationCache().get(-playingColor).get(dataWrapper);
-				} else {
-					currentEvaluation = evaluationService.computeEvaluation(dataWrapper, -playingColor);
-					context.getEvaluationCache().get(-playingColor).put(new DataWrapper(dataWrapper), currentEvaluation);
-				}
-				
+				currentEvaluation = evaluationService.computeEvaluation(dataWrapper);
 			} else {
 				subResult = internalMinMax(dataWrapper, -playingColor, threatContextService.buildAnalyzedMoves(dataWrapper, -playingColor), !findMax, depth + 1, context, minMaxDepth);
 				currentEvaluation = subResult.getEvaluation();

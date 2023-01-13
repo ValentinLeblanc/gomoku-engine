@@ -18,6 +18,7 @@ import fr.leblanc.gomoku.engine.service.EvaluationService;
 import fr.leblanc.gomoku.engine.service.MessageService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.StrikeService;
+import fr.leblanc.gomoku.engine.util.cache.L2CacheSupport;
 import lombok.extern.apachecommons.CommonsLog;
 
 @Service
@@ -59,36 +60,52 @@ public class EngineServiceImpl implements EngineService {
 	public MoveDto computeMove(GameDto game) {
 
 		int playingColor = game.getMoves().size() % 2 == 0 ? EngineConstants.BLACK_COLOR : EngineConstants.WHITE_COLOR;
-		
+
 		if (game.getMoves().isEmpty()) {
 			return new MoveDto(game.getBoardSize() / 2, game.getBoardSize() / 2, playingColor);
 		}
-		
-		MoveDto computedMove = null;
-		
+
 		try {
-			
-			messagingService.sendIsRunning(true);
-			
-			if (game.getSettings().isStrikeEnabled()) {
-				// STRIKE
-				StrikeResult strikeOrCounterStrike = strikeService.processStrike(DataWrapper.of(game), playingColor, game.getSettings().getStrikeDepth(), game.getSettings().getMinMaxDepth(), game.getSettings().getStrikeTimeout());
-				if (strikeOrCounterStrike.hasResult()) {
-					computedMove = new MoveDto(strikeOrCounterStrike.getResultCell().getColumn(), strikeOrCounterStrike.getResultCell().getRow(), playingColor);
+
+			MoveDto computedMove = L2CacheSupport.doInCacheContext(() -> {
+				MoveDto result = null;
+
+				messagingService.sendIsRunning(true);
+
+				if (game.getSettings().isStrikeEnabled()) {
+					// STRIKE
+					StrikeResult strikeOrCounterStrike = strikeService.processStrike(DataWrapper.of(game), playingColor,
+							game.getSettings().getStrikeDepth(), game.getSettings().getMinMaxDepth(),
+							game.getSettings().getStrikeTimeout());
+					if (strikeOrCounterStrike.hasResult()) {
+						result = new MoveDto(strikeOrCounterStrike.getResultCell().getColumn(),
+								strikeOrCounterStrike.getResultCell().getRow(), playingColor);
+					}
 				}
-			}
-				
-			//MINMAX
-			if (computedMove == null) {
-				
-				MinMaxResult minMaxResult = minMaxService.computeMinMax(DataWrapper.of(game), playingColor, null, game.getSettings().getMinMaxDepth());
-				
-				if (!minMaxResult.getOptimalMoves().isEmpty()) {
-					Cell minMaxMove = minMaxResult.getOptimalMoves().get(0);
-					computedMove = new MoveDto(minMaxMove.getColumn(), minMaxMove.getRow(), playingColor);
+
+				// MINMAX
+				if (result == null) {
+
+					MinMaxResult minMaxResult = minMaxService.computeMinMax(DataWrapper.of(game), playingColor, null,
+							game.getSettings().getMinMaxDepth());
+
+					if (!minMaxResult.getOptimalMoves().isEmpty()) {
+						Cell minMaxMove = minMaxResult.getOptimalMoves().get(0);
+						result = new MoveDto(minMaxMove.getColumn(), minMaxMove.getRow(), playingColor);
+					}
 				}
-				
-			}
+				return result;
+
+			});
+			JSONObject message = new JSONObject();
+
+			message.put("type", "REFRESH_MOVE");
+			message.put("content", computedMove);
+
+			messagingService.sendRefreshMove(computedMove);
+
+			return computedMove;
+			
 		} catch (InterruptedException e) {
 			log.info("Interrupted engine service");
 			Thread.currentThread().interrupt();
@@ -96,14 +113,8 @@ public class EngineServiceImpl implements EngineService {
 			messagingService.sendIsRunning(false);
 		}
 		
-		JSONObject message = new JSONObject();
-		
-		message.put("type", "REFRESH_MOVE");
-		message.put("content", computedMove);
-		
-		messagingService.sendRefreshMove(computedMove);
-		
-		return computedMove;
+		return null;
+
 	}
 
 
@@ -115,13 +126,12 @@ public class EngineServiceImpl implements EngineService {
 		DataWrapper dataWrapper = DataWrapper.of(game);
 		
 		if (playingColor == EngineConstants.BLACK_COLOR) {
-			return evaluationService.computeEvaluation(dataWrapper, playingColor);
+			return evaluationService.computeEvaluation(dataWrapper);
 		} else if (playingColor == EngineConstants.WHITE_COLOR) {
-			return -evaluationService.computeEvaluation(dataWrapper, playingColor);
+			return -evaluationService.computeEvaluation(dataWrapper);
 		}
 		
 		throw new IllegalArgumentException("Game has no valid playing color");
-		
 	}
 
 	@Override

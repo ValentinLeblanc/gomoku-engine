@@ -1,7 +1,5 @@
 package fr.leblanc.gomoku.engine.model;
 
-import java.util.Arrays;
-
 import fr.leblanc.gomoku.engine.model.messaging.GameDto;
 import fr.leblanc.gomoku.engine.model.messaging.MoveDto;
 import lombok.Getter;
@@ -71,10 +69,7 @@ public class DataWrapper {
 
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + Arrays.deepHashCode(data);
-		return result;
+		return hashCode(data);
 	}
 
 	@Override
@@ -86,7 +81,25 @@ public class DataWrapper {
 		if (getClass() != obj.getClass())
 			return false;
 		DataWrapper other = (DataWrapper) obj;
-		return Arrays.deepEquals(data, other.data);
+		return hashCode(data) == hashCode(other.data);
 	}
+
+	private int hashCode(int[][] data) {
+		final int prime = 31;
+		int result = 1;
+		
+		for (int i = 0; i < data.length; i++) {
+			for (int j = 0; j < data.length; j++) {
+				int value = data[i][j];
+				result = prime * result + i;
+				result = prime * result + j;
+				result = prime * result + value;
+			}
+		}
+		
+		return result;
+	}
+	
+	
 	
 }

@@ -12,12 +12,12 @@ import java.util.Set;
 import org.springframework.stereotype.Service;
 
 import fr.leblanc.gomoku.engine.model.Cell;
+import fr.leblanc.gomoku.engine.model.CompoThreatType;
 import fr.leblanc.gomoku.engine.model.DataWrapper;
 import fr.leblanc.gomoku.engine.model.DoubleThreat;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
 import fr.leblanc.gomoku.engine.model.Threat;
 import fr.leblanc.gomoku.engine.model.ThreatContext;
-import fr.leblanc.gomoku.engine.model.CompoThreatType;
 import fr.leblanc.gomoku.engine.model.ThreatType;
 import fr.leblanc.gomoku.engine.service.ThreatContextService;
 import fr.leblanc.gomoku.engine.util.Pair;
@@ -26,8 +26,15 @@ import fr.leblanc.gomoku.engine.util.Pair;
 public class ThreatContextServiceImpl implements ThreatContextService {
 	
 	@Override
-	public ThreatContext computeThreatContext(int[][] data, int playingColor) {
-		ThreatContext threatContext = new ThreatContext(data, playingColor);
+	public ThreatContext computeThreatContext(DataWrapper dataWrapper, int playingColor) {
+		
+		// this cache consumes too much memory
+		
+//		if (L2CacheSupport.isCacheEnabled() && L2CacheSupport.getThreatContextCache().containsKey(playingColor) && L2CacheSupport.getThreatContextCache().get(playingColor).containsKey(dataWrapper)) {
+//			return L2CacheSupport.getThreatContextCache().get(playingColor).get(dataWrapper);
+//		}
+		
+		ThreatContext threatContext = new ThreatContext(dataWrapper.getData(), playingColor);
 		
 		threatContext.getThreatTypeToThreatMap().put(ThreatType.THREAT_5, new ArrayList<>());
 		threatContext.getThreatTypeToThreatMap().put(ThreatType.THREAT_4, new ArrayList<>());
@@ -39,6 +46,14 @@ public class ThreatContextServiceImpl implements ThreatContextService {
 		threatContext.getDoubleThreatTypeToThreatMap().put(ThreatType.DOUBLE_THREAT_2, new HashSet<>());
 		
 		internalComputeThreatContext(threatContext);
+		
+//		if (L2CacheSupport.isCacheEnabled()) {
+//			if (!L2CacheSupport.getThreatContextCache().containsKey(playingColor)) {
+//				L2CacheSupport.getThreatContextCache().put(playingColor, new HashMap<>());
+//			}
+//			
+//			L2CacheSupport.getThreatContextCache().get(playingColor).put(new DataWrapper(dataWrapper), threatContext);
+//		}
 		
 		return threatContext;
 	}
@@ -69,8 +84,8 @@ public class ThreatContextServiceImpl implements ThreatContextService {
 
 		List<Cell> analysedMoves = new ArrayList<>();
 
-		ThreatContext threatContext = computeThreatContext(dataWrapper.getData(), color);
-		ThreatContext opponentThreatContext = computeThreatContext(dataWrapper.getData(), -color);
+		ThreatContext threatContext = computeThreatContext(dataWrapper, color);
+		ThreatContext opponentThreatContext = computeThreatContext(dataWrapper, -color);
 		
 		Map<ThreatType, List<Threat>> threatMap = threatContext.getThreatTypeToThreatMap();
 		Map<ThreatType, Set<DoubleThreat>> doubleThreatMap = threatContext.getDoubleThreatTypeToThreatMap();
@@ -436,6 +451,8 @@ public class ThreatContextServiceImpl implements ThreatContextService {
 		
 		Map<Cell, List<Pair<Threat>>> candidateMap = new HashMap<>();
 		
+		Set<Threat> visitedThreats = new HashSet<>();
+		
 		if (threatTryContext.getThreatType2() == null) {
 			if (threatTryContext.getThreatType1().isDoubleType()) {
 				for (DoubleThreat threat : context.getDoubleThreatTypeToThreatMap().get(threatTryContext.getThreatType1())) {
@@ -452,29 +469,36 @@ public class ThreatContextServiceImpl implements ThreatContextService {
 		} else {
 			if (threatTryContext.getThreatType1().isDoubleType()) {
 				for (DoubleThreat threat1 : context.getDoubleThreatTypeToThreatMap().get(threatTryContext.getThreatType1())) {
+					visitedThreats.add(threat1);
 					if (threatTryContext.getThreatType2().isDoubleType()) {
 						for (DoubleThreat threat2 : context.getDoubleThreatTypeToThreatMap().get(threatTryContext.getThreatType2())) {
-							if (threat1.getTargetCell().equals(threat2.getTargetCell()) && !threat1.getPlainCells().containsAll(threat2.getPlainCells())) {
-								candidateMap.computeIfAbsent(threat1.getTargetCell(), key -> new ArrayList<>()).add(new Pair<>(threat1, threat2));
+							if (!visitedThreats.contains(threat2)) {
+								if (threat1.getTargetCell().equals(threat2.getTargetCell()) && !threat1.getPlainCells().containsAll(threat2.getPlainCells())) {
+									candidateMap.computeIfAbsent(threat1.getTargetCell(), key -> new ArrayList<>()).add(new Pair<>(threat1, threat2));
+								}
 							}
 						}
 					}
 				}
 			} else {
 				for (Threat threat1 : context.getThreatTypeToThreatMap().get(threatTryContext.getThreatType1())) {
+					visitedThreats.add(threat1);
 					if (threatTryContext.getThreatType2().isDoubleType()) {
 						for (DoubleThreat threat2 : context.getDoubleThreatTypeToThreatMap().get(threatTryContext.getThreatType2())) {
-							
-							if (threat1.getEmptyCells().contains(threat2.getTargetCell()) && !threat1.getPlainCells().containsAll(threat2.getPlainCells())) {
-								candidateMap.computeIfAbsent(threat2.getTargetCell(), key -> new ArrayList<>()).add(new Pair<>(threat1, threat2));
+							if (!visitedThreats.contains(threat2)) {
+								if (threat1.getEmptyCells().contains(threat2.getTargetCell()) && !threat1.getPlainCells().containsAll(threat2.getPlainCells())) {
+									candidateMap.computeIfAbsent(threat2.getTargetCell(), key -> new ArrayList<>()).add(new Pair<>(threat1, threat2));
+								}
 							}
 						}
 					} else {
 						for (Threat threat2 : context.getThreatTypeToThreatMap().get(threatTryContext.getThreatType2())) {
-							if (!threat1.getPlainCells().containsAll(threat2.getPlainCells())) {
-								for (Cell emptyCell : threat2.getEmptyCells()) {
-									if (threat1.getEmptyCells().contains(emptyCell)) {
-										candidateMap.computeIfAbsent(emptyCell, key -> new ArrayList<>()).add(new Pair<>(threat1, threat2));
+							if (!visitedThreats.contains(threat2)) {
+								if (!threat1.getPlainCells().containsAll(threat2.getPlainCells())) {
+									for (Cell emptyCell : threat2.getEmptyCells()) {
+										if (threat1.getEmptyCells().contains(emptyCell)) {
+											candidateMap.computeIfAbsent(emptyCell, key -> new ArrayList<>()).add(new Pair<>(threat1, threat2));
+										}
 									}
 								}
 							}

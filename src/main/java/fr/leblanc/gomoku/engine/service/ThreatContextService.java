@@ -14,7 +14,7 @@ import fr.leblanc.gomoku.engine.util.Pair;
 
 public interface ThreatContextService {
 
-	ThreatContext computeThreatContext(int[][] data, int playingColor);
+	ThreatContext computeThreatContext(DataWrapper dataWrapper, int playingColor);
 	
 	Set<Cell> findCombinedThreats(ThreatContext threatContext, ThreatType threatType1, ThreatType threatType2);
 
