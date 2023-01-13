@@ -232,6 +232,39 @@ public class EvaluationServiceImpl2 implements EvaluationService {
 			}
 		}
 		
+		CompoThreatType _t4dt3 = CompoThreatType.of(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3, false);
+		
+		for (Entry<Cell, List<Pair<Threat>>> entry : compoThreatMap.get(_t4dt3).entrySet()) {
+			
+			Cell threatPosition = entry.getKey();
+			
+			List<Pair<Threat>> threatPairs = entry.getValue();
+			
+			long numberOfT5 = compoThreatMap.get(t5).keySet().stream().filter(c -> !c.equals(threatPosition)).count();
+			
+			if (numberOfT5 == 0) {
+				
+				for (Pair<Threat> threatPair : threatPairs) {
+					
+					Threat firstThreat4 = threatPair.getFirst();
+					
+					Cell blockingCell = firstThreat4.getEmptyCells().iterator().next();
+					
+					if (playingThreatContext.getCellToThreatMap().get(blockingCell) == null
+							|| playingThreatContext.getCellToThreatMap().get(blockingCell).get(ThreatType.THREAT_4) == null
+							|| playingThreatContext.getCellToThreatMap().get(blockingCell).get(ThreatType.THREAT_4).isEmpty()) {
+						
+						if (jokerUsed) {
+							evaluation -= t4dt3.getPotential();
+						} else {
+							jokerUsed = true;
+						}
+					}
+					
+				}
+			}
+		}
+		
 		return evaluation;
 	}
 	

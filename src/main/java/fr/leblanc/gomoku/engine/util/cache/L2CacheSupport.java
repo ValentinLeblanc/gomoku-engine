@@ -19,12 +19,7 @@ public class L2CacheSupport {
 		return doInCacheContext(action, threadLocalCache.get());
 	}
 	
-	public static GomokuCache getCurrentCache() {
-		return threadLocalCache.get();
-	}
-	
 	public static <T> T doInCacheContext(CachedAction<T> action, GomokuCache gomokuCache) throws InterruptedException {
-		
 		try {
 			gomokuCache.setCacheEnabled(true);
 			threadLocalCache.set(gomokuCache);
@@ -33,6 +28,10 @@ public class L2CacheSupport {
 			threadLocalCache.remove();
 			gomokuCache.setCacheEnabled(false);
 		}
+	}
+	
+	public static GomokuCache getCurrentCache() {
+		return threadLocalCache.get();
 	}
 	
 	public static boolean isCacheEnabled() {

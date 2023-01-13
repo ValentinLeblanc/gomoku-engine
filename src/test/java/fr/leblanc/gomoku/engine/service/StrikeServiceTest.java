@@ -96,11 +96,11 @@ class StrikeServiceTest {
 				
 				assertEquals(StrikeType.DEFEND_STRIKE, strikeResult.getStrikeType());
 				
-				strikeResult = strikeService.processStrike(DataWrapper.of(GomokuTestsHelper.readGameDto("secondaryStrike3.json")), EngineConstants.WHITE_COLOR, 4, 2, 10);
+				strikeResult = strikeService.processStrike(DataWrapper.of(GomokuTestsHelper.readGameDto("secondaryStrike3.json")), EngineConstants.WHITE_COLOR, 4, 2, 5);
 				
 				assertEquals(StrikeType.SECONDARY_STRIKE, strikeResult.getStrikeType());
 				
-				strikeResult = strikeService.processStrike(DataWrapper.of(GomokuTestsHelper.readGameDto("secondaryStrike4.json")), EngineConstants.BLACK_COLOR, 4, 2, 20);
+				strikeResult = strikeService.processStrike(DataWrapper.of(GomokuTestsHelper.readGameDto("secondaryStrike4.json")), EngineConstants.BLACK_COLOR, 1, 2, 15);
 				
 				assertEquals(StrikeType.EMPTY_STRIKE, strikeResult.getStrikeType());
 				

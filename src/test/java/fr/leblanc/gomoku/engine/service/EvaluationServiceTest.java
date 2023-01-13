@@ -26,9 +26,7 @@ class EvaluationServiceTest {
 			"testAttack3.json",
 			"testAttack4.json",
 			"testAttack5.json",
-//			"testAttack6.json",
-			"testAttack7.json"
-//			"testAttack8.json"
+			"testAttack6.json"
 		})
 	void testAttack(String arg) throws JsonProcessingException {
 
@@ -53,7 +51,9 @@ class EvaluationServiceTest {
 	
 	@ParameterizedTest
 	@ValueSource(strings = {
-			"testCannotDefend1.json"
+			"testCannotDefend1.json",
+			"testCannotDefend2.json",
+			"testCannotDefend3.json"
 		})
 	void testCannotDefend(String arg) throws JsonProcessingException {
 		
