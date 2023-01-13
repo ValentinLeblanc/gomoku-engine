@@ -87,7 +87,7 @@ class StrikeServiceTest {
 		
 		L2CacheSupport.doInCacheContext(() -> {
 			try {
-				StrikeResult strikeResult = strikeService.processStrike(DataWrapper.of(GomokuTestsHelper.readGameDto("secondaryStrike1.json")), EngineConstants.BLACK_COLOR, 2, 2, -1);
+				StrikeResult strikeResult = strikeService.processStrike(DataWrapper.of(GomokuTestsHelper.readGameDto("secondaryStrike1.json")), EngineConstants.BLACK_COLOR, 2, 2, 50);
 				
 				assertEquals(StrikeType.SECONDARY_STRIKE, strikeResult.getStrikeType());
 				assertEquals(new Cell(9,6), strikeResult.getResultCell());
@@ -96,11 +96,11 @@ class StrikeServiceTest {
 				
 				assertEquals(StrikeType.DEFEND_STRIKE, strikeResult.getStrikeType());
 				
-				strikeResult = strikeService.processStrike(DataWrapper.of(GomokuTestsHelper.readGameDto("secondaryStrike3.json")), EngineConstants.WHITE_COLOR, 4, 2, 5);
+				strikeResult = strikeService.processStrike(DataWrapper.of(GomokuTestsHelper.readGameDto("secondaryStrike3.json")), EngineConstants.WHITE_COLOR, 4, 2, 10);
 				
 				assertEquals(StrikeType.SECONDARY_STRIKE, strikeResult.getStrikeType());
 				
-				strikeResult = strikeService.processStrike(DataWrapper.of(GomokuTestsHelper.readGameDto("secondaryStrike4.json")), EngineConstants.BLACK_COLOR, 1, 2, 15);
+				strikeResult = strikeService.processStrike(DataWrapper.of(GomokuTestsHelper.readGameDto("secondaryStrike4.json")), EngineConstants.BLACK_COLOR, 1, 2, -1);
 				
 				assertEquals(StrikeType.EMPTY_STRIKE, strikeResult.getStrikeType());
 				
