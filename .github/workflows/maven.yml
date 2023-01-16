@@ -1,4 +1,4 @@
-name: Gomoku CI
+name: gomoku-engine CI
 
 on:
   push:
