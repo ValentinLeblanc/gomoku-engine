@@ -1,5 +1,6 @@
 package fr.leblanc.gomoku.engine.service.impl;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
@@ -17,6 +18,7 @@ import fr.leblanc.gomoku.engine.service.EvaluationService;
 import fr.leblanc.gomoku.engine.service.MessageService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.ThreatContextService;
+import fr.leblanc.gomoku.engine.util.cache.L2CacheSupport;
 import lombok.extern.apachecommons.CommonsLog;
 
 @Service
@@ -104,12 +106,24 @@ public class MinMaxServiceImpl implements MinMaxService {
 	
 	private MinMaxResult internalMinMax(DataWrapper dataWrapper, int playingColor, List<Cell> analysedMoves, boolean findMax, int depth, MinMaxContext context, int minMaxDepth) throws InterruptedException {
 		
+		if (L2CacheSupport.isCacheEnabled()) {
+			if (!L2CacheSupport.getMinMaxCache().containsKey(playingColor)) {
+				L2CacheSupport.getMinMaxCache().put(playingColor, new HashMap<>());
+			}
+			if (L2CacheSupport.getMinMaxCache().get(playingColor).containsKey(dataWrapper)) {
+				return L2CacheSupport.getMinMaxCache().get(playingColor).get(dataWrapper);
+			}
+		}
+		
 		MinMaxResult result = new MinMaxResult();
 		
 		double optimalEvaluation = findMax ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;
 		
 		if (checkWinService.checkWin(dataWrapper, -playingColor, new int[5][2])) {
 			result.setEvaluation(optimalEvaluation);
+			if (L2CacheSupport.isCacheEnabled()) {
+				L2CacheSupport.getMinMaxCache().get(playingColor).put(new DataWrapper(dataWrapper), result);
+			}
 			return result;
 		}
 		
@@ -198,6 +212,10 @@ public class MinMaxServiceImpl implements MinMaxService {
 	
 		context.getMaxList().remove(depth);
 		context.getMinList().remove(depth);
+		
+		if (L2CacheSupport.isCacheEnabled()) {
+			L2CacheSupport.getMinMaxCache().get(playingColor).put(new DataWrapper(dataWrapper), result);
+		}
 		
 		return result;
 	}

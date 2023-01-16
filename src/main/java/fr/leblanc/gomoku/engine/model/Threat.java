@@ -1,18 +1,39 @@
 package fr.leblanc.gomoku.engine.model;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.ToString;
 
-@Getter
-@Setter
 @RequiredArgsConstructor
 @ToString
 public class Threat {
+
+	public Set<Cell> getPlainCells() {
+		return plainCells;
+	}
+
+	public void setPlainCells(Set<Cell> plainCells) {
+		this.plainCells = plainCells;
+	}
+
+	public Set<Cell> getEmptyCells() {
+		return emptyCells;
+	}
+
+	public void setEmptyCells(Set<Cell> emptyCells) {
+		this.emptyCells = emptyCells;
+	}
+
+	public ThreatType getThreatType() {
+		return threatType;
+	}
+
+	public void setThreatType(ThreatType threatType) {
+		this.threatType = threatType;
+	}
 
 	private Set<Cell> plainCells = new HashSet<>();
 	private Set<Cell> emptyCells = new HashSet<>();
@@ -29,6 +50,11 @@ public class Threat {
 	}
 	
 	@Override
+	public int hashCode() {
+		return Objects.hash(emptyCells, plainCells, threatType);
+	}
+
+	@Override
 	public boolean equals(Object obj) {
 		
 		if (!(obj instanceof Threat)) {
@@ -36,6 +62,10 @@ public class Threat {
 		}
 		
 		Threat other = (Threat) obj;
+		
+		if (!threatType.equals(other.threatType)) {
+			return false;
+		}
 		
 		if (plainCells.size() != other.plainCells.size()) {
 			return false;
@@ -56,4 +86,9 @@ public class Threat {
 		return true;
 	}
 
+	public Set<Cell> getBlockingCells() {
+		return emptyCells;
+	}
+
+	
 }

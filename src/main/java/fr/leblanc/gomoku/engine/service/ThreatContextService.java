@@ -23,8 +23,8 @@ public interface ThreatContextService {
 	Map<Threat, Integer> getEffectiveThreats(ThreatContext playingThreatContext, ThreatContext opponentThreatContext,
 			ThreatType threatType, ThreatType secondThreatType);
 	
-	Map<Cell, List<Pair<Threat>>> findEfficientThreats(ThreatContext playingThreatContext, ThreatContext opponentThreatContext, CompoThreatType threatTryContext);
-	
-	Map<Cell, List<Pair<Threat>>> findCompositeThreats(ThreatContext context, CompoThreatType threatTryContext);
+	Map<Cell, Pair<Threat, List<Threat>>> findCompositeThreats(ThreatContext context, CompoThreatType threatTryContext);
+
+	Map<Cell, Pair<Threat, List<Threat>>> findEfficientThreats(ThreatContext playingThreatContext, ThreatContext opponentThreatContext, CompoThreatType threatTryContext);
 
 }

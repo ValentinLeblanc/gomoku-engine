@@ -3,13 +3,13 @@ package fr.leblanc.gomoku.engine.util;
 import lombok.ToString;
 
 @ToString
-public class Pair<T> {
+public class Pair<T, U> {
 
 	private T first;
 	
-	private T second;
+	private U second;
 	
-	public Pair(T first, T second) {
+	public Pair(T first, U second) {
 		this.first = first;
 		this.second = second;
 	}
@@ -18,7 +18,7 @@ public class Pair<T> {
 		return first;
 	}
 	
-	public T getSecond() {
+	public U getSecond() {
 		return second;
 	}
 }

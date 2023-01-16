@@ -6,7 +6,7 @@ import java.util.Map;
 
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.DataWrapper;
-import fr.leblanc.gomoku.engine.model.ThreatContext;
+import fr.leblanc.gomoku.engine.model.MinMaxResult;
 
 public class GomokuCache {
 	
@@ -18,9 +18,11 @@ public class GomokuCache {
 	
 	private Map<Integer, Map<DataWrapper, List<Cell>>> recordedCounterMoves = new HashMap<>();
 
-	private Map<Integer,  Map<DataWrapper, ThreatContext>> threatContextCache = new HashMap<>();
+	private Map<Integer,  Map<DataWrapper, List<Cell>>> threatContextCache = new HashMap<>();
 	
 	private Map<Integer, Map<DataWrapper, Double>> evaluationCache = new HashMap<>();
+	
+	private Map<Integer, Map<DataWrapper, MinMaxResult>> minMaxCache = new HashMap<>();
 
 	public Map<Integer, Map<DataWrapper, Cell>> getDirectStrikeAttempts() {
 		return directStrikeAttempts;
@@ -46,11 +48,11 @@ public class GomokuCache {
 		this.recordedCounterMoves = recordedCounterMoves;
 	}
 
-	public Map<Integer,  Map<DataWrapper, ThreatContext>> getThreatContextCache() {
+	public Map<Integer,  Map<DataWrapper, List<Cell>>> getThreatContextCache() {
 		return threatContextCache;
 	}
 
-	public void setThreatContextCache(Map<Integer,  Map<DataWrapper, ThreatContext>> threatContextCache) {
+	public void setThreatContextCache(Map<Integer,  Map<DataWrapper, List<Cell>>> threatContextCache) {
 		this.threatContextCache = threatContextCache;
 	}
 
@@ -68,6 +70,14 @@ public class GomokuCache {
 
 	public void setCacheEnabled(boolean isCacheEnabled) {
 		this.isCacheEnabled = isCacheEnabled;
+	}
+
+	public Map<Integer, Map<DataWrapper, MinMaxResult>> getMinMaxCache() {
+		return minMaxCache;
+	}
+
+	public void setMinMaxCache(Map<Integer, Map<DataWrapper, MinMaxResult>> minMaxCache) {
+		this.minMaxCache = minMaxCache;
 	}
 	
 }

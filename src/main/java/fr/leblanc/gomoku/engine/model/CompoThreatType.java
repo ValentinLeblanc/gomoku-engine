@@ -67,6 +67,15 @@ public class CompoThreatType {
 	}
 	
 	public int getPotential() {
+		
+		if (!isPlaying) {
+			return (int) (getRawPotential() / 1.5);
+		}
+		
+		return getRawPotential();
+	}
+
+	private int getRawPotential() {
 		if (ThreatType.THREAT_5.equals(threatType1)) {
 			return EngineConstants.THREAT_5_POTENTIAL;
 		}
@@ -81,6 +90,9 @@ public class CompoThreatType {
 			}
 			if (ThreatType.DOUBLE_THREAT_3.equals(threatType2)) {
 				return EngineConstants.THREAT_4_DOUBLE_THREAT_3_POTENTIAL;
+			}
+			if (ThreatType.DOUBLE_THREAT_2.equals(threatType2)) {
+				return EngineConstants.THREAT_4_DOUBLE_THREAT_2_POTENTIAL;
 			}
 			
 		}

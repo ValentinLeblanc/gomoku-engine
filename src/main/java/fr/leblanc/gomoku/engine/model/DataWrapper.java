@@ -81,7 +81,20 @@ public class DataWrapper {
 		if (getClass() != obj.getClass())
 			return false;
 		DataWrapper other = (DataWrapper) obj;
-		return hashCode(data) == hashCode(other.data);
+		
+		if (data.length != other.data.length) {
+			return false;
+		}
+		
+		for (int i = 0; i < data.length; i++) {
+			for (int j = 0; j < data.length; j++) {
+				if (data[i][j] != other.data[i][j]) {
+					return false;
+				}
+			}
+		}
+		
+		return true;
 	}
 
 	private int hashCode(int[][] data) {

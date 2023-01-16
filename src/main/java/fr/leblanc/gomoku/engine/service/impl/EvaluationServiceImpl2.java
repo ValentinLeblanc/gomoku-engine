@@ -1,9 +1,12 @@
 package fr.leblanc.gomoku.engine.service.impl;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -87,185 +90,344 @@ public class EvaluationServiceImpl2 implements EvaluationService {
 		ThreatContext playingThreatContext = threatContextService.computeThreatContext(context.getDataWrapper(), context.getPlayingColor());
 		ThreatContext opponentThreatContext = threatContextService.computeThreatContext(context.getDataWrapper(), -context.getPlayingColor());
 
-		return evaluateThreats(context, playingThreatContext, opponentThreatContext);
+		return evaluateThreats(playingThreatContext, opponentThreatContext);
 		
 	}
 
-	private int evaluateThreats(EvaluationContext context, ThreatContext playingThreatContext, ThreatContext opponentThreatContext) {
-		
-		Map<CompoThreatType, Map<Cell, List<Pair<Threat>>>> compoThreatMap = new HashMap<>();
+	private int evaluateThreats(ThreatContext playingThreatContext, ThreatContext opponentThreatContext) {
 		
 		int evaluation = 0;
 		
-		boolean jokerUsed = false;
+		Map<CompoThreatType, Map<Cell, Pair<Threat, List<Threat>>>> candidateThreatMap = new HashMap<>();
+		
+		Map<CompoThreatType, List<Entry<Cell, Pair<Threat, List<Threat>>>>> validatedThreatMap = new HashMap<>();
+		
+		Map<CompoThreatType, List<Entry<Cell, Pair<Threat, List<Threat>>>>> pendingThreatMap = new HashMap<>();
 		
 		for (CompoThreatType tryContext : EngineConstants.TRY_CONTEXTS) {
 			
 			if (tryContext.isPlaying()) {
-				compoThreatMap.put(tryContext, threatContextService.findCompositeThreats(playingThreatContext, tryContext));
+				candidateThreatMap.put(tryContext, threatContextService.findCompositeThreats(playingThreatContext, tryContext));
 			} else {
-				compoThreatMap.put(tryContext, threatContextService.findCompositeThreats(opponentThreatContext, tryContext));
+				candidateThreatMap.put(tryContext, threatContextService.findCompositeThreats(opponentThreatContext, tryContext));
 			}
+			
+			validatedThreatMap.put(tryContext, new ArrayList<>());
+			pendingThreatMap.put(tryContext, new ArrayList<>());
 		}
 		
-		CompoThreatType t5 = CompoThreatType.of(ThreatType.THREAT_5, null, true);
+		evaluation += computePlayingEvaluation(opponentThreatContext, candidateThreatMap,validatedThreatMap, pendingThreatMap, CompoThreatType.of(ThreatType.THREAT_5, null, true));
 		
-		for (Entry<Cell, List<Pair<Threat>>> entry : compoThreatMap.get(t5).entrySet()) {
-			evaluation += t5.getPotential();
-		}
+		evaluation += computePendingEvaluation(playingThreatContext, candidateThreatMap, validatedThreatMap, CompoThreatType.of(ThreatType.THREAT_5, null, false));
 		
-		CompoThreatType dt4 = CompoThreatType.of(ThreatType.DOUBLE_THREAT_4, null, true);
+		evaluation += computePlayingEvaluation(opponentThreatContext, candidateThreatMap,validatedThreatMap, pendingThreatMap, CompoThreatType.of(ThreatType.DOUBLE_THREAT_4, null, true));
 		
-		for (Entry<Cell, List<Pair<Threat>>> entry : compoThreatMap.get(dt4).entrySet()) {
-			Cell threatPosition = entry.getKey();
-			
-			CompoThreatType _t5 = CompoThreatType.of(ThreatType.THREAT_5, null, false);
-			
-			long numberOfOpponentT5 = compoThreatMap.get(_t5).keySet().stream().filter(c -> !c.equals(threatPosition)).count();
-			
-			if (numberOfOpponentT5 == 0) {
-				evaluation += t5.getPotential();
-			}
-		}
+		evaluation += computePlayingEvaluation(opponentThreatContext, candidateThreatMap,validatedThreatMap, pendingThreatMap, CompoThreatType.of(ThreatType.THREAT_4, ThreatType.THREAT_4, true));
 		
-		CompoThreatType t4t4 = CompoThreatType.of(ThreatType.THREAT_4, ThreatType.THREAT_4, true);
+		evaluation += computePlayingEvaluation(opponentThreatContext, candidateThreatMap,validatedThreatMap, pendingThreatMap, CompoThreatType.of(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3, true));
 		
-		for (Entry<Cell, List<Pair<Threat>>> entry : compoThreatMap.get(t4t4).entrySet()) {
-			Cell threatPosition = entry.getKey();
-			
-			CompoThreatType _t5 = CompoThreatType.of(ThreatType.THREAT_5, null, false);
-			
-			long numberOfOpponentT5 = compoThreatMap.get(_t5).keySet().stream().filter(c -> !c.equals(threatPosition)).count();
-			
-			if (numberOfOpponentT5 == 0) {
-				evaluation += t5.getPotential();
-			}
-		}
+		evaluation += computePlayingEvaluation(opponentThreatContext, candidateThreatMap,validatedThreatMap, pendingThreatMap, CompoThreatType.of(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_2, true));
 		
-		CompoThreatType _t5 = CompoThreatType.of(ThreatType.THREAT_5, null, false);
+		evaluation += computePendingEvaluation(playingThreatContext, candidateThreatMap, validatedThreatMap, CompoThreatType.of(ThreatType.DOUBLE_THREAT_4, null, false));
 		
-		for (Entry<Cell, List<Pair<Threat>>> entry : compoThreatMap.get(_t5).entrySet()) {
-			Cell threatPosition = entry.getKey();
-			
-			long numberOfT5 = compoThreatMap.get(t5).keySet().stream().filter(c -> !c.equals(threatPosition)).count();
-			
-			if (numberOfT5 == 0) {
-				
-				if (!jokerUsed) {
-					jokerUsed = true;
-				} else {
-					evaluation -= t5.getPotential();
-				}
-			}
-		}
+		evaluation += computePendingEvaluation(playingThreatContext, candidateThreatMap, validatedThreatMap, CompoThreatType.of(ThreatType.THREAT_4, ThreatType.THREAT_4, false));
 		
-		CompoThreatType t4dt3 = CompoThreatType.of(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3, true);
+		evaluation += computePendingEvaluation(playingThreatContext, candidateThreatMap, validatedThreatMap, CompoThreatType.of(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3, false));
 		
-		for (Entry<Cell, List<Pair<Threat>>> entry : compoThreatMap.get(t4dt3).entrySet()) {
-			
-			Cell threatPosition = entry.getKey();
-			
-			List<Pair<Threat>> threatPairs = entry.getValue();
-			
-			long numberOfOpponentT5 = compoThreatMap.get(_t5).keySet().stream().filter(c -> !c.equals(threatPosition)).count();
-			
-			if (numberOfOpponentT5 == 0) {
-				
-				for (Pair<Threat> threatPair : threatPairs) {
-					
-					Threat firstThreat4 = threatPair.getFirst();
-					
-					Cell blockingCell = firstThreat4.getEmptyCells().iterator().next();
-					
-					if (opponentThreatContext.getCellToThreatMap().get(blockingCell) == null
-							|| opponentThreatContext.getCellToThreatMap().get(blockingCell).get(ThreatType.THREAT_4) == null
-							|| opponentThreatContext.getCellToThreatMap().get(blockingCell).get(ThreatType.THREAT_4).isEmpty()) {
-						evaluation += t4dt3.getPotential();
-					}
-					
-				}
-			}
-		}
+		evaluation += computePlayingEvaluation(opponentThreatContext, candidateThreatMap,validatedThreatMap, pendingThreatMap, CompoThreatType.of(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3, true));
 		
-		CompoThreatType dt3dt3 = CompoThreatType.of(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3, true);
+		evaluation += computePlayingEvaluation(opponentThreatContext, candidateThreatMap,validatedThreatMap, pendingThreatMap, CompoThreatType.of(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2, true));
 		
-		for (Entry<Cell, List<Pair<Threat>>> entry : compoThreatMap.get(dt3dt3).entrySet()) {
-			
-			Cell threatPosition = entry.getKey();
-			
-			List<Pair<Threat>> threatPairs = entry.getValue();
-			
-			long numberOfOpponentT5 = compoThreatMap.get(_t5).keySet().stream().filter(c -> !c.equals(threatPosition)).count();
-			
-			if (numberOfOpponentT5 == 0) {
-				for (Pair<Threat> threatPair : threatPairs) {
-					boolean isBlocked = false;
-					
-					DoubleThreat dt31 = (DoubleThreat) threatPair.getFirst();
-					
-					for (Cell blockingCell : dt31.getBlockingCells()) {
-						if (opponentThreatContext.getCellToThreatMap().get(blockingCell) != null
-								&& opponentThreatContext.getCellToThreatMap().get(blockingCell).get(ThreatType.THREAT_4) != null
-								&& !opponentThreatContext.getCellToThreatMap().get(blockingCell).get(ThreatType.THREAT_4).isEmpty()) {
-							isBlocked = true;
-							break;
-						}
-					}
-					
-					DoubleThreat dt32 = (DoubleThreat) threatPair.getSecond();
-					
-					if(!isBlocked) {
-						for (Cell blockingCell : dt32.getBlockingCells()) {
-							if (opponentThreatContext.getCellToThreatMap().get(blockingCell) != null
-									&& opponentThreatContext.getCellToThreatMap().get(blockingCell).get(ThreatType.THREAT_4) != null
-									&& !opponentThreatContext.getCellToThreatMap().get(blockingCell).get(ThreatType.THREAT_4).isEmpty()) {
-								isBlocked = true;
-								break;
-							}
-						}
-					}
-					
-					if (!isBlocked) {
-						evaluation += t4dt3.getPotential();
-					}
-				}
-			}
-		}
+		evaluation += computePendingEvaluation(playingThreatContext, candidateThreatMap, validatedThreatMap, CompoThreatType.of(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3, false));
 		
-		CompoThreatType _t4dt3 = CompoThreatType.of(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3, false);
+		evaluation += computePendingEvaluation(playingThreatContext, candidateThreatMap, validatedThreatMap, CompoThreatType.of(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2, false));
 		
-		for (Entry<Cell, List<Pair<Threat>>> entry : compoThreatMap.get(_t4dt3).entrySet()) {
-			
-			Cell threatPosition = entry.getKey();
-			
-			List<Pair<Threat>> threatPairs = entry.getValue();
-			
-			long numberOfT5 = compoThreatMap.get(t5).keySet().stream().filter(c -> !c.equals(threatPosition)).count();
-			
-			if (numberOfT5 == 0) {
-				
-				for (Pair<Threat> threatPair : threatPairs) {
-					
-					Threat firstThreat4 = threatPair.getFirst();
-					
-					Cell blockingCell = firstThreat4.getEmptyCells().iterator().next();
-					
-					if (playingThreatContext.getCellToThreatMap().get(blockingCell) == null
-							|| playingThreatContext.getCellToThreatMap().get(blockingCell).get(ThreatType.THREAT_4) == null
-							|| playingThreatContext.getCellToThreatMap().get(blockingCell).get(ThreatType.THREAT_4).isEmpty()) {
-						
-						if (jokerUsed) {
-							evaluation -= t4dt3.getPotential();
-						} else {
-							jokerUsed = true;
-						}
-					}
-					
-				}
-			}
-		}
+		evaluation += computePlayingEvaluation(opponentThreatContext, candidateThreatMap,validatedThreatMap, pendingThreatMap, CompoThreatType.of(ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2, true));
+		
+		evaluation += computePendingEvaluation(playingThreatContext, candidateThreatMap, validatedThreatMap, CompoThreatType.of(ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2, false));
 		
 		return evaluation;
 	}
 	
+	private int computeEntryPlayingEvaluation(ThreatContext opponentThreatContext,
+			Map<CompoThreatType, Map<Cell, Pair<Threat, List<Threat>>>> candidateThreatMap,
+			Map<CompoThreatType, List<Entry<Cell, Pair<Threat, List<Threat>>>>> validatedThreatMap,
+			Map<CompoThreatType, List<Entry<Cell, Pair<Threat, List<Threat>>>>> pendingThreatMap,
+			Entry<Cell, Pair<Threat, List<Threat>>> entry,
+			CompoThreatType compoThreatType) {
+		
+		Cell threatPosition = entry.getKey();
+		
+		Pair<Threat, List<Threat>> threats = entry.getValue();
+
+		Threat mainThreat = threats.getFirst();
+		
+		ThreatType mainThreatBlockingThreatType = getBlockingThreatType(opponentThreatContext, mainThreat);
+		
+		boolean threatsNotBlocked = mainThreatBlockingThreatType == null && threats.getSecond().isEmpty();
+		
+		for (Threat secondThreat : threats.getSecond()) {
+			ThreatType secondThreatBlockingThreatType = getBlockingThreatType(opponentThreatContext, secondThreat);
+			
+			boolean isSecondThreatBlocked = secondThreatBlockingThreatType != null && !secondThreatBlockingThreatType.equals(secondThreat.getThreatType());
+			
+			if (!isSecondThreatBlocked && (mainThreatBlockingThreatType == null || mainThreatBlockingThreatType.equals(secondThreat.getThreatType()))) {
+				threatsNotBlocked = true;
+				break;
+			}
+		}
+		
+		int pendingAttackCount = pendingAttackCount(candidateThreatMap, compoThreatType, threatPosition);
+		
+		if (threatsNotBlocked && pendingAttackCount == 0) {
+			validatedThreatMap.get(compoThreatType).add(entry);
+			return compoThreatType.getPotential();
+		} else if (threatsNotBlocked && pendingAttackCount == 1 || pendingAttackCount == 0) {
+			Set<Cell> entryBlockingCells = new HashSet<>();
+
+			entryBlockingCells.addAll(mainThreat.getBlockingCells());
+			
+			for (Threat secondThreat : threats.getSecond()) {
+				entryBlockingCells.addAll(secondThreat.getBlockingCells());
+			}
+			
+			if (hasSimilarPendingThreat(pendingThreatMap, compoThreatType, entryBlockingCells) ) {
+				return compoThreatType.getPotential() / 2;
+			} else {
+				pendingThreatMap.get(compoThreatType).add(entry);
+			}
+		} else {
+			return 0;
+		}
+		
+		return 0;
+	}
+
+	private int pendingAttackCount(Map<CompoThreatType, Map<Cell, Pair<Threat, List<Threat>>>> candidateThreatMap, CompoThreatType compoThreatType, Cell threatPosition) {
+		int pendingAttackCount = 0;
+		
+		if (!CompoThreatType.of(ThreatType.THREAT_5, null, true).equals(compoThreatType)) {
+			if (candidateThreatMap.get(CompoThreatType.of(ThreatType.THREAT_5, null, false)).keySet().stream().filter(c -> !c.equals(threatPosition)).count() > 0) {
+				pendingAttackCount += 1;
+			}
+			
+			if (!CompoThreatType.of(ThreatType.DOUBLE_THREAT_4, null, true).equals(compoThreatType) && !ThreatType.THREAT_4.equals(compoThreatType.getThreatType1())) {
+				
+				if(candidateThreatMap.get(CompoThreatType.of(ThreatType.THREAT_4, ThreatType.THREAT_4, false)).keySet().stream().filter(c -> !c.equals(threatPosition)).count() > 0) {
+					pendingAttackCount += 1;
+				}
+				if (candidateThreatMap.get(CompoThreatType.of(ThreatType.DOUBLE_THREAT_4, null, false)).keySet().stream().filter(c -> !c.equals(threatPosition)).count() > 0) {
+					pendingAttackCount += 1;
+				}
+				if (candidateThreatMap.get(CompoThreatType.of(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3, false)).keySet().stream().filter(c -> !c.equals(threatPosition)).count() > 0) {
+					pendingAttackCount += 1;
+				}
+				
+				if (!ThreatType.DOUBLE_THREAT_3.equals(compoThreatType.getThreatType1())) {
+					if(candidateThreatMap.get(CompoThreatType.of(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3, false)).keySet().stream().filter(c -> !c.equals(threatPosition)).count() > 0) {
+						pendingAttackCount += 1;
+					}
+					if(candidateThreatMap.get(CompoThreatType.of(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3, false)).keySet().stream().filter(c -> !c.equals(threatPosition)).count() > 0) {
+						pendingAttackCount += 1;
+					}
+				}
+			}
+		}
+		
+		return pendingAttackCount;
+	}
+
+	private ThreatType getBlockingThreatType(ThreatContext opponentThreatContext, Threat threat) {
+		for (ThreatType blockingThreatType : threat.getThreatType().getBlockingThreatTypes()) {
+			if (blockingThreatType.isDoubleType()) {
+				for (DoubleThreat blockingThreat : opponentThreatContext.getDoubleThreatTypeToThreatMap().get(blockingThreatType)) {
+					if (threat.getBlockingCells().contains(blockingThreat.getTargetCell())) {
+						return blockingThreatType;
+					}
+				}
+			} else {
+				for (Threat blockingThreat : opponentThreatContext.getThreatTypeToThreatMap().get(blockingThreatType)) {
+					if (threat.getBlockingCells().stream().filter(blockingThreat.getEmptyCells()::contains).count() > 0) {
+						return blockingThreatType;
+					}
+				}
+			}
+		}
+		
+		return null;
+	}
+	
+	private int computePlayingEvaluation(ThreatContext opponentThreatContext,
+			Map<CompoThreatType, Map<Cell, Pair<Threat, List<Threat>>>> candidateThreatMap,
+			Map<CompoThreatType, List<Entry<Cell, Pair<Threat, List<Threat>>>>> validatedThreatMap,
+			Map<CompoThreatType, List<Entry<Cell, Pair<Threat, List<Threat>>>>> pendingThreatMap,
+			CompoThreatType compoThreatType) {
+		
+		int evaluation = 0;
+		
+		for (Entry<Cell, Pair<Threat, List<Threat>>> entry : candidateThreatMap.get(compoThreatType).entrySet()) {
+			evaluation += computeEntryPlayingEvaluation(opponentThreatContext, candidateThreatMap, validatedThreatMap, pendingThreatMap, entry, compoThreatType);
+		}
+		
+		return evaluation;
+	}
+
+	private int computePendingEvaluation(ThreatContext playingThreatContext,
+			Map<CompoThreatType, Map<Cell, Pair<Threat, List<Threat>>>> candidateThreatMap,
+		
+			Map<CompoThreatType, List<Entry<Cell, Pair<Threat, List<Threat>>>>> validatedThreatMap, CompoThreatType compoThreatType) {
+		int evaluation = 0;
+		
+		CompoThreatType t5 = CompoThreatType.of(ThreatType.THREAT_5, null, true);
+		CompoThreatType _t5 = CompoThreatType.of(ThreatType.THREAT_5, null, false);
+		CompoThreatType dt4 = CompoThreatType.of(ThreatType.DOUBLE_THREAT_4, null, true);
+		CompoThreatType _dt4 = CompoThreatType.of(ThreatType.DOUBLE_THREAT_4, null, false);
+		CompoThreatType _t4t4 = CompoThreatType.of(ThreatType.THREAT_4, ThreatType.THREAT_4, false);
+		CompoThreatType _t4dt3 = CompoThreatType.of(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3, false);
+		CompoThreatType t4t4 = CompoThreatType.of(ThreatType.THREAT_4, ThreatType.THREAT_4, true);
+		CompoThreatType t4dt3 = CompoThreatType.of(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3, true);
+		CompoThreatType dt3dt3 = CompoThreatType.of(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3, true);
+		CompoThreatType dt3dt2 = CompoThreatType.of(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2, true);
+
+		for (Entry<Cell, Pair<Threat, List<Threat>>> entry : candidateThreatMap.get(compoThreatType).entrySet()) {
+			
+			boolean hasT5Attack = !validatedThreatMap.get(t5).isEmpty();
+			
+			if (!hasT5Attack) {
+				boolean has_T5 = false;
+				
+				Set<Cell> entryKillingCells = getKillingCells(entry.getValue());
+						
+				for (Entry<Cell, Pair<Threat, List<Threat>>> previousEntry : validatedThreatMap.get(_t5)) {
+					
+					Set<Cell> previousKillingCells = getKillingCells(previousEntry.getValue());
+					
+					if (previousKillingCells.stream().filter(entryKillingCells::contains).count() == 0) {
+						has_T5 = true;
+						break;
+					}
+				}
+				
+				if (has_T5) {
+					evaluation -= compoThreatType.getPotential();
+					validatedThreatMap.get(compoThreatType).add(entry);
+				} else if (isT5(compoThreatType.getThreatType1())) {
+					validatedThreatMap.get(compoThreatType).add(entry);
+				} else {
+					
+					if (!hasT4Counter(playingThreatContext, entryKillingCells)) {
+						
+						boolean hasT4Attack = !validatedThreatMap.get(dt4).isEmpty() || !validatedThreatMap.get(t4t4).isEmpty() || !validatedThreatMap.get(t4dt3).isEmpty();
+						
+						if (!hasT4Attack) {
+							
+							if (hasAttack(validatedThreatMap, _dt4, entryKillingCells) || hasAttack(validatedThreatMap, _t4t4, entryKillingCells) || hasAttack(validatedThreatMap, _t4dt3, entryKillingCells)) {
+								evaluation -= compoThreatType.getPotential();
+								validatedThreatMap.get(compoThreatType).add(entry);
+							} else if (isT4(compoThreatType.getThreatType1())) {
+								validatedThreatMap.get(compoThreatType).add(entry);
+							} else {
+								boolean hasSimilarThreat = false;
+								
+								for (Entry<Cell, Pair<Threat, List<Threat>>> previousEntry : validatedThreatMap.get(compoThreatType)) {
+									
+									Set<Cell> previousKillingCells = getKillingCells(previousEntry.getValue());
+									
+									if (previousKillingCells.stream().filter(entryKillingCells::contains).count() == 0) {
+										hasSimilarThreat = true;
+										break;
+									}
+								}
+								
+								if (hasSimilarThreat) {
+									evaluation -= compoThreatType.getPotential();
+									validatedThreatMap.get(compoThreatType).add(entry);
+								} else {
+									boolean hasDT3Attack = !validatedThreatMap.get(dt3dt3).isEmpty() || !validatedThreatMap.get(dt3dt2).isEmpty();
+									
+									if (!hasDT3Attack) {
+										validatedThreatMap.get(compoThreatType).add(entry);
+									}
+								}
+							}
+							
+						}
+					}
+				}
+			}
+		}
+		
+		if (evaluation > 0 && log.isDebugEnabled()) {
+			log.debug(compoThreatType + " : " + evaluation);
+		}
+		
+		return evaluation;
+	}
+
+	private boolean hasSimilarPendingThreat(Map<CompoThreatType, List<Entry<Cell, Pair<Threat, List<Threat>>>>> pendingThreatMap, CompoThreatType compoThreatType, Set<Cell> entryBlockingCells) {
+		for (Entry<Cell, Pair<Threat, List<Threat>>> previousEntry : pendingThreatMap.get(compoThreatType)) {
+			
+			Set<Cell> previousBlockingCells = getBlockingCells(previousEntry.getValue());
+			
+			if (previousBlockingCells.stream().filter(entryBlockingCells::contains).count() == 0) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	private boolean hasT4Counter(ThreatContext threatContext, Set<Cell> cells) {
+		for (Threat threat : threatContext.getThreatTypeToThreatMap().get(ThreatType.THREAT_4)) {
+			if (threat.getEmptyCells().stream().filter(cells::contains).count() > 0) {
+				return true;
+			}
+		}
+		return false;
+	}
+		
+	private boolean hasAttack(Map<CompoThreatType, List<Entry<Cell, Pair<Threat, List<Threat>>>>> validatedThreatMap,
+			CompoThreatType _dt4, Set<Cell> entryKillingCells) {
+		for (Entry<Cell, Pair<Threat, List<Threat>>> previousEntry : validatedThreatMap.get(_dt4)) {
+			
+			Set<Cell> previousKillingCells = getKillingCells(previousEntry.getValue());
+			
+			if (previousKillingCells.stream().filter(entryKillingCells::contains).count() == 0) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private boolean isT4(ThreatType threatType) {
+		return threatType.equals(ThreatType.THREAT_4) || threatType.equals(ThreatType.DOUBLE_THREAT_4);
+	}
+	
+	private boolean isT5(ThreatType threatType) {
+		return threatType.equals(ThreatType.THREAT_5);
+	}
+	
+	private Set<Cell> getKillingCells(Pair<Threat, List<Threat>> pair) {
+		Set<Cell> killingCells = new HashSet<>();
+		
+		killingCells.addAll(pair.getFirst().getKillingCells());
+		
+		for (Threat secondThreat : pair.getSecond()) {
+			killingCells.addAll(secondThreat.getKillingCells());
+		}
+		
+		return killingCells;
+	}
+	
+	private Set<Cell> getBlockingCells(Pair<Threat, List<Threat>> pair) {
+		Set<Cell> killingCells = new HashSet<>();
+		
+		killingCells.addAll(pair.getFirst().getBlockingCells());
+		
+		for (Threat secondThreat : pair.getSecond()) {
+			killingCells.addAll(secondThreat.getBlockingCells());
+		}
+		
+		return killingCells;
+	}
 }

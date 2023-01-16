@@ -1,15 +1,12 @@
 package fr.leblanc.gomoku.engine.model;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.ToString;
 
-@Getter
-@Setter
 @RequiredArgsConstructor
 @ToString
 public class DoubleThreat extends Threat {
@@ -44,4 +41,34 @@ public class DoubleThreat extends Threat {
 		return super.equals(obj);
 	}
 	
+	@Override
+	public int hashCode() {
+		return Objects.hash(super.hashCode(), targetCell, blockingCells, killingCells);
+	}
+
+	public Cell getTargetCell() {
+		return targetCell;
+	}
+
+	public void setTargetCell(Cell targetCell) {
+		this.targetCell = targetCell;
+	}
+
+	@Override
+	public Set<Cell> getBlockingCells() {
+		return blockingCells;
+	}
+
+	public void setBlockingCells(Set<Cell> blockingCells) {
+		this.blockingCells = blockingCells;
+	}
+
+	public Set<Cell> getKillingCells() {
+		return killingCells;
+	}
+
+	public void setKillingCells(Set<Cell> killingCells) {
+		this.killingCells = killingCells;
+	}
+
 }

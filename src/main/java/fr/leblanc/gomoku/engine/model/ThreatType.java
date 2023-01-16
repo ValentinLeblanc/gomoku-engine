@@ -1,5 +1,7 @@
 package fr.leblanc.gomoku.engine.model;
 
+import java.util.List;
+
 public enum ThreatType {
 
 	THREAT_5,
@@ -152,6 +154,31 @@ public enum ThreatType {
 		}
 		
 		return 0;
+	}
+
+	public List<ThreatType> getBlockingThreatTypes() {
+		
+		if (this == THREAT_5) {
+			return List.of();
+		}
+		
+		if (this == DOUBLE_THREAT_4) {
+			return List.of(THREAT_5);
+		}
+		
+		if (this == THREAT_4) {
+			return List.of(THREAT_5, THREAT_4);
+		}
+		
+		if (this == DOUBLE_THREAT_3) {
+			return List.of(THREAT_5, THREAT_4, DOUBLE_THREAT_3);
+		}
+		
+		if (this == DOUBLE_THREAT_2) {
+			return List.of(THREAT_5, THREAT_4, DOUBLE_THREAT_3);
+		}
+		
+		return List.of();
 	}
 	
 }

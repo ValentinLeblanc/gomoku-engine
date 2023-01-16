@@ -5,7 +5,7 @@ import java.util.Map;
 
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.DataWrapper;
-import fr.leblanc.gomoku.engine.model.ThreatContext;
+import fr.leblanc.gomoku.engine.model.MinMaxResult;
 
 public class L2CacheSupport {
 
@@ -38,6 +38,10 @@ public class L2CacheSupport {
 		return threadLocalCache.get().isCacheEnabled();
 	}
 	
+	public static Map<Integer, Map<DataWrapper, MinMaxResult>> getMinMaxCache() {
+		return threadLocalCache.get().getMinMaxCache();
+	}
+	
 	public static Map<Integer, Map<DataWrapper, Cell>> getDirectStrikeAttempts() {
 		return threadLocalCache.get().getDirectStrikeAttempts();
 	}
@@ -50,7 +54,7 @@ public class L2CacheSupport {
 		return threadLocalCache.get().getRecordedCounterMoves();
 	}
 
-	public static Map<Integer,  Map<DataWrapper, ThreatContext>> getThreatContextCache() {
+	public static Map<Integer,  Map<DataWrapper, List<Cell>>> getThreatContextCache() {
 		return threadLocalCache.get().getThreatContextCache();
 	}
 
