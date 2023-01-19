@@ -60,51 +60,49 @@ class MinMaxServiceTest {
 	@Test
 	void minMax2Test() throws JsonProcessingException, InterruptedException {
 
-		L2CacheSupport.doInCacheContext(() -> {
+		GameDto gameDto = GomokuTestsHelper.readGameDto("minMax2.json");
 
-			try {
-				GameDto gameDto = GomokuTestsHelper.readGameDto("minMax2.json");
+		int playingColor = EngineConstants.WHITE_COLOR;
 
-				int playingColor = EngineConstants.WHITE_COLOR;
-
-				MinMaxResult minMaxResult = minMaxService.computeMinMax(DataWrapper.of(gameDto), playingColor, null, 4);
-
-				assertEquals(4, minMaxResult.getOptimalMoves().size());
-
-				assertEquals(new Cell(8, 6), minMaxResult.getOptimalMoves().get(0));
-
-				double evaluation = minMaxResult.getEvaluation();
-
-				MoveDto newMove = new MoveDto(minMaxResult.getOptimalMoves().get(0), playingColor);
-
-				newMove.setNumber(gameDto.getMoves().size());
-
-				gameDto.getMoves().add(newMove);
-
-				minMaxResult = minMaxService.computeMinMax(DataWrapper.of(gameDto), -playingColor, null, 3);
-
-				assertEquals(3, minMaxResult.getOptimalMoves().size());
-
-				assertEquals(evaluation, minMaxResult.getEvaluation(), 0.001);
-
-				evaluation = minMaxResult.getEvaluation();
-
-				newMove = new MoveDto(minMaxResult.getOptimalMoves().get(0), -playingColor);
-
-				newMove.setNumber(gameDto.getMoves().size());
-
-				gameDto.getMoves().add(newMove);
-
-				minMaxResult = minMaxService.computeMinMax(DataWrapper.of(gameDto), playingColor, null, 2);
-
-				assertEquals(2, minMaxResult.getOptimalMoves().size());
-
-				assertEquals(evaluation, minMaxResult.getEvaluation(), 0.001);
-			} catch (IOException e) {
-
-			}
-			return null;
+		MinMaxResult minMaxResult = L2CacheSupport.doInCacheContext(() -> {
+			return minMaxService.computeMinMax(DataWrapper.of(gameDto), playingColor, null, 4);
 		});
+
+		assertEquals(4, minMaxResult.getOptimalMoves().size());
+
+		assertEquals(new Cell(8, 6), minMaxResult.getOptimalMoves().get(0));
+
+		double evaluation = minMaxResult.getEvaluation();
+
+		MoveDto newMove = new MoveDto(minMaxResult.getOptimalMoves().get(0), playingColor);
+
+		newMove.setNumber(gameDto.getMoves().size());
+
+		gameDto.getMoves().add(newMove);
+
+		minMaxResult = L2CacheSupport.doInCacheContext(() -> {
+			return minMaxService.computeMinMax(DataWrapper.of(gameDto), -playingColor, null, 3);
+		});
+
+		assertEquals(3, minMaxResult.getOptimalMoves().size());
+
+		assertEquals(evaluation, minMaxResult.getEvaluation(), 0.001);
+
+		evaluation = minMaxResult.getEvaluation();
+
+		newMove = new MoveDto(minMaxResult.getOptimalMoves().get(0), -playingColor);
+
+		newMove.setNumber(gameDto.getMoves().size());
+
+		gameDto.getMoves().add(newMove);
+
+		minMaxResult = L2CacheSupport.doInCacheContext(() -> {
+			return minMaxService.computeMinMax(DataWrapper.of(gameDto), playingColor, null, 2);
+		});
+
+		assertEquals(2, minMaxResult.getOptimalMoves().size());
+
+		assertEquals(evaluation, minMaxResult.getEvaluation(), 0.001);
 
 	}
 
@@ -113,8 +111,8 @@ class MinMaxServiceTest {
 		L2CacheSupport.doInCacheContext(() -> {
 
 			int color = playingColor;
-			MinMaxResult minMaxResult = minMaxService.computeMinMax(DataWrapper.of(gameDto), color, null, depth);
 
+			MinMaxResult minMaxResult = minMaxService.computeMinMax(DataWrapper.of(gameDto), color, null, depth);
 			assertNotNull(minMaxResult);
 
 			double evaluation = minMaxResult.getEvaluation();

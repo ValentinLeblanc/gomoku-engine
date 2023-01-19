@@ -22,7 +22,7 @@ public class Threat {
 	public Set<Cell> getEmptyCells() {
 		return emptyCells;
 	}
-
+	
 	public void setEmptyCells(Set<Cell> emptyCells) {
 		this.emptyCells = emptyCells;
 	}

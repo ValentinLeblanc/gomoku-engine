@@ -156,7 +156,7 @@ public enum ThreatType {
 		return 0;
 	}
 
-	public List<ThreatType> getBlockingThreatTypes() {
+	public List<ThreatType> getPendingBlockingThreatTypes() {
 		
 		if (this == THREAT_5) {
 			return List.of();
@@ -180,5 +180,56 @@ public enum ThreatType {
 		
 		return List.of();
 	}
+	
+	public List<ThreatType> getDirectBlockingThreatTypes() {
+		
+		if (this == THREAT_5) {
+			return List.of(THREAT_5);
+		}
+		
+		if (this == DOUBLE_THREAT_4) {
+			return List.of(THREAT_5);
+		}
+		
+		if (this == THREAT_4) {
+			return List.of(THREAT_5, THREAT_4);
+		}
+		
+		if (this == DOUBLE_THREAT_3) {
+			return List.of(THREAT_5, THREAT_4, DOUBLE_THREAT_3);
+		}
+		
+		if (this == DOUBLE_THREAT_2) {
+			return List.of(THREAT_5, THREAT_4, DOUBLE_THREAT_3);
+		}
+		
+		return List.of();
+	}
+	
+	public List<ThreatType> getKillingThreatTypes() {
+		
+		if (this == THREAT_5) {
+			return List.of();
+		}
+		
+		if (this == DOUBLE_THREAT_4) {
+			return List.of(THREAT_5);
+		}
+		
+		if (this == THREAT_4) {
+			return List.of(THREAT_5);
+		}
+		
+		if (this == DOUBLE_THREAT_3) {
+			return List.of(THREAT_5, DOUBLE_THREAT_4);
+		}
+		
+		if (this == DOUBLE_THREAT_2) {
+			return List.of(THREAT_5, DOUBLE_THREAT_4);
+		}
+		
+		return List.of();
+	}
+
 	
 }

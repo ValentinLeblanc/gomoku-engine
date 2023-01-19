@@ -26,7 +26,6 @@ public class L2CacheSupport {
 			return action.run();
 		} finally {
 			threadLocalCache.remove();
-			gomokuCache.setCacheEnabled(false);
 		}
 	}
 	

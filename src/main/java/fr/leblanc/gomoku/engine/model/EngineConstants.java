@@ -33,22 +33,22 @@ public class EngineConstants {
 	public static final int DOUBLE_THREAT_3_POTENTIAL = 15;
 	public static final int THREAT_3_POTENTIAL = 5;
 	public static final int DOUBLE_THREAT_2_POTENTIAL = 2;
-	public static final CompoThreatType[] TRY_CONTEXTS = {
+	public static final CompoThreatType[] COMPO_THREAT_TYPES = {
 			new CompoThreatType(ThreatType.THREAT_5, null, true),
+			new CompoThreatType(ThreatType.THREAT_5, null, false),
 			new CompoThreatType(ThreatType.DOUBLE_THREAT_4, null, true),
 			new CompoThreatType(ThreatType.THREAT_4, ThreatType.THREAT_4, true),
 			new CompoThreatType(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3, true),
 			new CompoThreatType(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_2, true),
-			new CompoThreatType(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3, true),
-			new CompoThreatType(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2, true),
-			new CompoThreatType(ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2, true),
-			new CompoThreatType(ThreatType.THREAT_5, null, false),
 			new CompoThreatType(ThreatType.DOUBLE_THREAT_4, null, false),
 			new CompoThreatType(ThreatType.THREAT_4, ThreatType.THREAT_4, false),
 			new CompoThreatType(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3, false),
 			new CompoThreatType(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_2, false),
+			new CompoThreatType(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3, true),
+			new CompoThreatType(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2, true),
 			new CompoThreatType(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3, false),
 			new CompoThreatType(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2, false),
+			new CompoThreatType(ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2, true),
 			new CompoThreatType(ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2, false),
 			};
 	
