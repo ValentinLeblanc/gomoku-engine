@@ -65,7 +65,7 @@ class MinMaxServiceTest {
 		int playingColor = EngineConstants.WHITE_COLOR;
 
 		MinMaxResult minMaxResult = L2CacheSupport.doInCacheContext(() -> {
-			return minMaxService.computeMinMax(DataWrapper.of(gameDto), playingColor, null, 4);
+			return minMaxService.computeMinMax(DataWrapper.of(gameDto), playingColor, null, 4, -1);
 		});
 
 		assertEquals(4, minMaxResult.getOptimalMoves().size());
@@ -81,7 +81,7 @@ class MinMaxServiceTest {
 		gameDto.getMoves().add(newMove);
 
 		minMaxResult = L2CacheSupport.doInCacheContext(() -> {
-			return minMaxService.computeMinMax(DataWrapper.of(gameDto), -playingColor, null, 3);
+			return minMaxService.computeMinMax(DataWrapper.of(gameDto), -playingColor, null, 3, -1);
 		});
 
 		assertEquals(3, minMaxResult.getOptimalMoves().size());
@@ -97,7 +97,7 @@ class MinMaxServiceTest {
 		gameDto.getMoves().add(newMove);
 
 		minMaxResult = L2CacheSupport.doInCacheContext(() -> {
-			return minMaxService.computeMinMax(DataWrapper.of(gameDto), playingColor, null, 2);
+			return minMaxService.computeMinMax(DataWrapper.of(gameDto), playingColor, null, 2, -1);
 		});
 
 		assertEquals(2, minMaxResult.getOptimalMoves().size());
@@ -112,7 +112,7 @@ class MinMaxServiceTest {
 
 			int color = playingColor;
 
-			MinMaxResult minMaxResult = minMaxService.computeMinMax(DataWrapper.of(gameDto), color, null, depth);
+			MinMaxResult minMaxResult = minMaxService.computeMinMax(DataWrapper.of(gameDto), color, null, depth, -1);
 			assertNotNull(minMaxResult);
 
 			double evaluation = minMaxResult.getEvaluation();

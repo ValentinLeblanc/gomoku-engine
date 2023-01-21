@@ -5,6 +5,7 @@ import fr.leblanc.gomoku.engine.model.StrikeResult;
 
 public interface StrikeService extends StoppableService {
 
-	StrikeResult processStrike(DataWrapper dataWrapper, int playingColor, int strikeDepth, int minMaxDepth, int strikeTimeout) throws InterruptedException;
+	StrikeResult processStrike(DataWrapper dataWrapper, int playingColor, int strikeDepth, int minMaxDepth,
+			int strikeTimeout) throws InterruptedException;
 
 }

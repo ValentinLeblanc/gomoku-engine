@@ -28,12 +28,6 @@ public class ThreatContextServiceImpl implements ThreatContextService {
 	@Override
 	public ThreatContext computeThreatContext(DataWrapper dataWrapper, int playingColor) {
 		
-		// this cache consumes too much memory
-		
-//		if (L2CacheSupport.isCacheEnabled() && L2CacheSupport.getThreatContextCache().containsKey(playingColor) && L2CacheSupport.getThreatContextCache().get(playingColor).containsKey(dataWrapper)) {
-//			return L2CacheSupport.getThreatContextCache().get(playingColor).get(dataWrapper);
-//		}
-		
 		ThreatContext threatContext = new ThreatContext(dataWrapper.getData(), playingColor);
 		
 		threatContext.getThreatTypeToThreatMap().put(ThreatType.THREAT_5, new ArrayList<>());
@@ -46,14 +40,6 @@ public class ThreatContextServiceImpl implements ThreatContextService {
 		threatContext.getDoubleThreatTypeToThreatMap().put(ThreatType.DOUBLE_THREAT_2, new HashSet<>());
 		
 		internalComputeThreatContext(threatContext);
-		
-//		if (L2CacheSupport.isCacheEnabled()) {
-//			if (!L2CacheSupport.getThreatContextCache().containsKey(playingColor)) {
-//				L2CacheSupport.getThreatContextCache().put(playingColor, new HashMap<>());
-//			}
-//			
-//			L2CacheSupport.getThreatContextCache().get(playingColor).put(new DataWrapper(dataWrapper), threatContext);
-//		}
 		
 		return threatContext;
 	}

@@ -6,6 +6,7 @@ import java.util.Map;
 
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.DataWrapper;
+import fr.leblanc.gomoku.engine.model.EngineConstants;
 import fr.leblanc.gomoku.engine.model.MinMaxResult;
 
 public class GomokuCache {
@@ -24,6 +25,21 @@ public class GomokuCache {
 	
 	private Map<Integer, Map<DataWrapper, MinMaxResult>> minMaxCache = new HashMap<>();
 
+	public GomokuCache() {
+		directStrikeAttempts.put(EngineConstants.BLACK_COLOR, new HashMap<>());
+		directStrikeAttempts.put(EngineConstants.WHITE_COLOR, new HashMap<>());
+		secondaryStrikeAttempts.put(EngineConstants.BLACK_COLOR, new HashMap<>());
+		secondaryStrikeAttempts.put(EngineConstants.WHITE_COLOR, new HashMap<>());
+		recordedCounterMoves.put(EngineConstants.BLACK_COLOR, new HashMap<>());
+		recordedCounterMoves.put(EngineConstants.WHITE_COLOR, new HashMap<>());
+		threatContextCache.put(EngineConstants.BLACK_COLOR, new HashMap<>());
+		threatContextCache.put(EngineConstants.WHITE_COLOR, new HashMap<>());
+		evaluationCache.put(EngineConstants.BLACK_COLOR, new HashMap<>());
+		evaluationCache.put(EngineConstants.WHITE_COLOR, new HashMap<>());
+		minMaxCache.put(EngineConstants.BLACK_COLOR, new HashMap<>());
+		minMaxCache.put(EngineConstants.WHITE_COLOR, new HashMap<>());
+	}
+	
 	public Map<Integer, Map<DataWrapper, Cell>> getDirectStrikeAttempts() {
 		return directStrikeAttempts;
 	}

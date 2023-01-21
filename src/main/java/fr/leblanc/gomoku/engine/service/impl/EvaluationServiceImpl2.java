@@ -42,13 +42,8 @@ public class EvaluationServiceImpl2 implements EvaluationService {
 		
 		int playingColor = extractPlayingColor(dataWrapper);
 		
-		if (L2CacheSupport.isCacheEnabled()) {
-			if (!L2CacheSupport.getEvaluationCache().containsKey(playingColor)) {
-				L2CacheSupport.getEvaluationCache().put(playingColor, new HashMap<>());
-			}
-			if (L2CacheSupport.getEvaluationCache().get(playingColor).containsKey(dataWrapper)) {
-				return L2CacheSupport.getEvaluationCache().get(playingColor).get(dataWrapper);
-			}
+		if (L2CacheSupport.isCacheEnabled() && L2CacheSupport.getEvaluationCache().get(playingColor).containsKey(dataWrapper)) {
+			return L2CacheSupport.getEvaluationCache().get(playingColor).get(dataWrapper);
 		}
 		
 		double evaluation = internalComputeEvaluation(new EvaluationContext(dataWrapper, playingColor, -1, 0));

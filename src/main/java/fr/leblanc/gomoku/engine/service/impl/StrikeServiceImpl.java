@@ -1,7 +1,6 @@
 package fr.leblanc.gomoku.engine.service.impl;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -97,7 +96,7 @@ public class StrikeServiceImpl implements StrikeService {
 				
 				if (!counterOpponentThreats.isEmpty()) {
 					
-					Cell defense = minMaxService.computeMinMax(dataWrapper, playingColor, counterOpponentThreats, strikeContext.getMinMaxDepth()).getOptimalMoves().get(0);
+					Cell defense = minMaxService.computeMinMax(dataWrapper, playingColor, counterOpponentThreats, strikeContext.getMinMaxDepth(), -1).getOptimalMoves().get(0);
 					
 					stopWatch.stop();
 					
@@ -221,14 +220,8 @@ public class StrikeServiceImpl implements StrikeService {
 			throw new InterruptedException();
 		}
 		
-		if (L2CacheSupport.isCacheEnabled()) {
-			if (!L2CacheSupport.getDirectStrikeAttempts().containsKey(playingColor)) {
-				L2CacheSupport.getDirectStrikeAttempts().put(playingColor, new HashMap<>());
-			}
-			
-			if (L2CacheSupport.getDirectStrikeAttempts().containsKey(playingColor) && L2CacheSupport.getDirectStrikeAttempts().get(playingColor).containsKey(dataWrapper)) {
-				return L2CacheSupport.getDirectStrikeAttempts().get(playingColor).get(dataWrapper);
-			}
+		if (L2CacheSupport.isCacheEnabled() && L2CacheSupport.getDirectStrikeAttempts().containsKey(playingColor) && L2CacheSupport.getDirectStrikeAttempts().get(playingColor).containsKey(dataWrapper)) {
+			return L2CacheSupport.getDirectStrikeAttempts().get(playingColor).get(dataWrapper);
 		}
 		
 		ThreatContext computeThreatContext = threatContextService.computeThreatContext(dataWrapper, playingColor);
@@ -361,14 +354,8 @@ public class StrikeServiceImpl implements StrikeService {
 	
 	private List<Cell> counterDirectStrikeMoves(DataWrapper dataWrapper, int playingColor, StrikeContext strikeContext, boolean onlyOne) throws InterruptedException {
 	
-		if (L2CacheSupport.isCacheEnabled()) {
-			if (!L2CacheSupport.getRecordedCounterMoves().containsKey(playingColor)) {
-				L2CacheSupport.getRecordedCounterMoves().put(playingColor, new HashMap<>());
-			}
-			
-			if (L2CacheSupport.getRecordedCounterMoves().containsKey(playingColor) && L2CacheSupport.getRecordedCounterMoves().get(playingColor).containsKey(dataWrapper)) {
-				return L2CacheSupport.getRecordedCounterMoves().get(playingColor).get(dataWrapper);
-			}
+		if (L2CacheSupport.isCacheEnabled() && L2CacheSupport.getRecordedCounterMoves().containsKey(playingColor) && L2CacheSupport.getRecordedCounterMoves().get(playingColor).containsKey(dataWrapper)) {
+			return L2CacheSupport.getRecordedCounterMoves().get(playingColor).get(dataWrapper);
 		}
 		
 		List<Cell> defendingMoves = new ArrayList<>();
@@ -444,14 +431,8 @@ public class StrikeServiceImpl implements StrikeService {
 			return null;
 		}
 		
-		if (L2CacheSupport.isCacheEnabled()) {
-			if (!L2CacheSupport.getSecondaryStrikeAttempts().containsKey(playingColor)) {
-				L2CacheSupport.getSecondaryStrikeAttempts().put(playingColor, new HashMap<>());
-			}
-			
-			if (L2CacheSupport.getSecondaryStrikeAttempts().containsKey(playingColor) && L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).containsKey(dataWrapper)) {
-				return L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).get(dataWrapper);
-			}
+		if (L2CacheSupport.isCacheEnabled() && L2CacheSupport.getSecondaryStrikeAttempts().containsKey(playingColor) && L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).containsKey(dataWrapper)) {
+			return L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).get(dataWrapper);
 		}
 		
 		// check for a strike

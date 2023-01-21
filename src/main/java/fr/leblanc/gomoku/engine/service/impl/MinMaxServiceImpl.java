@@ -1,5 +1,6 @@
 package fr.leblanc.gomoku.engine.service.impl;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 
@@ -40,7 +41,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 	private Boolean stopComputation = false;
 	
 	@Override
-	public MinMaxResult computeMinMax(DataWrapper dataWrapper, int playingColor, List<Cell> analyzedMoves, int minMaxDepth) throws InterruptedException {
+	public MinMaxResult computeMinMax(DataWrapper dataWrapper, int playingColor, List<Cell> analyzedCells, int minMaxDepth, int deepAnalysisExtent) throws InterruptedException {
 		
 		if (log.isDebugEnabled()) {
 			log.debug("starting minMax...");
@@ -49,15 +50,15 @@ public class MinMaxServiceImpl implements MinMaxService {
 		isComputing = true;
 		
 		try {
-			if (analyzedMoves == null) {
-				analyzedMoves = threatContextService.buildAnalyzedMoves(dataWrapper, playingColor);
+			if (analyzedCells == null) {
+				analyzedCells = threatContextService.buildAnalyzedMoves(dataWrapper, playingColor);
 			}
 			
-			if (analyzedMoves.size() == 1) {
+			if (analyzedCells.size() == 1) {
 				
 				MinMaxResult result = new MinMaxResult();
 				
-				result.getOptimalMoves().put(0, analyzedMoves.get(0));
+				result.getOptimalMoves().put(0, analyzedCells.get(0));
 				
 				return result;
 			}
@@ -65,10 +66,34 @@ public class MinMaxServiceImpl implements MinMaxService {
 			try {
 				
 				StopWatch stopWatch = new StopWatch();
-				
 				stopWatch.start();
 				
-				MinMaxResult result = internalMinMax(dataWrapper, playingColor, analyzedMoves, (minMaxDepth % 2 == 0), 0, new MinMaxContext(), minMaxDepth);
+				List<Cell> subAnalyzedCells = new ArrayList<>();
+				boolean findMax = minMaxDepth % 2 == 0;
+				MinMaxResult result = null;
+				MinMaxContext context = new MinMaxContext();
+				context.setCurrentIndex(0);
+				
+				if (deepAnalysisExtent != -1) {
+					
+					context.setEndIndex(deepAnalysisExtent * analyzedCells.size() - deepAnalysisExtent * (deepAnalysisExtent - 1) / 2 + deepAnalysisExtent * (analyzedCells.size() - deepAnalysisExtent - 1));
+					
+					for (int i = 0; i < deepAnalysisExtent; i++) {
+						result = internalMinMax(dataWrapper, playingColor, analyzedCells, findMax, 0, context, minMaxDepth);
+						Cell cellResult = result.getOptimalMoves().get(0);
+						if (cellResult != null) {
+							subAnalyzedCells.add(cellResult);
+							analyzedCells.remove(cellResult);
+						}
+					}
+					
+					context.setIndexDepth(1);
+					result = internalMinMax(dataWrapper, playingColor, subAnalyzedCells, !findMax, 0, context, minMaxDepth + 1);
+					messagingService.sendPercentCompleted(1, 100);
+				} else {
+					context.setEndIndex(analyzedCells.size());
+					result = internalMinMax(dataWrapper, playingColor, analyzedCells, findMax, 0, context, minMaxDepth);
+				}
 				
 				stopWatch.stop();
 				
@@ -113,8 +138,6 @@ public class MinMaxServiceImpl implements MinMaxService {
 			return result;
 		}
 		
-		int advancement = 0;
-
 		for (Cell analysedMove : analysedMoves) {
 			
 			if (stopComputation) {
@@ -187,11 +210,9 @@ public class MinMaxServiceImpl implements MinMaxService {
 				}
 			}
 			
-			advancement++;
-
-			Integer percentCompleted = advancement * 100 / analysedMoves.size();
-			
-			if (depth == 0) {
+			if (depth <= context.getIndexDepth()) {
+				context.setCurrentIndex(context.getCurrentIndex() + 1);
+				Integer percentCompleted = context.getCurrentIndex() * 100 / context.getEndIndex();
 				messagingService.sendPercentCompleted(1, percentCompleted);
 			}
 		}

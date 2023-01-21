@@ -1,6 +1,5 @@
 package fr.leblanc.gomoku.engine.service.impl;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,13 +35,8 @@ public class EvaluationServiceImpl implements EvaluationService {
 	public double computeEvaluation(DataWrapper dataWrapper) {
 		int playingColor = extractPlayingColor(dataWrapper);
 		
-		if (L2CacheSupport.isCacheEnabled()) {
-			if (!L2CacheSupport.getEvaluationCache().containsKey(playingColor)) {
-				L2CacheSupport.getEvaluationCache().put(playingColor, new HashMap<>());
-			}
-			if (L2CacheSupport.getEvaluationCache().get(playingColor).containsKey(dataWrapper)) {
-				return L2CacheSupport.getEvaluationCache().get(playingColor).get(dataWrapper);
-			}
+		if (L2CacheSupport.isCacheEnabled() && L2CacheSupport.getEvaluationCache().get(playingColor).containsKey(dataWrapper)) {
+			return L2CacheSupport.getEvaluationCache().get(playingColor).get(dataWrapper);
 		}
 		
 		double evaluation = internalComputeEvaluation(new EvaluationContext(dataWrapper, playingColor, EVALUATION_DEPTH, 0));

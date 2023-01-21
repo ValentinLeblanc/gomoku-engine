@@ -18,11 +18,13 @@ public class EngineSettingsDto {
 	@Default
 	private boolean minMaxEnabled = true;
 	
+	@Default
+	private int minMaxAnalysisExtent = -1;
+	
 	private int minMaxDepth;
 	
 	private int strikeDepth;
 	
-	private int evaluationDepth;
 	
 	private int strikeTimeout;
 	
