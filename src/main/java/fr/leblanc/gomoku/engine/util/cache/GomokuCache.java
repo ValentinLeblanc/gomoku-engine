@@ -8,6 +8,7 @@ import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.DataWrapper;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
 import fr.leblanc.gomoku.engine.model.MinMaxResult;
+import fr.leblanc.gomoku.engine.model.ThreatContext;
 
 public class GomokuCache {
 	
@@ -19,7 +20,7 @@ public class GomokuCache {
 	
 	private Map<Integer, Map<DataWrapper, List<Cell>>> recordedCounterMoves = new HashMap<>();
 
-	private Map<Integer,  Map<DataWrapper, List<Cell>>> threatContextCache = new HashMap<>();
+	private Map<Integer,  Map<DataWrapper, ThreatContext>> threatContextCache = new HashMap<>();
 	
 	private Map<Integer, Map<DataWrapper, Double>> evaluationCache = new HashMap<>();
 	
@@ -64,11 +65,11 @@ public class GomokuCache {
 		this.recordedCounterMoves = recordedCounterMoves;
 	}
 
-	public Map<Integer,  Map<DataWrapper, List<Cell>>> getThreatContextCache() {
+	public Map<Integer,  Map<DataWrapper, ThreatContext>> getThreatContextCache() {
 		return threatContextCache;
 	}
 
-	public void setThreatContextCache(Map<Integer,  Map<DataWrapper, List<Cell>>> threatContextCache) {
+	public void setThreatContextCache(Map<Integer,  Map<DataWrapper, ThreatContext>> threatContextCache) {
 		this.threatContextCache = threatContextCache;
 	}
 

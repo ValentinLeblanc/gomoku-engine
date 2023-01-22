@@ -3,6 +3,7 @@ package fr.leblanc.gomoku.engine.model;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
@@ -46,7 +47,7 @@ public class Threat {
 	}
 	
 	public Set<Cell> getKillingCells() {
-		return emptyCells;
+		return getBlockingCells(null);
 	}
 	
 	@Override
@@ -86,9 +87,8 @@ public class Threat {
 		return true;
 	}
 
-	public Set<Cell> getBlockingCells() {
-		return emptyCells;
+	public Set<Cell> getBlockingCells(Cell playingCell) {
+		return emptyCells.stream().filter(c -> !c.equals(playingCell)).collect(Collectors.toSet());
 	}
-
 	
 }

@@ -55,7 +55,7 @@ public class DoubleThreat extends Threat {
 	}
 
 	@Override
-	public Set<Cell> getBlockingCells() {
+	public Set<Cell> getBlockingCells(Cell playingThreat) {
 		return blockingCells;
 	}
 
@@ -63,6 +63,7 @@ public class DoubleThreat extends Threat {
 		this.blockingCells = blockingCells;
 	}
 
+	@Override
 	public Set<Cell> getKillingCells() {
 		return killingCells;
 	}

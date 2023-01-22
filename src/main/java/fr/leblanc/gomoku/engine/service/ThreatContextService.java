@@ -1,14 +1,13 @@
 package fr.leblanc.gomoku.engine.service;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import fr.leblanc.gomoku.engine.model.Cell;
+import fr.leblanc.gomoku.engine.model.CompoThreatType;
 import fr.leblanc.gomoku.engine.model.DataWrapper;
 import fr.leblanc.gomoku.engine.model.Threat;
 import fr.leblanc.gomoku.engine.model.ThreatContext;
-import fr.leblanc.gomoku.engine.model.CompoThreatType;
 import fr.leblanc.gomoku.engine.model.ThreatType;
 import fr.leblanc.gomoku.engine.util.Pair;
 
@@ -20,11 +19,6 @@ public interface ThreatContextService {
 
 	List<Cell> buildAnalyzedMoves(DataWrapper dataWrapper, int color);
 
-	Map<Threat, Integer> getEffectiveThreats(ThreatContext playingThreatContext, ThreatContext opponentThreatContext,
-			ThreatType threatType, ThreatType secondThreatType);
-	
-	Map<Cell, Pair<Threat, List<Threat>>> findCompositeThreats(ThreatContext context, CompoThreatType threatTryContext);
-
-	Map<Cell, Pair<Threat, List<Threat>>> findEfficientThreats(ThreatContext playingThreatContext, ThreatContext opponentThreatContext, CompoThreatType threatTryContext);
+	List<Pair<Threat, Threat>> findCompositeThreats(ThreatContext context, CompoThreatType threatTryContext);
 
 }
