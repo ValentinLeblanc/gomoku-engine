@@ -76,7 +76,17 @@ public class MinMaxServiceImpl implements MinMaxService {
 				
 				if (deepAnalysisExtent != -1) {
 					
-					context.setEndIndex(deepAnalysisExtent * analyzedCells.size() - deepAnalysisExtent * (deepAnalysisExtent - 1) / 2 + deepAnalysisExtent * (analyzedCells.size() - deepAnalysisExtent - 1));
+					int emptyCellsCount = 0;
+					
+					for (int i = 0; i < dataWrapper.getData().length; i++) {
+						for (int j = 0; j < dataWrapper.getData().length; j++) {
+							if (dataWrapper.getData()[i][j] == EngineConstants.NONE_COLOR) {
+								emptyCellsCount++;
+							}
+						}
+					}
+					
+					context.setEndIndex(deepAnalysisExtent * analyzedCells.size() - deepAnalysisExtent * (deepAnalysisExtent - 1) / 2 + deepAnalysisExtent * (emptyCellsCount - 1));
 					
 					for (int i = 0; i < deepAnalysisExtent; i++) {
 						result = internalMinMax(dataWrapper, playingColor, analyzedCells, findMax, 0, context, minMaxDepth);
@@ -158,8 +168,14 @@ public class MinMaxServiceImpl implements MinMaxService {
 			if (depth == minMaxDepth - 1) {
 				currentEvaluation = evaluationService.computeEvaluation(dataWrapper);
 			} else {
-				subResult = internalMinMax(dataWrapper, -playingColor, threatContextService.buildAnalyzedMoves(dataWrapper, -playingColor), !findMax, depth + 1, context, minMaxDepth);
+				List<Cell> subAnalyzedMoves = threatContextService.buildAnalyzedMoves(dataWrapper, -playingColor);
+				subResult = internalMinMax(dataWrapper, -playingColor, subAnalyzedMoves, !findMax, depth + 1, context, minMaxDepth);
 				currentEvaluation = subResult.getEvaluation();
+				if (depth < context.getIndexDepth()) {
+					context.setCurrentIndex(context.getCurrentIndex() + subAnalyzedMoves.size());
+					Integer percentCompleted = context.getCurrentIndex() * 100 / context.getEndIndex();
+					messagingService.sendPercentCompleted(1, percentCompleted);
+				}
 			}
 			
 			dataWrapper.removeMove(analysedMove);
@@ -210,7 +226,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 				}
 			}
 			
-			if (depth <= context.getIndexDepth()) {
+			if (depth == 0) {
 				context.setCurrentIndex(context.getCurrentIndex() + 1);
 				Integer percentCompleted = context.getCurrentIndex() * 100 / context.getEndIndex();
 				messagingService.sendPercentCompleted(1, percentCompleted);

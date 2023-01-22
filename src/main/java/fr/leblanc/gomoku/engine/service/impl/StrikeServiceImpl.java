@@ -53,6 +53,13 @@ public class StrikeServiceImpl implements StrikeService {
 	private Boolean stopComputation = false;
 	
 	private ExecutorService executor = Executors.newSingleThreadExecutor();
+	
+	private static final ThreatType[][] SECONDARY_THREAT_PAIRS = { { ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3 }
+		, { ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2 }
+		, { ThreatType.DOUBLE_THREAT_3, ThreatType.THREAT_3 }
+		, { ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3 }
+		, { ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_2 }
+		};
 
 	@Override
 	public StrikeResult processStrike(DataWrapper dataWrapper, int playingColor, int strikeDepth, int minMaxDepth, int strikeTimeout) throws InterruptedException {
@@ -96,7 +103,7 @@ public class StrikeServiceImpl implements StrikeService {
 				
 				if (!counterOpponentThreats.isEmpty()) {
 					
-					Cell defense = minMaxService.computeMinMax(dataWrapper, playingColor, counterOpponentThreats, strikeContext.getMinMaxDepth(), -1).getOptimalMoves().get(0);
+					Cell defense = minMaxService.computeMinMax(dataWrapper, playingColor, counterOpponentThreats, strikeContext.getMinMaxDepth(), 3).getOptimalMoves().get(0);
 					
 					stopWatch.stop();
 					
@@ -465,52 +472,18 @@ public class StrikeServiceImpl implements StrikeService {
 		
 		ThreatContext threatContext = threatContextService.computeThreatContext(dataWrapper, playingColor);
 
-		Cell retry = secondaryWithGivenSet(dataWrapper, playingColor, threatContextService.findCombinedThreats(threatContext, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3), depth, maxDepth, strikeContext);
-		
-		if (retry != null) {
-			if (L2CacheSupport.isCacheEnabled()) {
-				L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), retry);
+		for (ThreatType[] secondaryThreatTypePair : SECONDARY_THREAT_PAIRS) {
+			Cell retry = secondaryWithGivenSet(dataWrapper, playingColor, threatContextService.findCombinedThreats(threatContext, secondaryThreatTypePair[0], secondaryThreatTypePair[1]), depth, maxDepth, strikeContext);
+			
+			if (retry != null) {
+				if (L2CacheSupport.isCacheEnabled()) {
+					L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), retry);
+				}
+				return retry;
 			}
-			return retry;
 		}
 		
-		retry = secondaryWithGivenSet(dataWrapper, playingColor, threatContextService.findCombinedThreats(threatContext, ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2), depth, maxDepth, strikeContext);
-		
-		if (retry != null) {
-			if (L2CacheSupport.isCacheEnabled()) {
-				L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), retry);
-			}
-			return retry;
-		}
-		
-		retry = secondaryWithGivenSet(dataWrapper, playingColor, threatContextService.findCombinedThreats(threatContext, ThreatType.DOUBLE_THREAT_3, ThreatType.THREAT_3), depth, maxDepth, strikeContext);
-		
-		if (retry != null) {
-			if (L2CacheSupport.isCacheEnabled()) {
-				L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), retry);
-			}
-			return retry;
-		}
-		
-		retry = secondaryWithGivenSet(dataWrapper, playingColor, threatContextService.findCombinedThreats(threatContext, ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3), depth, maxDepth, strikeContext);
-		
-		if (retry != null) {
-			if (L2CacheSupport.isCacheEnabled()) {
-				L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), retry);
-			}
-			return retry;
-		}
-		
-		retry = secondaryWithGivenSet(dataWrapper, playingColor, threatContextService.findCombinedThreats(threatContext, ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_2), depth, maxDepth, strikeContext);
-		
-		if (retry != null) {
-			if (L2CacheSupport.isCacheEnabled()) {
-				L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), retry);
-			}
-			return retry;
-		}
-		
-		retry = secondaryWithGivenSet(dataWrapper, playingColor, threatContext.getDoubleThreatTypeToThreatMap().get(ThreatType.DOUBLE_THREAT_3).stream().map(DoubleThreat::getTargetCell).collect(Collectors.toSet()), depth, maxDepth, strikeContext);
+		Cell retry = secondaryWithGivenSet(dataWrapper, playingColor, threatContext.getDoubleThreatTypeToThreatMap().get(ThreatType.DOUBLE_THREAT_3).stream().map(DoubleThreat::getTargetCell).collect(Collectors.toSet()), depth, maxDepth, strikeContext);
 		
 		if (retry != null) {
 			if (L2CacheSupport.isCacheEnabled()) {
