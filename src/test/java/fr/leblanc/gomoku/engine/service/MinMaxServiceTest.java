@@ -4,8 +4,6 @@ import static org.junit.Assert.assertEquals;
 //import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-import java.io.IOException;
-
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -32,31 +30,53 @@ class MinMaxServiceTest {
 	
 	@Test
 	void minMax1Test() throws JsonProcessingException, InterruptedException {
-		L2CacheSupport.doInCacheContext(() -> {
 
-			try {
-				GameDto gameDto = GomokuTestsHelper.readGameDto("minMax1.json");
+		GameDto gameDto = GomokuTestsHelper.readGameDto("minMax1.json");
 
-				int playingColor = EngineConstants.WHITE_COLOR;
+		int playingColor = EngineConstants.WHITE_COLOR;
 
-				int i = 0;
+		int i = 0;
 
-				while (i < 5) {
-					i++;
-					testNextMoves(gameDto, 2, playingColor);
-				}
+		while (i < 5) {
+			i++;
+			testNextMoves(gameDto, 2, playingColor);
+		}
 
-				testNextMoves(gameDto, 3, playingColor);
+		testNextMoves(gameDto, 3, playingColor);
 
-				testNextMoves(gameDto, 3, -playingColor);
-			} catch (IOException e) {
-
-			}
-			return null;
-
-		});
+		testNextMoves(gameDto, 3, -playingColor);
 	}
 	
+	private void testNextMoves(GameDto gameDto, int depth, int playingColor) throws InterruptedException {
+	
+		L2CacheSupport.doInCacheContext(() -> {
+	
+			int color = playingColor;
+	
+			MinMaxResult minMaxResult = minMaxService.computeMinMax(DataWrapper.of(gameDto), color, null, depth, -1);
+			assertNotNull(minMaxResult);
+	
+			double evaluation = minMaxResult.getEvaluation();
+	
+			assertEquals(depth, minMaxResult.getOptimalMoves().size());
+	
+			for (int index = 0; index < depth; index++) {
+				Cell move = minMaxResult.getOptimalMoves().get(index);
+	
+				MoveDto newMove = new MoveDto(move, color);
+	
+				newMove.setNumber(gameDto.getMoves().size());
+	
+				gameDto.getMoves().add(newMove);
+				color = -color;
+			}
+	
+			assertEquals(evaluation, evaluationService.computeEvaluation(DataWrapper.of(gameDto)), 0.0001);
+			return null;
+		});
+	
+	}
+
 	@Test
 	void minMax2Test() throws JsonProcessingException, InterruptedException {
 
@@ -103,36 +123,6 @@ class MinMaxServiceTest {
 		assertEquals(2, minMaxResult.getOptimalMoves().size());
 
 		assertEquals(evaluation, minMaxResult.getEvaluation(), 0.001);
-
-	}
-
-	private void testNextMoves(GameDto gameDto, int depth, int playingColor) throws InterruptedException {
-
-		L2CacheSupport.doInCacheContext(() -> {
-
-			int color = playingColor;
-
-			MinMaxResult minMaxResult = minMaxService.computeMinMax(DataWrapper.of(gameDto), color, null, depth, -1);
-			assertNotNull(minMaxResult);
-
-			double evaluation = minMaxResult.getEvaluation();
-
-			assertEquals(depth, minMaxResult.getOptimalMoves().size());
-
-			for (int index = 0; index < depth; index++) {
-				Cell move = minMaxResult.getOptimalMoves().get(index);
-
-				MoveDto newMove = new MoveDto(move, color);
-
-				newMove.setNumber(gameDto.getMoves().size());
-
-				gameDto.getMoves().add(newMove);
-				color = -color;
-			}
-
-			assertEquals(evaluation, evaluationService.computeEvaluation(DataWrapper.of(gameDto)), 0.0001);
-			return null;
-		});
 
 	}
 
