@@ -10,7 +10,7 @@ public interface EngineService {
 
 	MoveDto computeMove(GameDto game);
 
-	Double computeEvaluation(GameDto game);
+	Double computeEvaluation(GameDto game, boolean external);
 
 	void stopComputation();
 

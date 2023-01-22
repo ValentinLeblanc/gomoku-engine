@@ -15,6 +15,8 @@ public class EvaluationContext {
 	
 	private int depth;
 	
+	private boolean external;
+	
 	public void reversePlayingColor() {
 		playingColor = -playingColor;
 	}

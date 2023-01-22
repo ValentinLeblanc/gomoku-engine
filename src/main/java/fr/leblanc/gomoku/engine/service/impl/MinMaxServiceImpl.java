@@ -166,7 +166,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			double currentEvaluation = 0;
 			
 			if (depth == minMaxDepth - 1) {
-				currentEvaluation = evaluationService.computeEvaluation(dataWrapper);
+				currentEvaluation = evaluationService.computeEvaluation(dataWrapper).getEvaluation();
 			} else {
 				List<Cell> subAnalyzedMoves = threatContextService.buildAnalyzedMoves(dataWrapper, -playingColor);
 				subResult = internalMinMax(dataWrapper, -playingColor, subAnalyzedMoves, !findMax, depth + 1, context, minMaxDepth);

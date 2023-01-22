@@ -28,7 +28,7 @@ public class EngineConstants {
 	public static final int DOUBLE_THREAT_3_DOUBLE_THREAT_3_POTENTIAL = 100;
 	public static final int THREAT_4_DOUBLE_THREAT_2_POTENTIAL = 30;
 	public static final int DOUBLE_THREAT_3_DOUBLE_THREAT_2_POTENTIAL = 25;
-	public static final int DOUBLE_THREAT_2_DOUBLE_THREAT_2_POTENTIAL = 2;
+	public static final int DOUBLE_THREAT_2_DOUBLE_THREAT_2_POTENTIAL = 4;
 	public static final int THREAT_4_POTENTIAL = 20;
 	public static final int DOUBLE_THREAT_3_POTENTIAL = 15;
 	public static final int THREAT_3_POTENTIAL = 5;

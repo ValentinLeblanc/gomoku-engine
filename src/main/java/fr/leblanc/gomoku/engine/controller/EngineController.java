@@ -28,7 +28,7 @@ public class EngineController {
 	
 	@PostMapping("/computeEvaluation")
 	public Double computeEvaluation(@RequestBody GameDto game) {
-		return engineService.computeEvaluation(game);
+		return engineService.computeEvaluation(game, true);
 	}
 	
 	@PostMapping("/stop")

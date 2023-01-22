@@ -7,6 +7,7 @@ import java.util.Map;
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.DataWrapper;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
+import fr.leblanc.gomoku.engine.model.EvaluationResult;
 import fr.leblanc.gomoku.engine.model.MinMaxResult;
 import fr.leblanc.gomoku.engine.model.ThreatContext;
 
@@ -22,7 +23,7 @@ public class GomokuCache {
 
 	private Map<Integer,  Map<DataWrapper, ThreatContext>> threatContextCache = new HashMap<>();
 	
-	private Map<Integer, Map<DataWrapper, Double>> evaluationCache = new HashMap<>();
+	private Map<Integer, Map<DataWrapper, EvaluationResult>> evaluationCache = new HashMap<>();
 	
 	private Map<Integer, Map<DataWrapper, MinMaxResult>> minMaxCache = new HashMap<>();
 
@@ -73,11 +74,11 @@ public class GomokuCache {
 		this.threatContextCache = threatContextCache;
 	}
 
-	public Map<Integer, Map<DataWrapper, Double>> getEvaluationCache() {
+	public Map<Integer, Map<DataWrapper, EvaluationResult>> getEvaluationCache() {
 		return evaluationCache;
 	}
 
-	public void setEvaluationCache(Map<Integer, Map<DataWrapper, Double>> evaluationCache) {
+	public void setEvaluationCache(Map<Integer, Map<DataWrapper, EvaluationResult>> evaluationCache) {
 		this.evaluationCache = evaluationCache;
 	}
 

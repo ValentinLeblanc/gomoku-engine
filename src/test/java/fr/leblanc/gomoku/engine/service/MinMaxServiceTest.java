@@ -71,7 +71,7 @@ class MinMaxServiceTest {
 				color = -color;
 			}
 	
-			assertEquals(evaluation, evaluationService.computeEvaluation(DataWrapper.of(gameDto)), 0.0001);
+			assertEquals(evaluation, evaluationService.computeEvaluation(DataWrapper.of(gameDto)).getEvaluation(), 0.0001);
 			return null;
 		});
 	

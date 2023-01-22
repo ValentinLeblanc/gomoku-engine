@@ -179,9 +179,34 @@ public class ThreatContextServiceImpl implements ThreatContextService {
 		
 		return candidateMap;
 	}
-
+	
+	private Cell retrieveThreatCell(Pair<Threat, Threat> threatPair) {
+		
+		if (threatPair.getFirst().getThreatType().isDoubleType()) {
+			return ((DoubleThreat) threatPair.getFirst()).getTargetCell();
+		}
+		
+		if (threatPair.getSecond() == null) {
+			return threatPair.getFirst().getEmptyCells().iterator().next();
+		}
+		
+		if (threatPair.getSecond().getThreatType().isDoubleType()) {
+			return ((DoubleThreat) threatPair.getSecond()).getTargetCell();
+		}
+		
+		return threatPair.getFirst().getEmptyCells().stream().filter(c -> threatPair.getSecond().getEmptyCells().contains(c)).findFirst().orElse(null);
+		
+	}
+	
 	private boolean areAligned(Threat threat1, Threat threat2) {
-		return threat1.getPlainCells().stream().filter(threat2.getPlainCells()::contains).count() > 0;
+		
+		if (threat1.getPlainCells().stream().filter(threat2.getPlainCells()::contains).count() > 0) {
+			return true;
+		}
+		
+		Cell commonCell = retrieveThreatCell(new Pair<>(threat1, threat2));
+		
+		return commonCell != null && threat1.getBlockingCells(commonCell).stream().filter(threat2.getBlockingCells(commonCell)::contains).count() > 0;
 	}
 
 	private void internalComputeThreatContext(ThreatContext threatContext) {

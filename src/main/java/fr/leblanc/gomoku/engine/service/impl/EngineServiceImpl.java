@@ -87,7 +87,7 @@ public class EngineServiceImpl implements EngineService {
 				if (result == null) {
 
 					MinMaxResult minMaxResult = minMaxService.computeMinMax(DataWrapper.of(game), playingColor, null,
-							game.getSettings().getMinMaxDepth(), game.getSettings().getMinMaxAnalysisExtent());
+							game.getSettings().getMinMaxDepth(), 7);
 
 					if (!minMaxResult.getOptimalMoves().isEmpty()) {
 						Cell minMaxMove = minMaxResult.getOptimalMoves().get(0);
@@ -117,18 +117,17 @@ public class EngineServiceImpl implements EngineService {
 
 	}
 
-
 	@Override
-	public Double computeEvaluation(GameDto game) {
+	public Double computeEvaluation(GameDto game, boolean external) {
 		
 		int playingColor = extractPlayingColor(game);
 		
 		DataWrapper dataWrapper = DataWrapper.of(game);
 		
 		if (playingColor == EngineConstants.BLACK_COLOR) {
-			return evaluationService.computeEvaluation(dataWrapper);
+			return evaluationService.computeEvaluation(dataWrapper, external).getEvaluation();
 		} else if (playingColor == EngineConstants.WHITE_COLOR) {
-			return -evaluationService.computeEvaluation(dataWrapper);
+			return -evaluationService.computeEvaluation(dataWrapper, external).getEvaluation();
 		}
 		
 		throw new IllegalArgumentException("Game has no valid playing color");

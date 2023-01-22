@@ -1,5 +1,6 @@
 package fr.leblanc.gomoku.engine.service;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -10,8 +11,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
+import fr.leblanc.gomoku.engine.model.CompoThreatType;
 import fr.leblanc.gomoku.engine.model.DataWrapper;
-import fr.leblanc.gomoku.engine.model.EngineConstants;
+import fr.leblanc.gomoku.engine.model.ThreatType;
 import fr.leblanc.gomoku.engine.model.messaging.GameDto;
 import fr.leblanc.gomoku.engine.util.GomokuTestsHelper;
 
@@ -34,35 +36,37 @@ class EvaluationServiceTest {
 		})
 	void testAttack(String arg) throws JsonProcessingException {
 		GameDto gameDto = GomokuTestsHelper.readGameDto(arg);
-		assertTrue(evaluationService.computeEvaluation(DataWrapper.of(gameDto)) >= 100);
+		assertTrue(evaluationService.computeEvaluation(DataWrapper.of(gameDto)).getEvaluation() >= 100);
 	}
 	
 	@Test
 	void DT3DT3_DT4() throws JsonProcessingException {
 		GameDto gameDto = GomokuTestsHelper.readGameDto("evalDT3DT3_DT4.json");
-		assertTrue(evaluationService.computeEvaluation(DataWrapper.of(gameDto)) >= EngineConstants.DOUBLE_THREAT_3_DOUBLE_THREAT_3_POTENTIAL / 2);
+		assertTrue(evaluationService.computeEvaluation(DataWrapper.of(gameDto)).getEvaluationMap().get(CompoThreatType.of(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3, true)) > 0);
 	}
 	
 	@Test
-	void evalDT3DT2_DT3() throws JsonProcessingException {
-		GameDto gameDto = GomokuTestsHelper.readGameDto("evalDT3DT2_DT3.json");
-		assertTrue(evaluationService.computeEvaluation(DataWrapper.of(gameDto)) <= EngineConstants.DOUBLE_THREAT_3_DOUBLE_THREAT_2_POTENTIAL);
+	void evalDT3DT2_DT3_0() throws JsonProcessingException {
+		GameDto gameDto = GomokuTestsHelper.readGameDto("evalDT3DT2_DT3_0.json");
+		assertEquals(0d, evaluationService.computeEvaluation(DataWrapper.of(gameDto)).getEvaluationMap().get(CompoThreatType.of(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2, true)), 0.0001);
 	}
 	
 	@Test
 	void eval_T4T4() throws JsonProcessingException {
 		GameDto gameDto = GomokuTestsHelper.readGameDto("eval_T4T4.json");
-		assertTrue(evaluationService.computeEvaluation(DataWrapper.of(gameDto)) <= -50);
+		assertTrue(evaluationService.computeEvaluation(DataWrapper.of(gameDto)).getEvaluationMap().get(CompoThreatType.of(ThreatType.THREAT_4, ThreatType.THREAT_4, false)) < 0);
 	}
 	
-	@ParameterizedTest
-	@ValueSource(strings = {
-			"testCannotAttack1.json",
-			"testCannotAttack2.json"
-		})
-	void testCannotAttack(String arg) throws JsonProcessingException {
-		GameDto gameDto = GomokuTestsHelper.readGameDto(arg);
-		assertTrue(evaluationService.computeEvaluation(DataWrapper.of(gameDto)) < 100);
+	@Test
+	void evalDT3DT3_T4_0() throws JsonProcessingException {
+		GameDto gameDto = GomokuTestsHelper.readGameDto("evalDT3DT3_T4.json");
+		assertEquals(0d, evaluationService.computeEvaluation(DataWrapper.of(gameDto)).getEvaluationMap().get(CompoThreatType.of(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3, true)), 0.0001);
+	}
+	
+	@Test
+	void evalT4DT3_T4_0() throws JsonProcessingException {
+		GameDto gameDto = GomokuTestsHelper.readGameDto("evalT4DT3_T4_0.json");
+		assertEquals(0d, evaluationService.computeEvaluation(DataWrapper.of(gameDto)).getEvaluationMap().get(CompoThreatType.of(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3, true)), 0.0001);
 	}
 	
 	@ParameterizedTest
@@ -73,7 +77,7 @@ class EvaluationServiceTest {
 		})
 	void testCannotDefend(String arg) throws JsonProcessingException {
 		GameDto gameDto = GomokuTestsHelper.readGameDto(arg);
-		assertTrue(evaluationService.computeEvaluation(DataWrapper.of(gameDto)) < -75);
+		assertTrue(evaluationService.computeEvaluation(DataWrapper.of(gameDto)).getEvaluation() < -75);
 	}
 
 }
