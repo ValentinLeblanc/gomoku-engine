@@ -113,24 +113,18 @@ public class EvaluationServiceImpl implements EvaluationService {
 		
 		for (CompoThreatType compoThreatType : EngineConstants.COMPO_THREAT_TYPES) {
 			
-			if (compoThreatType.isPlaying()) {
-				for (Pair<Threat, Threat> threatPair : compositeThreatMap.get(compoThreatType)) {
-					int computePlayingEvaluation = evaluatePlayingThreatPair(opponentThreatContext, compositeThreatMap, validatedThreatMap, pendingThreatMap, threatPair, compoThreatType);
-					evaluation += computePlayingEvaluation;
-					if (log.isDebugEnabled() && computePlayingEvaluation != 0) {
-						log.debug(computePlayingEvaluation + " FROM " + compoThreatType);
-					}
+			for (Pair<Threat, Threat> threatPair : compositeThreatMap.get(compoThreatType)) {
+				int computePlayingEvaluation = 0;
+				if (compoThreatType.isPlaying()) {
+					computePlayingEvaluation = evaluatePlayingThreatPair(opponentThreatContext, compositeThreatMap, validatedThreatMap, pendingThreatMap, threatPair, compoThreatType);
+				} else {
+					computePlayingEvaluation = evaluatePendingThreatPair(playingThreatContext, compositeThreatMap, validatedThreatMap, threatPair, compoThreatType);
 				}
-			} else {
-				for (Pair<Threat, Threat> threatPair : compositeThreatMap.get(compoThreatType)) {
-					int computePlayingEvaluation = evaluatePendingThreatPair(playingThreatContext, compositeThreatMap, validatedThreatMap, threatPair, compoThreatType);
-					evaluation += computePlayingEvaluation;
-					if (log.isDebugEnabled() && computePlayingEvaluation != 0) {
-						log.debug(computePlayingEvaluation + " FROM " + compoThreatType);
-					}
+				evaluation += computePlayingEvaluation;
+				if (log.isDebugEnabled() && computePlayingEvaluation != 0) {
+					log.debug(computePlayingEvaluation + " FROM " + compoThreatType);
 				}
 			}
-			
 		}
 		
 		return evaluation;
@@ -202,7 +196,6 @@ public class EvaluationServiceImpl implements EvaluationService {
 					return true;
 				}
 			}
-			
 		}
 		
 		if (threatPair.getSecond() != null) {
@@ -213,7 +206,6 @@ public class EvaluationServiceImpl implements EvaluationService {
 						return true;
 					}
 				}
-				
 			}
 		}
 		
