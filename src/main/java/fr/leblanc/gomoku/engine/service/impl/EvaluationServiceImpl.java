@@ -193,7 +193,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 			
 			if (!isFirstThreatKilled) {
 				if (hasSimilarThreat(validatedThreatMap, compoThreatType, threatPair, false)) {
-					return -compoThreatType.getPotential();
+					return -compoThreatType.getPotential() / 2;
 				}
 				validatedThreatMap.computeIfAbsent(compoThreatType, k -> new ArrayList<>()).add(threatPair);
 			}
