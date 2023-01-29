@@ -300,7 +300,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 					
 					ThreatType opponentThreatType = entry.getKey();
 					
-					if (threatPair.getFirst().getThreatType().getBlockingThreatTypes().contains(opponentThreatType)) {
+					if (threatPair.getFirst().getThreatType().getBlockingThreatTypes().contains(opponentThreatType) && !opponentThreatType.getBetterOrEqualThreatTypes().contains(threatPair.getSecond().getThreatType())) {
 						
 						boolean isBlocked = true;
 						
