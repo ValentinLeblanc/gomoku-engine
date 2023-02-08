@@ -103,7 +103,7 @@ public class StrikeServiceImpl implements StrikeService {
 				
 				if (!counterOpponentThreats.isEmpty()) {
 					
-					Cell defense = minMaxService.computeMinMax(dataWrapper, playingColor, counterOpponentThreats, strikeContext.getMinMaxDepth(), 3).getOptimalMoves().get(0);
+					Cell defense = minMaxService.computeMinMax(dataWrapper, counterOpponentThreats, strikeContext.getMinMaxDepth(), 3).getOptimalMoves().get(0);
 					
 					stopWatch.stop();
 					

@@ -24,6 +24,7 @@ import fr.leblanc.gomoku.engine.model.ThreatType;
 import fr.leblanc.gomoku.engine.service.CheckWinService;
 import fr.leblanc.gomoku.engine.service.EvaluationService;
 import fr.leblanc.gomoku.engine.service.ThreatContextService;
+import fr.leblanc.gomoku.engine.util.GameHelper;
 import fr.leblanc.gomoku.engine.util.Pair;
 import fr.leblanc.gomoku.engine.util.cache.L2CacheSupport;
 import lombok.extern.apachecommons.CommonsLog;
@@ -46,7 +47,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 	@Override
 	public EvaluationResult computeEvaluation(DataWrapper dataWrapper, boolean external) {
 		
-		int playingColor = extractPlayingColor(dataWrapper);
+		int playingColor = GameHelper.extractPlayingColor(dataWrapper);
 		
 		if (L2CacheSupport.isCacheEnabled() && L2CacheSupport.getEvaluationCache().get(playingColor).containsKey(dataWrapper)) {
 			return L2CacheSupport.getEvaluationCache().get(playingColor).get(dataWrapper);
@@ -61,23 +62,6 @@ public class EvaluationServiceImpl implements EvaluationService {
 		return evaluation;
 	}
 
-	private int extractPlayingColor(DataWrapper dataWrapper) {
-		
-		int[][] data = dataWrapper.getData();
-		
-		int moveCount = 0;
-		
-		for (int i = 0; i < data[0].length; i++) {
-			for (int j = 0; j < data.length; j++) {
-				if (data[j][i] != EngineConstants.NONE_COLOR) {
-					moveCount++;
-				}
-			}
-		}
-		
-		return moveCount % 2 == 0 ? EngineConstants.BLACK_COLOR : EngineConstants.WHITE_COLOR;
-	}
-	
 	private EvaluationResult evaluateThreats(EvaluationContext context) {
 		
 		EvaluationResult evaluationResult = new EvaluationResult();

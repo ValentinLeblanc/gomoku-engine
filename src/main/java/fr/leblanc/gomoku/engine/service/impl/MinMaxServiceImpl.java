@@ -2,6 +2,7 @@ package fr.leblanc.gomoku.engine.service.impl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +19,7 @@ import fr.leblanc.gomoku.engine.service.EvaluationService;
 import fr.leblanc.gomoku.engine.service.MessageService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.ThreatContextService;
+import fr.leblanc.gomoku.engine.util.GameHelper;
 import lombok.extern.apachecommons.CommonsLog;
 
 @Service
@@ -36,12 +38,12 @@ public class MinMaxServiceImpl implements MinMaxService {
 	@Autowired
 	private CheckWinService checkWinService;
 	
-	private Boolean isComputing = false;
+	private boolean isComputing = false;
 	
-	private Boolean stopComputation = false;
+	private boolean stopComputation = false;
 	
 	@Override
-	public MinMaxResult computeMinMax(DataWrapper dataWrapper, int playingColor, List<Cell> analyzedCells, int minMaxDepth, int deepAnalysisExtent) throws InterruptedException {
+	public MinMaxResult computeMinMax(DataWrapper dataWrapper, List<Cell> cells, int depth, int extent) throws InterruptedException {
 		
 		if (log.isDebugEnabled()) {
 			log.debug("starting minMax...");
@@ -50,15 +52,18 @@ public class MinMaxServiceImpl implements MinMaxService {
 		isComputing = true;
 		
 		try {
-			if (analyzedCells == null) {
-				analyzedCells = threatContextService.buildAnalyzedMoves(dataWrapper, playingColor);
+			
+			int playingColor = GameHelper.extractPlayingColor(dataWrapper);
+			
+			if (cells == null) {
+				cells = threatContextService.buildAnalyzedMoves(dataWrapper, playingColor);
 			}
 			
-			if (analyzedCells.size() == 1) {
+			if (cells.size() == 1) {
 				
 				MinMaxResult result = new MinMaxResult();
 				
-				result.getOptimalMoves().put(0, analyzedCells.get(0));
+				result.getOptimalMoves().put(0, cells.get(0));
 				
 				return result;
 			}
@@ -69,12 +74,11 @@ public class MinMaxServiceImpl implements MinMaxService {
 				stopWatch.start();
 				
 				List<Cell> subAnalyzedCells = new ArrayList<>();
-				boolean findMax = minMaxDepth % 2 == 0;
+				boolean findMax = depth % 2 == 0;
 				MinMaxResult result = null;
 				MinMaxContext context = new MinMaxContext();
-				context.setCurrentIndex(0);
 				
-				if (deepAnalysisExtent != 0) {
+				if (extent != 0) {
 					
 					int emptyCellsCount = 0;
 					
@@ -86,23 +90,23 @@ public class MinMaxServiceImpl implements MinMaxService {
 						}
 					}
 					
-					context.setEndIndex(deepAnalysisExtent * analyzedCells.size() - deepAnalysisExtent * (deepAnalysisExtent - 1) / 2 + deepAnalysisExtent * (emptyCellsCount - 1));
+					context.setEndIndex(extent * cells.size() - extent * (extent - 1) / 2 + extent * (emptyCellsCount - 1));
 					
-					for (int i = 0; i < deepAnalysisExtent; i++) {
-						result = internalMinMax(dataWrapper, playingColor, analyzedCells, findMax, 0, context, minMaxDepth);
+					for (int i = 0; i < extent; i++) {
+						result = internalMinMax(dataWrapper, playingColor, cells, findMax, 0, context, depth);
 						Cell cellResult = result.getOptimalMoves().get(0);
 						if (cellResult != null) {
 							subAnalyzedCells.add(cellResult);
-							analyzedCells.remove(cellResult);
+							cells.remove(cellResult);
 						}
 					}
 					
 					context.setIndexDepth(1);
-					result = internalMinMax(dataWrapper, playingColor, subAnalyzedCells, !findMax, 0, context, minMaxDepth + 1);
+					result = internalMinMax(dataWrapper, playingColor, subAnalyzedCells, !findMax, 0, context, depth + 1);
 					messagingService.sendPercentCompleted(1, 100);
 				} else {
-					context.setEndIndex(analyzedCells.size());
-					result = internalMinMax(dataWrapper, playingColor, analyzedCells, findMax, 0, context, minMaxDepth);
+					context.setEndIndex(cells.size());
+					result = internalMinMax(dataWrapper, playingColor, cells, findMax, 0, context, depth);
 				}
 				
 				stopWatch.stop();
@@ -111,7 +115,6 @@ public class MinMaxServiceImpl implements MinMaxService {
 					log.debug("minMax elpased time : " + stopWatch.getTotalTimeMillis() + " ms");
 					log.debug("result = " + result);
 				}
-				
 				
 				return result;
 			} catch (InterruptedException e) {
@@ -184,48 +187,28 @@ public class MinMaxServiceImpl implements MinMaxService {
 				messagingService.sendAnalysisCell(analysedMove, EngineConstants.NONE_COLOR);
 			}
 			
-			if (findMax) {
-				if (currentEvaluation > optimalEvaluation) {
-					optimalEvaluation = currentEvaluation;
-					
-					result.setEvaluation(optimalEvaluation);
-					
-					result.getOptimalMoves().put(depth, analysedMove);
-					
-					for (Entry<Integer, Cell> entry : subResult.getOptimalMoves().entrySet()) {
-						result.getOptimalMoves().put(entry.getKey(), entry.getValue());
-					}
-					
-					context.getMaxList().put(depth, optimalEvaluation);
-					
-					final double eval = optimalEvaluation;
-					
-					if (context.getMinList().entrySet().stream().anyMatch(minEntry -> minEntry.getKey() < depth && eval >= minEntry.getValue())) {
-						break;
-					}
+			int factor = findMax ? 1 : -1;
+			
+			Map<Integer, Double> optimumList = findMax ? context.getMaxList() : context.getMinList();
+			Map<Integer, Double> otherList = findMax ? context.getMinList() : context.getMaxList();
+			
+			if (factor * currentEvaluation > factor * optimalEvaluation) {
+				optimalEvaluation = currentEvaluation;
+				
+				result.setEvaluation(optimalEvaluation);
+				result.getOptimalMoves().put(depth, analysedMove);
+				
+				for (Entry<Integer, Cell> entry : subResult.getOptimalMoves().entrySet()) {
+					result.getOptimalMoves().put(entry.getKey(), entry.getValue());
 				}
-			} else {
-				if (currentEvaluation < optimalEvaluation) {
-					optimalEvaluation = currentEvaluation;
-					
-					result.setEvaluation(optimalEvaluation);
-					
-					result.getOptimalMoves().put(depth, analysedMove);
-					
-					context.getMinList().put(depth, optimalEvaluation);
-					
-					for (Entry<Integer, Cell> entry : subResult.getOptimalMoves().entrySet()) {
-						result.getOptimalMoves().put(entry.getKey(), entry.getValue());
-					}
-					
-					final double eval = optimalEvaluation;
-
-					if (context.getMaxList().entrySet().stream().anyMatch(maxEntry -> maxEntry.getKey() < depth && eval <= maxEntry.getValue())) {
-						break;
-					}
+				
+				optimumList.put(depth, optimalEvaluation);
+				
+				double eval = optimalEvaluation;
+				if (isOptimumReached(depth, factor, otherList, eval)) {
+					break;
 				}
 			}
-			
 			if (depth == 0) {
 				context.setCurrentIndex(context.getCurrentIndex() + 1);
 				Integer percentCompleted = context.getCurrentIndex() * 100 / context.getEndIndex();
@@ -237,6 +220,10 @@ public class MinMaxServiceImpl implements MinMaxService {
 		context.getMinList().remove(depth);
 		
 		return result;
+	}
+
+	private boolean isOptimumReached(int depth, int factor, Map<Integer, Double> otherList, double eval) {
+		return otherList.entrySet().stream().anyMatch(entry -> entry.getKey() < depth && factor * eval >= factor * entry.getValue());
 	}
 
 }

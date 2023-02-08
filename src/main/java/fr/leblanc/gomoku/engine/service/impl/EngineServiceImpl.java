@@ -18,6 +18,7 @@ import fr.leblanc.gomoku.engine.service.EvaluationService;
 import fr.leblanc.gomoku.engine.service.MessageService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.StrikeService;
+import fr.leblanc.gomoku.engine.util.GameHelper;
 import fr.leblanc.gomoku.engine.util.cache.L2CacheSupport;
 import lombok.extern.apachecommons.CommonsLog;
 
@@ -86,7 +87,7 @@ public class EngineServiceImpl implements EngineService {
 				// MINMAX
 				if (result == null) {
 
-					MinMaxResult minMaxResult = minMaxService.computeMinMax(DataWrapper.of(game), playingColor, null,
+					MinMaxResult minMaxResult = minMaxService.computeMinMax(DataWrapper.of(game), null,
 							game.getSettings().getMinMaxDepth(), game.getSettings().getMinMaxExtent());
 
 					if (!minMaxResult.getOptimalMoves().isEmpty()) {
@@ -120,7 +121,7 @@ public class EngineServiceImpl implements EngineService {
 	@Override
 	public Double computeEvaluation(GameDto game, boolean external) {
 		
-		int playingColor = extractPlayingColor(game);
+		int playingColor = GameHelper.extractPlayingColor(game);
 		
 		DataWrapper dataWrapper = DataWrapper.of(game);
 		
@@ -151,10 +152,6 @@ public class EngineServiceImpl implements EngineService {
 		}
 
 		return result;
-	}
-
-	private int extractPlayingColor(GameDto game) {
-		return game.getMoves().size() % 2 == 0 ? EngineConstants.BLACK_COLOR : EngineConstants.WHITE_COLOR;
 	}
 
 }

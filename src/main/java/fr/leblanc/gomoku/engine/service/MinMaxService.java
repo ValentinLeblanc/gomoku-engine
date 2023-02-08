@@ -8,6 +8,6 @@ import fr.leblanc.gomoku.engine.model.MinMaxResult;
 
 public interface MinMaxService extends StoppableService {
 
-	MinMaxResult computeMinMax(DataWrapper dataWrapper, int playingColor, List<Cell> sample, int minMaxDepth, int deepAnalysisExtent) throws InterruptedException;
+	MinMaxResult computeMinMax(DataWrapper dataWrapper, List<Cell> cells, int depth, int extent) throws InterruptedException;
 
 }
