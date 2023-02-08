@@ -74,7 +74,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 				MinMaxContext context = new MinMaxContext();
 				context.setCurrentIndex(0);
 				
-				if (deepAnalysisExtent != -1) {
+				if (deepAnalysisExtent != 0) {
 					
 					int emptyCellsCount = 0;
 					

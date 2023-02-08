@@ -19,7 +19,7 @@ public class EngineSettingsDto {
 	private boolean minMaxEnabled = true;
 	
 	@Default
-	private int minMaxAnalysisExtent = -1;
+	private int minMaxExtent = -1;
 	
 	private int minMaxDepth;
 	
