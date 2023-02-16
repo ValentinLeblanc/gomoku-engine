@@ -2,13 +2,7 @@ package fr.leblanc.gomoku.engine.model;
 
 import fr.leblanc.gomoku.engine.model.messaging.GameDto;
 import fr.leblanc.gomoku.engine.model.messaging.MoveDto;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
 
-@Getter
-@Setter
-@ToString
 public class DataWrapper {
 
 	private int[][] data;
@@ -67,6 +61,14 @@ public class DataWrapper {
 		return new DataWrapper(data);
 	}
 
+	public int[][] getData() {
+		return data;
+	}
+
+	public void setData(int[][] data) {
+		this.data = data;
+	}
+
 	@Override
 	public int hashCode() {
 		return hashCode(data);
@@ -112,7 +114,5 @@ public class DataWrapper {
 		
 		return result;
 	}
-	
-	
 	
 }

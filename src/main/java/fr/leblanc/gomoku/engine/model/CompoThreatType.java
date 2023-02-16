@@ -1,13 +1,40 @@
 package fr.leblanc.gomoku.engine.model;
 
 import java.util.List;
+import java.util.Objects;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-
-@Data
-@AllArgsConstructor
 public class CompoThreatType {
+
+	public CompoThreatType(ThreatType threatType1, ThreatType threatType2, boolean isPlaying) {
+		super();
+		this.threatType1 = threatType1;
+		this.threatType2 = threatType2;
+		this.isPlaying = isPlaying;
+	}
+
+	public ThreatType getThreatType1() {
+		return threatType1;
+	}
+
+	public void setThreatType1(ThreatType threatType1) {
+		this.threatType1 = threatType1;
+	}
+
+	public ThreatType getThreatType2() {
+		return threatType2;
+	}
+
+	public void setThreatType2(ThreatType threatType2) {
+		this.threatType2 = threatType2;
+	}
+
+	public boolean isPlaying() {
+		return isPlaying;
+	}
+
+	public void setPlaying(boolean isPlaying) {
+		this.isPlaying = isPlaying;
+	}
 
 	private ThreatType threatType1;
 
@@ -223,6 +250,29 @@ public class CompoThreatType {
 		}
 
 		throw new IllegalStateException("CompoThreatType not implemented : " + this);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(isPlaying, threatType1, threatType2);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		CompoThreatType other = (CompoThreatType) obj;
+		return isPlaying == other.isPlaying && threatType1 == other.threatType1 && threatType2 == other.threatType2;
+	}
+
+	@Override
+	public String toString() {
+		return "CompoThreatType [threatType1=" + threatType1 + ", threatType2=" + threatType2 + ", isPlaying="
+				+ isPlaying + "]";
 	}
 	
 }

@@ -1,6 +1,8 @@
 package fr.leblanc.gomoku.engine.service.impl;
 
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -20,12 +22,12 @@ import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.StrikeService;
 import fr.leblanc.gomoku.engine.util.GameHelper;
 import fr.leblanc.gomoku.engine.util.cache.L2CacheSupport;
-import lombok.extern.apachecommons.CommonsLog;
 
 @Service
-@CommonsLog
 public class EngineServiceImpl implements EngineService {
 
+	private static final Logger logger = LoggerFactory.getLogger(EngineServiceImpl.class);
+	
 	@Autowired
 	private EvaluationService evaluationService;
 	
@@ -108,7 +110,7 @@ public class EngineServiceImpl implements EngineService {
 			return computedMove;
 			
 		} catch (InterruptedException e) {
-			log.info("Interrupted engine service");
+			logger.info("Interrupted engine service");
 			Thread.currentThread().interrupt();
 		} finally {
 			messagingService.sendIsRunning(false);

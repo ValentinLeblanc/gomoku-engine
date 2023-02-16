@@ -2,9 +2,6 @@ package fr.leblanc.gomoku.engine.util;
 
 import java.util.Objects;
 
-import lombok.ToString;
-
-@ToString
 public class Pair<T, U> {
 
 	private T first;
@@ -37,7 +34,7 @@ public class Pair<T, U> {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		Pair other = (Pair) obj;
+		Pair<?,?> other = (Pair<?,?>) obj;
 		return Objects.equals(first, other.first) && Objects.equals(second, other.second);
 	}
 	

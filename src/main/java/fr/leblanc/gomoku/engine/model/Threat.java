@@ -5,11 +5,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import lombok.RequiredArgsConstructor;
-import lombok.ToString;
-
-@RequiredArgsConstructor
-@ToString
 public class Threat {
 
 	public Set<Cell> getPlainCells() {
@@ -46,10 +41,18 @@ public class Threat {
 		this.threatType = threatType;
 	}
 	
+	public Threat() {
+	}
+
 	public Set<Cell> getKillingCells() {
 		return getBlockingCells(null);
 	}
 	
+	
+	public Set<Cell> getBlockingCells(Cell playingCell) {
+		return emptyCells.stream().filter(c -> !c.equals(playingCell)).collect(Collectors.toSet());
+	}
+
 	@Override
 	public int hashCode() {
 		return Objects.hash(emptyCells, plainCells, threatType);
@@ -87,8 +90,9 @@ public class Threat {
 		return true;
 	}
 
-	public Set<Cell> getBlockingCells(Cell playingCell) {
-		return emptyCells.stream().filter(c -> !c.equals(playingCell)).collect(Collectors.toSet());
+	@Override
+	public String toString() {
+		return "Threat [plainCells=" + plainCells + ", emptyCells=" + emptyCells + ", threatType=" + threatType + "]";
 	}
 	
 }

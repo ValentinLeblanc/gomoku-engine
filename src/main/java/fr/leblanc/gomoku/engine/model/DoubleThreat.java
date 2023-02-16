@@ -4,12 +4,14 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import lombok.RequiredArgsConstructor;
-import lombok.ToString;
-
-@RequiredArgsConstructor
-@ToString
 public class DoubleThreat extends Threat {
+
+	public DoubleThreat(Set<Cell> plainCells, Set<Cell> emptyCells, ThreatType threatType) {
+		super(plainCells, emptyCells, threatType);
+	}
+
+	public DoubleThreat() {
+	}
 
 	private Cell targetCell;
 	
@@ -17,6 +19,10 @@ public class DoubleThreat extends Threat {
 	
 	private Set<Cell> killingCells = new HashSet<>();
 	
+	public Set<Cell> getBlockingCells() {
+		return blockingCells;
+	}
+
 	@Override
 	public boolean equals(Object obj) {
 		

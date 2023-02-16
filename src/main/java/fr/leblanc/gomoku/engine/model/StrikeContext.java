@@ -1,5 +1,7 @@
 package fr.leblanc.gomoku.engine.model;
 
+import java.util.Objects;
+
 public class StrikeContext {
 
 	private int strikeDepth;
@@ -30,6 +32,30 @@ public class StrikeContext {
 
 	public void setStrikeTimeout(int strikeTimeout) {
 		this.strikeTimeout = strikeTimeout;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(minMaxDepth, strikeDepth, strikeTimeout);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		StrikeContext other = (StrikeContext) obj;
+		return minMaxDepth == other.minMaxDepth && strikeDepth == other.strikeDepth
+				&& strikeTimeout == other.strikeTimeout;
+	}
+
+	@Override
+	public String toString() {
+		return "StrikeContext [strikeDepth=" + strikeDepth + ", minMaxDepth=" + minMaxDepth + ", strikeTimeout="
+				+ strikeTimeout + "]";
 	}
 	
 }

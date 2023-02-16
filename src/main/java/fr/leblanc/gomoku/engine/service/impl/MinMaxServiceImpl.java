@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
@@ -20,11 +22,11 @@ import fr.leblanc.gomoku.engine.service.MessageService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.ThreatContextService;
 import fr.leblanc.gomoku.engine.util.GameHelper;
-import lombok.extern.apachecommons.CommonsLog;
 
 @Service
-@CommonsLog
 public class MinMaxServiceImpl implements MinMaxService {
+	
+	private static final Logger logger = LoggerFactory.getLogger(MinMaxServiceImpl.class);
 	
 	@Autowired
 	private ThreatContextService threatContextService;
@@ -45,8 +47,8 @@ public class MinMaxServiceImpl implements MinMaxService {
 	@Override
 	public MinMaxResult computeMinMax(DataWrapper dataWrapper, List<Cell> cells, int depth, int extent) throws InterruptedException {
 		
-		if (log.isDebugEnabled()) {
-			log.debug("starting minMax...");
+		if (logger.isDebugEnabled()) {
+			logger.debug("starting minMax...");
 		}
 		
 		isComputing = true;
@@ -111,16 +113,16 @@ public class MinMaxServiceImpl implements MinMaxService {
 				
 				stopWatch.stop();
 				
-				if (log.isDebugEnabled()) {
-					log.debug("minMax elpased time : " + stopWatch.getTotalTimeMillis() + " ms");
-					log.debug("result = " + result);
+				if (logger.isDebugEnabled()) {
+					logger.debug("minMax elpased time : " + stopWatch.getTotalTimeMillis() + " ms");
+					logger.debug("result = " + result);
 				}
 				
 				return result;
 			} catch (InterruptedException e) {
 				throw e;
 			} catch (Exception e) {
-				log.error("Error while computing min/max : " + e.getMessage(), e);
+				logger.error("Error while computing min/max : " + e.getMessage(), e);
 			}
 		} finally {
 			isComputing = false;

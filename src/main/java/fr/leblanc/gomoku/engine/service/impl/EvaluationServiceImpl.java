@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -27,12 +29,12 @@ import fr.leblanc.gomoku.engine.service.ThreatContextService;
 import fr.leblanc.gomoku.engine.util.GameHelper;
 import fr.leblanc.gomoku.engine.util.Pair;
 import fr.leblanc.gomoku.engine.util.cache.L2CacheSupport;
-import lombok.extern.apachecommons.CommonsLog;
 
 @Service
-@CommonsLog
 public class EvaluationServiceImpl implements EvaluationService {
 
+	private static final Logger logger = LoggerFactory.getLogger(EvaluationServiceImpl.class);
+	
 	@Autowired
 	private ThreatContextService threatContextService;
 	
@@ -102,8 +104,8 @@ public class EvaluationServiceImpl implements EvaluationService {
 				}
 				evaluation += threatEvaluation;
 				threatTypeEvaluation += threatEvaluation;
-				if (log.isDebugEnabled() && threatEvaluation != 0 && context.isExternal()) {
-					log.debug(threatEvaluation + " AT " + retrieveThreatCell(threatPair) + " FROM "  + compoThreatType);
+				if (logger.isDebugEnabled() && threatEvaluation != 0 && context.isExternal()) {
+					logger.debug(threatEvaluation + " AT " + retrieveThreatCell(threatPair) + " FROM "  + compoThreatType);
 				}
 			}
 			

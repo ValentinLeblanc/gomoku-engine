@@ -230,6 +230,5 @@ public enum ThreatType {
 		
 		return List.of();
 	}
-
 	
 }

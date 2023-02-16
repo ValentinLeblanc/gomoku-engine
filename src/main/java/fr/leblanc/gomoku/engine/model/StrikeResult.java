@@ -1,5 +1,7 @@
 package fr.leblanc.gomoku.engine.model;
 
+import java.util.Objects;
+
 public class StrikeResult {
 
 	public StrikeResult(Cell resultCell, StrikeType strikeType) {
@@ -37,4 +39,27 @@ public class StrikeResult {
 		DEFEND_STRIKE,
 		EMPTY_STRIKE
 	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(resultCell, strikeType);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		StrikeResult other = (StrikeResult) obj;
+		return Objects.equals(resultCell, other.resultCell) && strikeType == other.strikeType;
+	}
+
+	@Override
+	public String toString() {
+		return "StrikeResult [resultCell=" + resultCell + ", strikeType=" + strikeType + "]";
+	}
+	
 }
