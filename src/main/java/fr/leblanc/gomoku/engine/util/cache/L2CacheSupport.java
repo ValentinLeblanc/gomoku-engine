@@ -2,6 +2,7 @@ package fr.leblanc.gomoku.engine.util.cache;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.DataWrapper;
@@ -43,11 +44,11 @@ public class L2CacheSupport {
 		return threadLocalCache.get().getMinMaxCache();
 	}
 	
-	public static Map<Integer, Map<DataWrapper, Cell>> getDirectStrikeAttempts() {
+	public static Map<Integer, Map<DataWrapper, Optional<Cell>>> getDirectStrikeAttempts() {
 		return threadLocalCache.get().getDirectStrikeAttempts();
 	}
 	
-	public static Map<Integer, Map<DataWrapper, Cell>> getSecondaryStrikeAttempts() {
+	public static Map<Integer, Map<DataWrapper, Optional<Cell>>> getSecondaryStrikeAttempts() {
 		return threadLocalCache.get().getSecondaryStrikeAttempts();
 	}
 

@@ -68,6 +68,13 @@ public class EngineServiceImpl implements EngineService {
 			return new MoveDto(game.getBoardSize() / 2, game.getBoardSize() / 2, playingColor);
 		}
 
+		for (int color : EngineConstants.COLORS) {
+			int[][] result = new int[5][2];
+			if (checkWinService.checkWin(DataWrapper.of(game), color, result)) {
+				return null;
+			}
+		}
+		
 		try {
 
 			MoveDto computedMove = L2CacheSupport.doInCacheContext(() -> {

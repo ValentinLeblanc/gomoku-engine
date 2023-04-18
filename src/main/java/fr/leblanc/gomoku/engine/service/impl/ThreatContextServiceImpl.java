@@ -66,7 +66,7 @@ public class ThreatContextServiceImpl implements ThreatContextService {
 	}
 	
 	@Override
-	public List<Cell> buildAnalyzedMoves(DataWrapper dataWrapper, int color) {
+	public List<Cell> buildAnalyzedCells(DataWrapper dataWrapper, int color) {
 
 		List<Cell> analysedMoves = new ArrayList<>();
 

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -105,7 +106,11 @@ public class StrikeServiceImpl implements StrikeService {
 				
 				if (!counterOpponentThreats.isEmpty()) {
 					
-					Cell defense = minMaxService.computeMinMax(dataWrapper, counterOpponentThreats, strikeContext.getMinMaxDepth(), 3).getOptimalMoves().get(0);
+					Cell defense = counterOpponentThreats.get(0);
+					
+					if (counterOpponentThreats.size() > 1) {
+						defense = minMaxService.computeMinMax(dataWrapper, counterOpponentThreats, strikeContext.getMinMaxDepth(), 0).getOptimalMoves().get(0);
+					}
 					
 					stopWatch.stop();
 					
@@ -230,7 +235,7 @@ public class StrikeServiceImpl implements StrikeService {
 		}
 		
 		if (L2CacheSupport.isCacheEnabled() && L2CacheSupport.getDirectStrikeAttempts().containsKey(playingColor) && L2CacheSupport.getDirectStrikeAttempts().get(playingColor).containsKey(dataWrapper)) {
-			return L2CacheSupport.getDirectStrikeAttempts().get(playingColor).get(dataWrapper);
+			return L2CacheSupport.getDirectStrikeAttempts().get(playingColor).get(dataWrapper).orElse(null);
 		}
 		
 		ThreatContext computeThreatContext = threatContextService.computeThreatContext(dataWrapper, playingColor);
@@ -245,7 +250,7 @@ public class StrikeServiceImpl implements StrikeService {
 			Cell move = threatMap.get(ThreatType.THREAT_5).iterator().next().getEmptyCells().iterator().next();
 			
 			if (L2CacheSupport.isCacheEnabled()) {
-				L2CacheSupport.getDirectStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), move);
+				L2CacheSupport.getDirectStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), Optional.of(move));
 			}
 			
 			return move;
@@ -290,7 +295,7 @@ public class StrikeServiceImpl implements StrikeService {
 						
 						if (nextThreat != null) {
 							if (L2CacheSupport.isCacheEnabled()) {
-								L2CacheSupport.getDirectStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), opponentThreat);
+								L2CacheSupport.getDirectStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), Optional.of(opponentThreat));
 							}
 							return opponentThreat;
 						}
@@ -302,7 +307,7 @@ public class StrikeServiceImpl implements StrikeService {
 			}
 			
 			if (L2CacheSupport.isCacheEnabled()) {
-				L2CacheSupport.getDirectStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), null);
+				L2CacheSupport.getDirectStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), Optional.empty());
 			}
 			
 			return null;
@@ -311,7 +316,7 @@ public class StrikeServiceImpl implements StrikeService {
 		// check for a double threat4 move
 		if (!doubleThreatMap.get(ThreatType.DOUBLE_THREAT_4).isEmpty()) {
 			if (L2CacheSupport.isCacheEnabled()) {
-				L2CacheSupport.getDirectStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), doubleThreatMap.get(ThreatType.DOUBLE_THREAT_4).iterator().next().getTargetCell());
+				L2CacheSupport.getDirectStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), Optional.of(doubleThreatMap.get(ThreatType.DOUBLE_THREAT_4).iterator().next().getTargetCell()));
 			}
 			return doubleThreatMap.get(ThreatType.DOUBLE_THREAT_4).iterator().next().getTargetCell();
 		}
@@ -348,14 +353,14 @@ public class StrikeServiceImpl implements StrikeService {
 
 			if (nextAttempt != null) {
 				if (L2CacheSupport.isCacheEnabled()) {
-					L2CacheSupport.getDirectStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), threat4Move);
+					L2CacheSupport.getDirectStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), Optional.of(threat4Move));
 				}
 				return threat4Move;
 			}
 		}
 		
 		if (L2CacheSupport.isCacheEnabled()) {
-			L2CacheSupport.getDirectStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), null);
+			L2CacheSupport.getDirectStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), Optional.empty());
 		}
 
 		return null;
@@ -378,7 +383,7 @@ public class StrikeServiceImpl implements StrikeService {
 			return defendingMoves;
 		}
 		
-		List<Cell> analysedMoves =  threatContextService.buildAnalyzedMoves(dataWrapper, playingColor);
+		List<Cell> analysedMoves =  threatContextService.buildAnalyzedCells(dataWrapper, playingColor);
 		
 		for (Cell analysedMove : analysedMoves) {
 			messagingService.sendAnalysisCell(analysedMove, playingColor);
@@ -441,7 +446,7 @@ public class StrikeServiceImpl implements StrikeService {
 		}
 		
 		if (L2CacheSupport.isCacheEnabled() && L2CacheSupport.getSecondaryStrikeAttempts().containsKey(playingColor) && L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).containsKey(dataWrapper)) {
-			return L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).get(dataWrapper);
+			return L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).get(dataWrapper).orElse(null);
 		}
 		
 		// check for a strike
@@ -461,10 +466,10 @@ public class StrikeServiceImpl implements StrikeService {
 			if (L2CacheSupport.isCacheEnabled()) {
 				if (defend == null) {
 					if (depth + 1 == strikeContext.getStrikeDepth()) {
-						L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), null);
+						L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), Optional.empty());
 					}
 				} else {
-					L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), defend);
+					L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), Optional.of(defend));
 				}
 			}
 			
@@ -479,7 +484,7 @@ public class StrikeServiceImpl implements StrikeService {
 			
 			if (retry != null) {
 				if (L2CacheSupport.isCacheEnabled()) {
-					L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), retry);
+					L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), Optional.of(retry));
 				}
 				return retry;
 			}
@@ -489,7 +494,7 @@ public class StrikeServiceImpl implements StrikeService {
 		
 		if (retry != null) {
 			if (L2CacheSupport.isCacheEnabled()) {
-				L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), retry);
+				L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), Optional.of(retry));
 			}
 			return retry;
 		}

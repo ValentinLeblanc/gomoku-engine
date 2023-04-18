@@ -3,24 +3,63 @@ package fr.leblanc.gomoku.engine.model;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class MinMaxContext {
 	
-	private int currentIndex = 0;
-	
+	private AtomicInteger currentIndex = new AtomicInteger(0);
 	private int endIndex;
-	
 	private int indexDepth = 0;
-	
+	private int maxDepth;
+	private boolean findMax;
 	private Map<Integer, Double> minList = new HashMap<>();
-	
 	private Map<Integer, Double> maxList = new HashMap<>();
+	private AtomicReference<Double> firstMaximum = new AtomicReference<>(Double.NEGATIVE_INFINITY);
+	
+	public MinMaxContext() {
+		
+	}
+	
+	public MinMaxContext(MinMaxContext context) {
+		this.currentIndex = context.currentIndex;
+		this.maxDepth = context.maxDepth;
+		this.endIndex = context.endIndex;
+		this.indexDepth = context.indexDepth;
+		this.findMax = context.findMax;
+		this.currentIndex = context.currentIndex;
+		this.firstMaximum = context.firstMaximum;
+	}
+	
+	public boolean isFindMax() {
+		return findMax;
+	}
 
-	public int getCurrentIndex() {
+	public void setFindMax(boolean findMax) {
+		this.findMax = findMax;
+	}
+
+	public int getMaxDepth() {
+		return maxDepth;
+	}
+
+	public void setMaxDepth(int maxDepth) {
+		this.maxDepth = maxDepth;
+	}
+
+	public AtomicReference<Double> getFirstMaximum() {
+		return firstMaximum;
+	}
+
+	public void setFirstMaximum(AtomicReference<Double> firstMin) {
+		this.firstMaximum = firstMin;
+	}
+
+	public AtomicInteger getCurrentIndex() {
 		return currentIndex;
 	}
 
-	public void setCurrentIndex(int currentIndex) {
+	public void setCurrentIndex(AtomicInteger currentIndex) {
 		this.currentIndex = currentIndex;
 	}
 

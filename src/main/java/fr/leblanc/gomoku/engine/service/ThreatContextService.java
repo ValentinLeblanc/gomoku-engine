@@ -17,7 +17,7 @@ public interface ThreatContextService {
 	
 	Set<Cell> findCombinedThreats(ThreatContext threatContext, ThreatType threatType1, ThreatType threatType2);
 
-	List<Cell> buildAnalyzedMoves(DataWrapper dataWrapper, int color);
+	List<Cell> buildAnalyzedCells(DataWrapper dataWrapper, int color);
 
 	List<Pair<Threat, Threat>> findCompositeThreats(ThreatContext context, CompoThreatType threatTryContext);
 

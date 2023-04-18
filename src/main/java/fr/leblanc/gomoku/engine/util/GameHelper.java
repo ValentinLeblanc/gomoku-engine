@@ -30,4 +30,17 @@ public class GameHelper {
 	public static int extractPlayingColor(GameDto game) {
 		return game.getMoves().size() % 2 == 0 ? EngineConstants.BLACK_COLOR : EngineConstants.WHITE_COLOR;
 	}
+	
+	public static int countEmptyCells(DataWrapper dataWrapper) {
+		int emptyCellsCount = 0;
+		
+		for (int i = 0; i < dataWrapper.getData().length; i++) {
+			for (int j = 0; j < dataWrapper.getData().length; j++) {
+				if (dataWrapper.getData()[i][j] == EngineConstants.NONE_COLOR) {
+					emptyCellsCount++;
+				}
+			}
+		}
+		return emptyCellsCount;
+	}
 }
