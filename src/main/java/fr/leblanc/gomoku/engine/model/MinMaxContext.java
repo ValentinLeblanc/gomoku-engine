@@ -12,6 +12,7 @@ public class MinMaxContext {
 	private int endIndex;
 	private int indexDepth = 0;
 	private int maxDepth;
+	private int playingColor;
 	private boolean findMax;
 	private Map<Integer, Double> minList = new HashMap<>();
 	private Map<Integer, Double> maxList = new HashMap<>();
@@ -29,8 +30,17 @@ public class MinMaxContext {
 		this.findMax = context.findMax;
 		this.currentIndex = context.currentIndex;
 		this.firstMaximum = context.firstMaximum;
+		this.playingColor = context.playingColor;
 	}
 	
+	public int getPlayingColor() {
+		return playingColor;
+	}
+
+	public void setPlayingColor(int playingColor) {
+		this.playingColor = playingColor;
+	}
+
 	public boolean isFindMax() {
 		return findMax;
 	}
