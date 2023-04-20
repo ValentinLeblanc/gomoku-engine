@@ -57,8 +57,8 @@ public class MinMaxServiceImpl implements MinMaxService {
 		
 		MinMaxResult result = null;
 		
-		if (logger.isDebugEnabled()) {
-			logger.debug("starting minMax...");
+		if (logger.isInfoEnabled()) {
+			logger.info("starting minMax...");
 		}
 		
 		StopWatch stopWatch = new StopWatch();
@@ -72,7 +72,8 @@ public class MinMaxServiceImpl implements MinMaxService {
 			context.setMaxDepth(maxDepth);
 			context.setFindMax(maxDepth % 2 == 0);
 			context.setPlayingColor(GameHelper.extractPlayingColor(dataWrapper));
-			
+			context.setOptimumReference(context.isFindMax() ? new AtomicReference<>(Double.NEGATIVE_INFINITY) : new AtomicReference<>(Double.POSITIVE_INFINITY));
+
 			if (analyzedCells == null) {
 				analyzedCells = threatContextService.buildAnalyzedCells(dataWrapper, context.getPlayingColor());
 			}
@@ -116,9 +117,9 @@ public class MinMaxServiceImpl implements MinMaxService {
 			messagingService.sendPercentCompleted(1, 100);
 			stopWatch.stop();
 			
-			if (logger.isDebugEnabled()) {
-				logger.debug(String.format("minMax elpased time : %d ms", stopWatch.getTotalTimeMillis()));
-				logger.debug(String.format("result = %s", result));
+			if (logger.isInfoEnabled()) {
+				logger.info(String.format("minMax elpased time : %d ms", stopWatch.getTotalTimeMillis()));
+				logger.info(String.format("result = %s", result));
 			}
 		}
 
@@ -260,7 +261,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			
 			Map<Integer, Double> optimumList = findMax ? context.getMaxList() : context.getMinList();
 			Map<Integer, Double> otherList = findMax ? context.getMinList() : context.getMaxList();
-			AtomicReference<Double> firstMaximum = context.getFirstMaximum();
+			AtomicReference<Double> optimumReference = context.getOptimumReference();
 			
 			if (factor * currentEvaluation > factor * optimalEvaluation) {
 				optimalEvaluation = currentEvaluation;
@@ -272,14 +273,17 @@ public class MinMaxServiceImpl implements MinMaxService {
 					result.getOptimalMoves().put(entry.getKey(), entry.getValue());
 				}
 				
-				if (currentDepth == 0 && optimalEvaluation > firstMaximum.get()) {
-					firstMaximum.set(optimalEvaluation);
+				if (currentDepth == 0 && factor * optimalEvaluation > factor * optimumReference.get()) {
+					if (logger.isDebugEnabled()) {
+						logger.debug(String.format("new optimum: %s", optimumReference.get()));
+					}
+					optimumReference.set(optimalEvaluation);
 				}
 				
 				optimumList.put(currentDepth, optimalEvaluation);
 				
 				double eval = optimalEvaluation;
-				if (isOptimumReached(currentDepth, factor, otherList, eval, firstMaximum.get())) {
+				if (isOptimumReached(currentDepth, factor, otherList, eval, optimumReference.get())) {
 					break;
 				}
 			}
@@ -292,14 +296,18 @@ public class MinMaxServiceImpl implements MinMaxService {
 	
 		stopWatch.stop();
 		
+		if (currentDepth == 0 && logger.isDebugEnabled()) {
+			logger.debug(String.format("current thread elapsed time: %d ms", stopWatch.getTotalTimeMillis()));
+		}
+		
 		context.getMaxList().remove(currentDepth);
 		context.getMinList().remove(currentDepth);
 		
 		return result;
 	}
 
-	private boolean isOptimumReached(int depth, int factor, Map<Integer, Double> otherList, double eval, Double firstMaximum) {
-		if (otherList.containsKey(0) && depth > 0 && factor * eval >= factor * firstMaximum) {
+	private boolean isOptimumReached(int depth, int factor, Map<Integer, Double> otherList, double eval, Double optimum) {
+		if (otherList.containsKey(0) && depth > 0 && factor * eval >= factor * optimum) {
 			return true;
 		}
 		return otherList.entrySet().stream().anyMatch(entry -> entry.getKey() < depth && factor * eval >= factor * entry.getValue());

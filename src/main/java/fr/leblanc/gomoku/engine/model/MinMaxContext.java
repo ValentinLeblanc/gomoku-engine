@@ -16,7 +16,7 @@ public class MinMaxContext {
 	private boolean findMax;
 	private Map<Integer, Double> minList = new HashMap<>();
 	private Map<Integer, Double> maxList = new HashMap<>();
-	private AtomicReference<Double> firstMaximum = new AtomicReference<>(Double.NEGATIVE_INFINITY);
+	private AtomicReference<Double> optimumReference;
 	
 	public MinMaxContext() {
 		
@@ -29,7 +29,7 @@ public class MinMaxContext {
 		this.indexDepth = context.indexDepth;
 		this.findMax = context.findMax;
 		this.currentIndex = context.currentIndex;
-		this.firstMaximum = context.firstMaximum;
+		this.optimumReference = context.optimumReference;
 		this.playingColor = context.playingColor;
 	}
 	
@@ -57,12 +57,12 @@ public class MinMaxContext {
 		this.maxDepth = maxDepth;
 	}
 
-	public AtomicReference<Double> getFirstMaximum() {
-		return firstMaximum;
+	public AtomicReference<Double> getOptimumReference() {
+		return optimumReference;
 	}
 
-	public void setFirstMaximum(AtomicReference<Double> firstMin) {
-		this.firstMaximum = firstMin;
+	public void setOptimumReference(AtomicReference<Double> firstMin) {
+		this.optimumReference = firstMin;
 	}
 
 	public AtomicInteger getCurrentIndex() {
