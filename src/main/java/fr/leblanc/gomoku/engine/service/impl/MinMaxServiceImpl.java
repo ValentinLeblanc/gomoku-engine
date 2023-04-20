@@ -9,9 +9,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,9 +51,11 @@ public class MinMaxServiceImpl implements MinMaxService {
 	@Autowired
 	private MessageService messagingService;
 	
+	private ExecutorService multiThreadPoolExecutor;
+	
 	private boolean isComputing = false;
 	
-	private boolean stopComputation = false;
+	private AtomicBoolean stopComputation = new AtomicBoolean(false);
 	
 	@Override
 	public MinMaxResult computeMinMax(DataWrapper dataWrapper, List<Cell> analyzedCells, int maxDepth, int extent) throws InterruptedException {
@@ -89,7 +94,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 				for (int i = 0; i < extent; i++) {
 					if (!analyzedCells.isEmpty()) {
 						result = internalMinMax(dataWrapper, analyzedCells, context);
-						Cell tempResult = result.getOptimalMoves().get(0);
+						Cell tempResult = result != null ? result.getOptimalMoves().get(0) : null;
 						if (tempResult != null) {
 							extentAnalyzedCells.add(tempResult);
 							analyzedCells.remove(tempResult);
@@ -108,8 +113,6 @@ public class MinMaxServiceImpl implements MinMaxService {
 			}
 			
 			return result;
-		} catch (InterruptedException e) {
-			throw e;
 		} catch (Exception e) {
 			logger.error("Error while computing min/max : " + e.getMessage(), e);
 		} finally {
@@ -133,14 +136,17 @@ public class MinMaxServiceImpl implements MinMaxService {
 
 	@Override
 	public void stopComputation() {
-		stopComputation = true;
+		stopComputation.set(true);
 		isComputing = false;
+		multiThreadPoolExecutor.shutdownNow();
 	}
 	
 	
-	private MinMaxResult internalMinMax(DataWrapper dataWrapper, List<Cell> analysedMoves, MinMaxContext context) throws InterruptedException, ExecutionException {
+	private MinMaxResult internalMinMax(DataWrapper dataWrapper, List<Cell> analysedMoves, MinMaxContext context) {
 		
 		int threadsInvolved = context.getMaxDepth() > 2 ? MAX_THREADS : 1;
+		
+		multiThreadPoolExecutor = Executors.newFixedThreadPool(threadsInvolved);
 		
 		List<RecursiveMinMaxCommand> commands = new ArrayList<>();
 		
@@ -158,36 +164,50 @@ public class MinMaxServiceImpl implements MinMaxService {
 			commands.add(new RecursiveMinMaxCommand(dataWrapper, cells, context, L2CacheSupport.getCurrentCache()));
 		}
 		
-		List<Future<MinMaxResult>> results = Executors.newFixedThreadPool(threadsInvolved).invokeAll(commands);
-		
-		results.sort(resultsComparator(context.isFindMax()));
-		
-		return results.get(0).get();
+		try {
+			List<Future<MinMaxResult>> futures = multiThreadPoolExecutor.invokeAll(commands);
+			List<MinMaxResult> results = futures.stream().map(r -> {
+				try {
+					return r.get();
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				} catch (ExecutionException e) {
+					if (e.getCause() instanceof InterruptedException) {
+						if (stopComputation.get()) {
+							stopComputation.set(false);
+							logger.warn("engine was interrupted");
+						}
+					} else {
+						logger.error("Error while executing minMax thread: " + e.getMessage(), e);
+					}
+				}
+				return new MinMaxResult();
+			}).filter(r -> r.getFinalEvaluation() != null).collect(Collectors.toList());
+			results.sort(resultsComparator(context.isFindMax()));
+			if (!results.isEmpty()) {
+				return results.get(0);
+			}
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
+		return null;
 	}
 
-	private Comparator<? super Future<MinMaxResult>> resultsComparator(boolean findMax) {
-		return (f1, f2) -> {
-			try {
-				MinMaxResult minMaxResult1 = f1.get();
-				MinMaxResult minMaxResult2 = f2.get();
-				if (findMax) {
-					if (minMaxResult1.getEvaluation() < minMaxResult2.getEvaluation()) {
-						return 1;
-					} else if (minMaxResult1.getEvaluation() == minMaxResult2.getEvaluation()) {
-						return 0;
-					}
-					return -1;
-				}
-				if (minMaxResult1.getEvaluation() > minMaxResult2.getEvaluation()) {
+	private Comparator<? super MinMaxResult> resultsComparator(boolean findMax) {
+		return (minMaxResult1, minMaxResult2) -> {
+			if (minMaxResult1.getFinalEvaluation().equals(minMaxResult2.getFinalEvaluation())) {
+				return 0;
+			}
+			if (findMax) {
+				if (minMaxResult1.getFinalEvaluation() < minMaxResult2.getFinalEvaluation()) {
 					return 1;
-				} else if (minMaxResult1.getEvaluation() == minMaxResult2.getEvaluation()) {
-					return 0;
 				}
 				return -1;
-			} catch (InterruptedException | ExecutionException e1) {
-				 Thread.currentThread().interrupt();
 			}
-			return 0;
+			if (minMaxResult1.getFinalEvaluation() > minMaxResult2.getFinalEvaluation()) {
+				return 1;
+			}
+			return -1;
 		};
 	}
 	
@@ -206,13 +226,13 @@ public class MinMaxServiceImpl implements MinMaxService {
 		}
 		
 		@Override
-		public MinMaxResult call() {
+		public MinMaxResult call() throws InterruptedException {
 			try {
 				return L2CacheSupport.doInCacheContext(() -> recursiveMinMax(dataWrapper, context.getPlayingColor(), cells, context.isFindMax(), 0, context), cache);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
+				throw e;
 			}
-			return null;
 		}
 
 	}
@@ -228,8 +248,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 		
 		for (Cell analysedMove : analysedMoves) {
 			
-			if (stopComputation) {
-				stopComputation = false;
+			if (stopComputation.get()) {
 				throw new InterruptedException();
 			}
 			
@@ -267,23 +286,24 @@ public class MinMaxServiceImpl implements MinMaxService {
 				optimalEvaluation = currentEvaluation;
 				
 				result.setEvaluation(optimalEvaluation);
-				result.getOptimalMoves().put(currentDepth, analysedMove);
 				
 				for (Entry<Integer, Cell> entry : subResult.getOptimalMoves().entrySet()) {
 					result.getOptimalMoves().put(entry.getKey(), entry.getValue());
 				}
-				
+				result.getOptimalMoves().put(currentDepth, analysedMove);
+
 				if (currentDepth == 0 && factor * optimalEvaluation > factor * optimumReference.get()) {
-					optimumReference.set(optimalEvaluation);
 					if (logger.isDebugEnabled()) {
-						logger.debug(String.format("new optimum: %s", optimumReference.get()));
+						logger.debug(String.format("current best move: %s, new optimum: %d", analysedMove, (int) (factor * optimalEvaluation)));
 					}
+					optimumReference.set(optimalEvaluation);
+					result.getOptimalMoves().put(currentDepth, analysedMove);
+					result.setFinalEvaluation(optimalEvaluation);
 				}
 				
 				optimumList.put(currentDepth, optimalEvaluation);
 				
-				double eval = optimalEvaluation;
-				if (isOptimumReached(currentDepth, factor, otherList, eval, optimumReference.get())) {
+				if (isOptimumReached(currentDepth, factor, otherList, optimalEvaluation, optimumReference.get())) {
 					break;
 				}
 			}
@@ -296,10 +316,6 @@ public class MinMaxServiceImpl implements MinMaxService {
 	
 		stopWatch.stop();
 		
-		if (currentDepth == 0 && logger.isDebugEnabled()) {
-			logger.debug(String.format("current thread elapsed time: %d ms", stopWatch.getTotalTimeMillis()));
-		}
-		
 		context.getMaxList().remove(currentDepth);
 		context.getMinList().remove(currentDepth);
 		
@@ -310,18 +326,8 @@ public class MinMaxServiceImpl implements MinMaxService {
 		boolean localOtptimumReeached = otherList.entrySet().stream().anyMatch(entry -> entry.getKey() < depth && factor * eval >= factor * entry.getValue());
 		
 		if (localOtptimumReeached) {
-			if (logger.isDebugEnabled() && depth <= 1) {
-				logger.debug(String.format("local optimum reached: %s for depth: %d", otherList, depth));
-			}
 			return true;
 		}
-		if (otherList.containsKey(0) && depth > 0 && factor * eval > factor * globalOptimum) {
-			if (logger.isDebugEnabled()) {
-				logger.debug(String.format("global optimum reached: %s for depth: %d", globalOptimum, depth));
-			}
-			return true;
-		}
-		return false;
+		return otherList.containsKey(0) && depth > 0 && factor * eval >= factor * globalOptimum;
 	}
-
 }

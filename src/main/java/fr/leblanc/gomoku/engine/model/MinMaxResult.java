@@ -7,8 +7,17 @@ import java.util.Objects;
 public class MinMaxResult {
 	
 	private double evaluation;
+	private Double finalEvaluation;
 	
 	private Map<Integer, Cell> optimalMoves = new HashMap<>();
+
+	public Double getFinalEvaluation() {
+		return finalEvaluation;
+	}
+
+	public void setFinalEvaluation(Double finalEvaluation) {
+		this.finalEvaluation = finalEvaluation;
+	}
 
 	public double getEvaluation() {
 		return evaluation;
@@ -28,7 +37,7 @@ public class MinMaxResult {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(evaluation, optimalMoves);
+		return Objects.hash(evaluation, finalEvaluation, optimalMoves);
 	}
 
 	@Override
@@ -41,12 +50,15 @@ public class MinMaxResult {
 			return false;
 		MinMaxResult other = (MinMaxResult) obj;
 		return Double.doubleToLongBits(evaluation) == Double.doubleToLongBits(other.evaluation)
+				&& Objects.equals(finalEvaluation, other.finalEvaluation)
 				&& Objects.equals(optimalMoves, other.optimalMoves);
 	}
 
 	@Override
 	public String toString() {
-		return "MinMaxResult [evaluation=" + evaluation + ", optimalMoves=" + optimalMoves + "]";
+		return "MinMaxResult [evaluation=" + evaluation + ", finalEvaluation=" + finalEvaluation + ", optimalMoves="
+				+ optimalMoves + "]";
 	}
+
 
 }

@@ -500,7 +500,7 @@ public class StrikeServiceImpl implements StrikeService {
 		}
 		
 		if (L2CacheSupport.isCacheEnabled() && depth + 1 == strikeContext.getStrikeDepth()) {
-			L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), null);
+			L2CacheSupport.getSecondaryStrikeAttempts().get(playingColor).put(new DataWrapper(dataWrapper), Optional.empty());
 		}
 		
 		return null;

@@ -99,7 +99,7 @@ public class EngineServiceImpl implements EngineService {
 					MinMaxResult minMaxResult = minMaxService.computeMinMax(DataWrapper.of(game), null,
 							game.getSettings().getMinMaxDepth(), game.getSettings().getMinMaxExtent());
 
-					if (!minMaxResult.getOptimalMoves().isEmpty()) {
+					if (minMaxResult != null && !minMaxResult.getOptimalMoves().isEmpty()) {
 						Cell minMaxMove = minMaxResult.getOptimalMoves().get(0);
 						result = new MoveDto(minMaxMove.getColumn(), minMaxMove.getRow(), playingColor);
 					}
