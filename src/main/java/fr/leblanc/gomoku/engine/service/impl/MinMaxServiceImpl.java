@@ -274,10 +274,10 @@ public class MinMaxServiceImpl implements MinMaxService {
 				}
 				
 				if (currentDepth == 0 && factor * optimalEvaluation > factor * optimumReference.get()) {
+					optimumReference.set(optimalEvaluation);
 					if (logger.isDebugEnabled()) {
 						logger.debug(String.format("new optimum: %s", optimumReference.get()));
 					}
-					optimumReference.set(optimalEvaluation);
 				}
 				
 				optimumList.put(currentDepth, optimalEvaluation);
@@ -306,11 +306,22 @@ public class MinMaxServiceImpl implements MinMaxService {
 		return result;
 	}
 
-	private boolean isOptimumReached(int depth, int factor, Map<Integer, Double> otherList, double eval, Double optimum) {
-		if (otherList.containsKey(0) && depth > 0 && factor * eval >= factor * optimum) {
+	private boolean isOptimumReached(int depth, int factor, Map<Integer, Double> otherList, double eval, Double globalOptimum) {
+		boolean localOtptimumReeached = otherList.entrySet().stream().anyMatch(entry -> entry.getKey() < depth && factor * eval >= factor * entry.getValue());
+		
+		if (localOtptimumReeached) {
+			if (logger.isDebugEnabled() && depth <= 1) {
+				logger.debug(String.format("local optimum reached: %s for depth: %d", otherList, depth));
+			}
 			return true;
 		}
-		return otherList.entrySet().stream().anyMatch(entry -> entry.getKey() < depth && factor * eval >= factor * entry.getValue());
+		if (otherList.containsKey(0) && depth > 0 && factor * eval > factor * globalOptimum) {
+			if (logger.isDebugEnabled()) {
+				logger.debug(String.format("global optimum reached: %s for depth: %d", globalOptimum, depth));
+			}
+			return true;
+		}
+		return false;
 	}
 
 }
