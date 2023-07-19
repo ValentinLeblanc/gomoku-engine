@@ -12,15 +12,15 @@ public class EvaluationContext {
 	
 	private int depth;
 	
-	private boolean external;
+	private boolean logEnabled;
 	
-	public EvaluationContext(DataWrapper dataWrapper, int playingColor, int maxDepth, int depth, boolean external) {
+	public EvaluationContext(DataWrapper dataWrapper, int playingColor, int maxDepth, int depth, boolean logEnabled) {
 		super();
 		this.dataWrapper = dataWrapper;
 		this.playingColor = playingColor;
 		this.maxDepth = maxDepth;
 		this.depth = depth;
-		this.external = external;
+		this.logEnabled = logEnabled;
 	}
 
 	public int getPlayingColor() {
@@ -39,12 +39,12 @@ public class EvaluationContext {
 		this.depth = depth;
 	}
 
-	public boolean isExternal() {
-		return external;
+	public boolean isLogEnabled() {
+		return logEnabled;
 	}
 
-	public void setExternal(boolean external) {
-		this.external = external;
+	public void setLogEnabled(boolean logEnabled) {
+		this.logEnabled = logEnabled;
 	}
 
 	public DataWrapper getDataWrapper() {
@@ -69,7 +69,7 @@ public class EvaluationContext {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(dataWrapper, depth, external, maxDepth, playingColor);
+		return Objects.hash(dataWrapper, depth, logEnabled, maxDepth, playingColor);
 	}
 
 	@Override
@@ -81,14 +81,14 @@ public class EvaluationContext {
 		if (getClass() != obj.getClass())
 			return false;
 		EvaluationContext other = (EvaluationContext) obj;
-		return Objects.equals(dataWrapper, other.dataWrapper) && depth == other.depth && external == other.external
+		return Objects.equals(dataWrapper, other.dataWrapper) && depth == other.depth && logEnabled == other.logEnabled
 				&& maxDepth == other.maxDepth && playingColor == other.playingColor;
 	}
 
 	@Override
 	public String toString() {
 		return "EvaluationContext [dataWrapper=" + dataWrapper + ", playingColor=" + playingColor + ", maxDepth="
-				+ maxDepth + ", depth=" + depth + ", external=" + external + "]";
+				+ maxDepth + ", depth=" + depth + ", external=" + logEnabled + "]";
 	}
 	
 }

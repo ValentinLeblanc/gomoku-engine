@@ -27,6 +27,11 @@ public class Pair<T, U> {
 	}
 
 	@Override
+	public String toString() {
+		return "Pair [first=" + first + ", second=" + second + "]";
+	}
+
+	@Override
 	public boolean equals(Object obj) {
 		if (this == obj)
 			return true;

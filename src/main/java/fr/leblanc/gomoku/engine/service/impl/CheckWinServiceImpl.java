@@ -2,15 +2,35 @@ package fr.leblanc.gomoku.engine.service.impl;
 
 import org.springframework.stereotype.Service;
 
+import fr.leblanc.gomoku.engine.model.CheckWinResult;
 import fr.leblanc.gomoku.engine.model.DataWrapper;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
+import fr.leblanc.gomoku.engine.model.messaging.MoveDto;
 import fr.leblanc.gomoku.engine.service.CheckWinService;
 
 @Service
 public class CheckWinServiceImpl implements CheckWinService {
 
 	@Override
-	public boolean checkWin(DataWrapper dataWrapper, int color, int[][] result) {
+	public CheckWinResult checkWin(DataWrapper dataWrapper) {
+		for (int color : EngineConstants.COLORS) {
+			int[][] result = new int[5][2];
+			if (checkWin(dataWrapper, color, result)) {
+				return buildResult(result, color);
+			}
+		}
+		return null;
+	}
+	
+	private CheckWinResult buildResult(int[][] win, int color) {
+		CheckWinResult result = new CheckWinResult(color);
+		for (int i = 0; i < win.length; i++) {
+			result.getWinMoves().add(new MoveDto(win[i][0], win[i][1], color));
+		}
+		return result;
+	}
+	
+	private boolean checkWin(DataWrapper dataWrapper, int color, int[][] result) {
 
 		int[][] data = dataWrapper.getData();
 		

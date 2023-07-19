@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import fr.leblanc.gomoku.engine.model.Cell;
+import fr.leblanc.gomoku.engine.model.CheckWinResult;
 import fr.leblanc.gomoku.engine.model.CompoThreatType;
 import fr.leblanc.gomoku.engine.model.DataWrapper;
 import fr.leblanc.gomoku.engine.model.DoubleThreat;
@@ -47,7 +48,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 	}
 	
 	@Override
-	public EvaluationResult computeEvaluation(DataWrapper dataWrapper, boolean external) {
+	public EvaluationResult computeEvaluation(DataWrapper dataWrapper, boolean logEnabled) {
 		
 		int playingColor = GameHelper.extractPlayingColor(dataWrapper);
 		
@@ -55,7 +56,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 			return L2CacheSupport.getEvaluationCache().get(playingColor).get(dataWrapper);
 		}
 		
-		EvaluationResult evaluation =  evaluateThreats(new EvaluationContext(dataWrapper, playingColor, -1, 0, external));
+		EvaluationResult evaluation =  evaluateThreats(new EvaluationContext(dataWrapper, playingColor, -1, 0, logEnabled));
 		
 		if (L2CacheSupport.isCacheEnabled()) {
 			L2CacheSupport.getEvaluationCache().get(playingColor).put(new DataWrapper(dataWrapper), evaluation);
@@ -68,13 +69,14 @@ public class EvaluationServiceImpl implements EvaluationService {
 		
 		EvaluationResult evaluationResult = new EvaluationResult();
 		
-		if (checkWinService.checkWin(context.getDataWrapper(), context.getPlayingColor(), new int[5][2])) {
-			evaluationResult.setEvaluation(EngineConstants.WIN_EVALUATION);
-			return evaluationResult;
-		}
+		CheckWinResult checkWinResult = checkWinService.checkWin(context.getDataWrapper());
 		
-		if (checkWinService.checkWin(context.getDataWrapper(), -context.getPlayingColor(), new int[5][2])) {
-			evaluationResult.setEvaluation(-EngineConstants.WIN_EVALUATION);
+		if (checkWinResult != null) {
+			if (checkWinResult.getColor() == context.getPlayingColor()) {
+				evaluationResult.setEvaluation(EngineConstants.WIN_EVALUATION);
+			} else {
+				evaluationResult.setEvaluation(-EngineConstants.WIN_EVALUATION);
+			}
 			return evaluationResult;
 		}
 		
@@ -104,7 +106,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 				}
 				evaluation += threatEvaluation;
 				threatTypeEvaluation += threatEvaluation;
-				if (logger.isDebugEnabled() && threatEvaluation != 0 && context.isExternal()) {
+				if (logger.isDebugEnabled() && threatEvaluation != 0 && context.isLogEnabled()) {
 					logger.debug(threatEvaluation + " AT " + retrieveThreatCell(threatPair) + " FROM "  + compoThreatType);
 				}
 			}

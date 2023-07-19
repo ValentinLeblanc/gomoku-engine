@@ -196,7 +196,9 @@ public class CompoThreatType {
 					CompoThreatType.of(ThreatType.DOUBLE_THREAT_4, null, isThreatPlaying),
 					CompoThreatType.of(ThreatType.THREAT_4, ThreatType.THREAT_4, isThreatPlaying),
 					CompoThreatType.of(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3, isThreatPlaying),
-					CompoThreatType.of(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3, isThreatPlaying));
+					CompoThreatType.of(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_2, isThreatPlaying),
+					CompoThreatType.of(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3, isThreatPlaying),
+					CompoThreatType.of(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2, isThreatPlaying));
 		}
 		
 		if (ThreatType.DOUBLE_THREAT_3.equals(threatType1) && ThreatType.DOUBLE_THREAT_3.equals(threatType2)) {

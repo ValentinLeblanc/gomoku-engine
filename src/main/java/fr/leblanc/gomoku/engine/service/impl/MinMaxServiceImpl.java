@@ -74,9 +74,9 @@ public class MinMaxServiceImpl implements MinMaxService {
 		try {
 			
 			MinMaxContext context = new MinMaxContext();
+			context.setPlayingColor(GameHelper.extractPlayingColor(dataWrapper));
 			context.setMaxDepth(maxDepth);
 			context.setFindMax(maxDepth % 2 == 0);
-			context.setPlayingColor(GameHelper.extractPlayingColor(dataWrapper));
 			context.setOptimumReference(context.isFindMax() ? new AtomicReference<>(Double.NEGATIVE_INFINITY) : new AtomicReference<>(Double.POSITIVE_INFINITY));
 
 			if (analyzedCells == null) {

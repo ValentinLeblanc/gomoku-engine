@@ -7,14 +7,12 @@ import fr.leblanc.gomoku.engine.model.messaging.MoveDto;
 
 public class CheckWinResult {
 
-	public boolean isWin() {
-		return isWin;
+	private int color;
+	
+	public int getColor() {
+		return color;
 	}
-
-	public void setWin(boolean isWin) {
-		this.isWin = isWin;
-	}
-
+	
 	public Set<MoveDto> getWinMoves() {
 		return winMoves;
 	}
@@ -23,14 +21,9 @@ public class CheckWinResult {
 		this.winMoves = winMoves;
 	}
 
-	public CheckWinResult(boolean isWin) {
-		this.isWin = isWin;
+	public CheckWinResult(int color) {
+		this.color = color;
 	}
-	
-	public CheckWinResult() {
-	}
-
-	private boolean isWin = false;
 
 	private Set<MoveDto> winMoves = new HashSet<>();
 }
