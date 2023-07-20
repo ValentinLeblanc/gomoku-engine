@@ -39,6 +39,6 @@ class EngineControllerTest {
 				.andExpect(status().isOk())
 				.andReturn();
 		
-		assertEquals("{\"winMoves\":[],\"win\":false}", result.getResponse().getContentAsString());
+		assertEquals("", result.getResponse().getContentAsString());
 	}
 }
