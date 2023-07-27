@@ -77,7 +77,6 @@ public class MinMaxServiceImpl implements MinMaxService {
 			context.setPlayingColor(GameHelper.extractPlayingColor(dataWrapper));
 			context.setMaxDepth(maxDepth);
 			context.setFindMax(maxDepth % 2 == 0);
-			context.setOptimumReference(context.isFindMax() ? new AtomicReference<>(Double.NEGATIVE_INFINITY) : new AtomicReference<>(Double.POSITIVE_INFINITY));
 
 			if (analyzedCells == null) {
 				analyzedCells = threatContextService.buildAnalyzedCells(dataWrapper, context.getPlayingColor());
@@ -144,6 +143,8 @@ public class MinMaxServiceImpl implements MinMaxService {
 	
 	private MinMaxResult internalMinMax(DataWrapper dataWrapper, List<Cell> analysedMoves, MinMaxContext context) {
 		
+		context.setOptimumReference(context.isFindMax() ? new AtomicReference<>(Double.NEGATIVE_INFINITY) : new AtomicReference<>(Double.POSITIVE_INFINITY));
+
 		int threadsInvolved = context.getMaxDepth() > 2 ? MAX_THREADS : 1;
 		
 		multiThreadPoolExecutor = Executors.newFixedThreadPool(threadsInvolved);
