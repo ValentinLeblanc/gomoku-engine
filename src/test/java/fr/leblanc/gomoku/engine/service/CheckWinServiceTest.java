@@ -1,15 +1,15 @@
 package fr.leblanc.gomoku.engine.service;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertFalse;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import fr.leblanc.gomoku.engine.model.Cell;
-import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
+import fr.leblanc.gomoku.engine.model.GameData;
 
 @SpringBootTest
 class CheckWinServiceTest {
@@ -28,7 +28,7 @@ class CheckWinServiceTest {
 		dataWrapper.addMove(new Cell(3, 0), EngineConstants.WHITE_COLOR);
 		dataWrapper.addMove(new Cell(13, 0), EngineConstants.BLACK_COLOR);
 		
-		assertNull(checkWinService.checkWin(dataWrapper));
+		assertFalse(checkWinService.checkWin(dataWrapper).isWin());
 
 		dataWrapper = new GameData(15);
 		

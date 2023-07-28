@@ -70,7 +70,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 		
 		CheckWinResult checkWinResult = checkWinService.checkWin(context.getDataWrapper());
 		
-		if (checkWinResult != null) {
+		if (checkWinResult.isWin()) {
 			if (checkWinResult.getColor() == context.getPlayingColor()) {
 				evaluationResult.setEvaluation(EngineConstants.WIN_EVALUATION);
 			} else {
