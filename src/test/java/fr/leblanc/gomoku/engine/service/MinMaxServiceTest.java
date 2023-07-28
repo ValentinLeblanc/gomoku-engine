@@ -1,6 +1,7 @@
 package fr.leblanc.gomoku.engine.service;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
 import org.junit.jupiter.api.Test;
@@ -28,7 +29,21 @@ class MinMaxServiceTest {
 	private EvaluationService evaluationService;
 	
 	@Test
-	void minMax1Test() throws JsonProcessingException, InterruptedException {
+	void testMinMaxExtent() throws InterruptedException {
+		GameDto gameDto = new GameDto();
+		gameDto.setBoardSize(15);
+		gameDto.getMoves().add(new MoveDto(7, 7, EngineConstants.BLACK_COLOR));
+		
+		MinMaxResult minMaxResult = L2CacheSupport.doInCacheContext(() -> {
+			return minMaxService.computeMinMax(DataWrapper.of(gameDto), null, 2, 2);
+		});
+		
+		assertNotNull(minMaxResult);
+		assertFalse(minMaxResult.getOptimalMoves().isEmpty());
+	}
+	
+	@Test
+	void testMinMaxEvaluation() throws JsonProcessingException, InterruptedException {
 
 		GameDto gameDto = GomokuTestsHelper.readGameDto("minMax1.json");
 
@@ -38,15 +53,15 @@ class MinMaxServiceTest {
 
 		while (i < 5) {
 			i++;
-			testNextMoves(gameDto, 2, playingColor);
+			computeMinMaxAndTestEvaluation(gameDto, 2, playingColor);
 		}
 
-		testNextMoves(gameDto, 3, playingColor);
+		computeMinMaxAndTestEvaluation(gameDto, 3, playingColor);
 
-		testNextMoves(gameDto, 3, -playingColor);
+		computeMinMaxAndTestEvaluation(gameDto, 3, -playingColor);
 	}
 	
-	private void testNextMoves(GameDto gameDto, int depth, int playingColor) throws InterruptedException {
+	private void computeMinMaxAndTestEvaluation(GameDto gameDto, int depth, int playingColor) throws InterruptedException {
 	
 		L2CacheSupport.doInCacheContext(() -> {
 	
@@ -77,7 +92,7 @@ class MinMaxServiceTest {
 	}
 
 	@Test
-	void minMax2Test() throws JsonProcessingException, InterruptedException {
+	void testMinMaxDepth() throws JsonProcessingException, InterruptedException {
 
 		GameDto gameDto = GomokuTestsHelper.readGameDto("minMax2.json");
 
