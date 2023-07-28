@@ -16,7 +16,7 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import com.google.gson.Gson;
 
-import fr.leblanc.gomoku.engine.model.messaging.GameDto;
+import fr.leblanc.gomoku.engine.model.messaging.GameDTO;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -28,7 +28,7 @@ class EngineControllerTest {
 	@Test
 	void checkWinRequestTest() throws Exception {
 
-		GameDto gameDto = new GameDto(15, new HashSet<>(), null);
+		GameDTO gameDto = new GameDTO(15, new HashSet<>(), null);
 
 		Gson gson = new Gson();
 		String json = gson.toJson(gameDto);

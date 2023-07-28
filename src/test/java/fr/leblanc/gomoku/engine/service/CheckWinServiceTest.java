@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import fr.leblanc.gomoku.engine.model.Cell;
-import fr.leblanc.gomoku.engine.model.DataWrapper;
+import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
 
 @SpringBootTest
@@ -20,7 +20,7 @@ class CheckWinServiceTest {
 	@Test
 	void checkWinTest() {
 		
-		DataWrapper dataWrapper = new DataWrapper(15);
+		GameData dataWrapper = new GameData(15);
 		
 		dataWrapper.addMove(new Cell(0, 0), EngineConstants.BLACK_COLOR);
 		dataWrapper.addMove(new Cell(1, 0), EngineConstants.WHITE_COLOR);
@@ -30,7 +30,7 @@ class CheckWinServiceTest {
 		
 		assertNull(checkWinService.checkWin(dataWrapper));
 
-		dataWrapper = new DataWrapper(15);
+		dataWrapper = new GameData(15);
 		
 		dataWrapper.addMove(new Cell(0, 0), EngineConstants.BLACK_COLOR);
 		dataWrapper.addMove(new Cell(1, 0), EngineConstants.BLACK_COLOR);
@@ -40,7 +40,7 @@ class CheckWinServiceTest {
 		
 		assertEquals(EngineConstants.BLACK_COLOR, checkWinService.checkWin(dataWrapper).getColor());
 		
-		dataWrapper = new DataWrapper(15);
+		dataWrapper = new GameData(15);
 		
 		dataWrapper.addMove(new Cell(10, 0), EngineConstants.BLACK_COLOR);
 		dataWrapper.addMove(new Cell(11, 0), EngineConstants.BLACK_COLOR);
@@ -50,7 +50,7 @@ class CheckWinServiceTest {
 		
 		assertEquals(EngineConstants.BLACK_COLOR, checkWinService.checkWin(dataWrapper).getColor());
 		
-		dataWrapper = new DataWrapper(15);
+		dataWrapper = new GameData(15);
 		
 		dataWrapper.addMove(new Cell(0, 0), EngineConstants.WHITE_COLOR);
 		dataWrapper.addMove(new Cell(0, 1), EngineConstants.WHITE_COLOR);
@@ -60,7 +60,7 @@ class CheckWinServiceTest {
 		
 		assertEquals(EngineConstants.WHITE_COLOR, checkWinService.checkWin(dataWrapper).getColor());
 		
-		dataWrapper = new DataWrapper(15);
+		dataWrapper = new GameData(15);
 		
 		dataWrapper.addMove(new Cell(0, 10), EngineConstants.WHITE_COLOR);
 		dataWrapper.addMove(new Cell(0, 11), EngineConstants.WHITE_COLOR);

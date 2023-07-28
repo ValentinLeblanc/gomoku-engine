@@ -4,7 +4,7 @@ import java.util.Objects;
 
 public class EvaluationContext {
 	
-	private DataWrapper dataWrapper;
+	private GameData dataWrapper;
 
 	private int playingColor;
 	
@@ -14,7 +14,7 @@ public class EvaluationContext {
 	
 	private boolean logEnabled;
 	
-	public EvaluationContext(DataWrapper dataWrapper, int playingColor, int maxDepth, int depth, boolean logEnabled) {
+	public EvaluationContext(GameData dataWrapper, int playingColor, int maxDepth, int depth, boolean logEnabled) {
 		super();
 		this.dataWrapper = dataWrapper;
 		this.playingColor = playingColor;
@@ -47,7 +47,7 @@ public class EvaluationContext {
 		this.logEnabled = logEnabled;
 	}
 
-	public DataWrapper getDataWrapper() {
+	public GameData getDataWrapper() {
 		return dataWrapper;
 	}
 

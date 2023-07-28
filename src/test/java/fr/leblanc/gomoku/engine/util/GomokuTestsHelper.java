@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import fr.leblanc.gomoku.engine.model.messaging.GameDto;
+import fr.leblanc.gomoku.engine.model.messaging.GameDTO;
 
 public class GomokuTestsHelper {
 
@@ -19,7 +19,7 @@ public class GomokuTestsHelper {
 		
 	}
 	
-	public static GameDto readGameDto(String resourceName) throws JsonProcessingException {
+	public static GameDTO readGameDto(String resourceName) throws JsonProcessingException {
 		InputStream inputStream = GomokuTestsHelper.class.getClassLoader().getResourceAsStream(resourceName);
 
 		String jsonGame = new BufferedReader(new InputStreamReader(inputStream)).lines()
@@ -27,10 +27,10 @@ public class GomokuTestsHelper {
 
 		ObjectMapper objectMapper = new ObjectMapper();
 
-		return objectMapper.readValue(jsonGame, GameDto.class);
+		return objectMapper.readValue(jsonGame, GameDTO.class);
 	}
 	
-	public static void writeGameDto(GameDto game, String fileName) {
+	public static void writeGameDto(GameDTO game, String fileName) {
 		
 		try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))){
 			ObjectMapper objectMapper = new ObjectMapper();

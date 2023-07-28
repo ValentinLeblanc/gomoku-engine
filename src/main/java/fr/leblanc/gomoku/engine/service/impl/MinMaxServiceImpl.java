@@ -23,15 +23,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
 
 import fr.leblanc.gomoku.engine.model.Cell;
-import fr.leblanc.gomoku.engine.model.DataWrapper;
+import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
 import fr.leblanc.gomoku.engine.model.MinMaxContext;
 import fr.leblanc.gomoku.engine.model.MinMaxResult;
+import fr.leblanc.gomoku.engine.model.messaging.MoveDTO;
 import fr.leblanc.gomoku.engine.service.EvaluationService;
-import fr.leblanc.gomoku.engine.service.MessageService;
+import fr.leblanc.gomoku.engine.service.WebSocketService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.ThreatContextService;
-import fr.leblanc.gomoku.engine.util.GameHelper;
 import fr.leblanc.gomoku.engine.util.cache.GomokuCache;
 import fr.leblanc.gomoku.engine.util.cache.L2CacheSupport;
 
@@ -49,7 +49,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 	private EvaluationService evaluationService;
 
 	@Autowired
-	private MessageService messagingService;
+	private WebSocketService webSocketService;
 	
 	private ExecutorService multiThreadPoolExecutor;
 	
@@ -58,7 +58,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 	private AtomicBoolean stopComputation = new AtomicBoolean(false);
 	
 	@Override
-	public MinMaxResult computeMinMax(DataWrapper dataWrapper, List<Cell> analyzedCells, int maxDepth, int extent) throws InterruptedException {
+	public MinMaxResult computeMinMax(GameData dataWrapper, List<Cell> analyzedCells, int maxDepth, int extent) throws InterruptedException {
 		
 		MinMaxResult result = null;
 		
@@ -74,7 +74,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 		try {
 			
 			MinMaxContext context = new MinMaxContext();
-			context.setPlayingColor(GameHelper.extractPlayingColor(dataWrapper));
+			context.setPlayingColor(GameData.extractPlayingColor(dataWrapper));
 			context.setMaxDepth(maxDepth);
 			context.setFindMax(maxDepth % 2 == 0);
 
@@ -82,7 +82,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 				analyzedCells = threatContextService.buildAnalyzedCells(dataWrapper, context.getPlayingColor());
 			}
 			
-			int emptyCellsCount = GameHelper.countEmptyCells(dataWrapper);
+			int emptyCellsCount = GameData.countEmptyCells(dataWrapper);
 			
 			if (extent > 0) {
 				
@@ -111,12 +111,11 @@ public class MinMaxServiceImpl implements MinMaxService {
 				result = internalMinMax(dataWrapper, analyzedCells, context);
 			}
 			
-			return result;
 		} catch (Exception e) {
 			logger.error("Error while computing min/max : " + e.getMessage(), e);
 		} finally {
 			isComputing = false;
-			messagingService.sendPercentCompleted(1, 100);
+			webSocketService.sendComputingProgress(100);
 			stopWatch.stop();
 			
 			if (logger.isInfoEnabled()) {
@@ -124,8 +123,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 				logger.info(String.format("result = %s", result));
 			}
 		}
-
-		return null;
+		return result;
 	}
 
 	@Override
@@ -141,7 +139,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 	}
 	
 	
-	private MinMaxResult internalMinMax(DataWrapper dataWrapper, List<Cell> analysedMoves, MinMaxContext context) {
+	private MinMaxResult internalMinMax(GameData dataWrapper, List<Cell> analysedMoves, MinMaxContext context) {
 		
 		context.setOptimumReference(context.isFindMax() ? new AtomicReference<>(Double.NEGATIVE_INFINITY) : new AtomicReference<>(Double.POSITIVE_INFINITY));
 
@@ -215,13 +213,13 @@ public class MinMaxServiceImpl implements MinMaxService {
 	private class RecursiveMinMaxCommand implements Callable<MinMaxResult> {
 		
 		private MinMaxContext context;
-		private DataWrapper dataWrapper;
+		private GameData dataWrapper;
 		private List<Cell> cells;
 		private GomokuCache cache;
 		
-		private RecursiveMinMaxCommand(DataWrapper dataWrapper, List<Cell> cells, MinMaxContext context, GomokuCache cache) {
+		private RecursiveMinMaxCommand(GameData dataWrapper, List<Cell> cells, MinMaxContext context, GomokuCache cache) {
 			this.context = new MinMaxContext(context);
-			this.dataWrapper = new DataWrapper(dataWrapper);
+			this.dataWrapper = new GameData(dataWrapper);
 			this.cells = cells;
 			this.cache = cache;
 		}
@@ -238,7 +236,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 
 	}
 
-	private MinMaxResult recursiveMinMax(DataWrapper dataWrapper, int playingColor, List<Cell> analysedMoves, boolean findMax, int currentDepth, MinMaxContext context) throws InterruptedException {
+	private MinMaxResult recursiveMinMax(GameData dataWrapper, int playingColor, List<Cell> analysedMoves, boolean findMax, int currentDepth, MinMaxContext context) throws InterruptedException {
 		
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
@@ -256,7 +254,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			dataWrapper.addMove(analysedMove, playingColor);
 
 			if (currentDepth <= 1) {
-				messagingService.sendAnalysisCell(analysedMove, playingColor);
+				webSocketService.sendAnalysisMove(new MoveDTO(analysedMove, playingColor));
 			}
 			
 			MinMaxResult subResult = new MinMaxResult();
@@ -274,7 +272,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			dataWrapper.removeMove(analysedMove);
 			
 			if (currentDepth <= 1) {
-				messagingService.sendAnalysisCell(analysedMove, EngineConstants.NONE_COLOR);
+				webSocketService.sendAnalysisMove(new MoveDTO(analysedMove, EngineConstants.NONE_COLOR));
 			}
 			
 			int factor = findMax ? 1 : -1;
@@ -311,7 +309,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			if (currentDepth == context.getIndexDepth()) {
 				context.getCurrentIndex().set(context.getCurrentIndex().get() + 1);
 				Integer percentCompleted = context.getCurrentIndex().get() * 100 / context.getEndIndex();
-				messagingService.sendPercentCompleted(1, percentCompleted);
+				webSocketService.sendComputingProgress(percentCompleted);
 			}
 		}
 	

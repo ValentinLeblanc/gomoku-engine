@@ -1,12 +1,13 @@
 package fr.leblanc.gomoku.engine.service;
 
-import fr.leblanc.gomoku.engine.model.messaging.GameDto;
-import fr.leblanc.gomoku.engine.model.messaging.MoveDto;
+import fr.leblanc.gomoku.engine.model.Cell;
+import fr.leblanc.gomoku.engine.model.GameData;
+import fr.leblanc.gomoku.engine.model.messaging.GameSettings;
 
 public interface EngineService {
 
-	MoveDto computeMove(GameDto game);
-
 	void stopComputation();
+
+	Cell computeMove(GameData gameData, GameSettings gameSettings);
 
 }

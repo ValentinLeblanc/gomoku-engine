@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.CheckWinResult;
 import fr.leblanc.gomoku.engine.model.CompoThreatType;
-import fr.leblanc.gomoku.engine.model.DataWrapper;
+import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.DoubleThreat;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
 import fr.leblanc.gomoku.engine.model.EvaluationContext;
@@ -27,7 +27,6 @@ import fr.leblanc.gomoku.engine.model.ThreatType;
 import fr.leblanc.gomoku.engine.service.CheckWinService;
 import fr.leblanc.gomoku.engine.service.EvaluationService;
 import fr.leblanc.gomoku.engine.service.ThreatContextService;
-import fr.leblanc.gomoku.engine.util.GameHelper;
 import fr.leblanc.gomoku.engine.util.Pair;
 import fr.leblanc.gomoku.engine.util.cache.L2CacheSupport;
 
@@ -43,14 +42,14 @@ public class EvaluationServiceImpl implements EvaluationService {
 	private CheckWinService checkWinService;
 	
 	@Override
-	public EvaluationResult computeEvaluation(DataWrapper dataWrapper) {
+	public EvaluationResult computeEvaluation(GameData dataWrapper) {
 		return computeEvaluation(dataWrapper, false);
 	}
 	
 	@Override
-	public EvaluationResult computeEvaluation(DataWrapper dataWrapper, boolean logEnabled) {
+	public EvaluationResult computeEvaluation(GameData dataWrapper, boolean logEnabled) {
 		
-		int playingColor = GameHelper.extractPlayingColor(dataWrapper);
+		int playingColor = GameData.extractPlayingColor(dataWrapper);
 		
 		if (L2CacheSupport.isCacheEnabled() && L2CacheSupport.getEvaluationCache().get(playingColor).containsKey(dataWrapper)) {
 			return L2CacheSupport.getEvaluationCache().get(playingColor).get(dataWrapper);
@@ -59,7 +58,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 		EvaluationResult evaluation =  evaluateThreats(new EvaluationContext(dataWrapper, playingColor, -1, 0, logEnabled));
 		
 		if (L2CacheSupport.isCacheEnabled()) {
-			L2CacheSupport.getEvaluationCache().get(playingColor).put(new DataWrapper(dataWrapper), evaluation);
+			L2CacheSupport.getEvaluationCache().get(playingColor).put(new GameData(dataWrapper), evaluation);
 		}
 		
 		return evaluation;

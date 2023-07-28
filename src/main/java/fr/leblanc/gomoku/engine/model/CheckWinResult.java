@@ -3,7 +3,7 @@ package fr.leblanc.gomoku.engine.model;
 import java.util.HashSet;
 import java.util.Set;
 
-import fr.leblanc.gomoku.engine.model.messaging.MoveDto;
+import fr.leblanc.gomoku.engine.model.messaging.MoveDTO;
 
 public class CheckWinResult {
 
@@ -17,17 +17,29 @@ public class CheckWinResult {
 		return color;
 	}
 	
-	public Set<MoveDto> getWinMoves() {
+	public Set<MoveDTO> getWinMoves() {
 		return winMoves;
 	}
 
-	public void setWinMoves(Set<MoveDto> winMoves) {
+	public void setWinMoves(Set<MoveDTO> winMoves) {
 		this.winMoves = winMoves;
 	}
 
 	public CheckWinResult(int color) {
 		this.color = color;
 	}
+	
+	public boolean isWin() {
+		return color != EngineConstants.NONE_COLOR;
+	}
 
-	private Set<MoveDto> winMoves = new HashSet<>();
+	private Set<MoveDTO> winMoves = new HashSet<>();
+
+	public CheckWinResult build(int[][] win, int color) {
+		this.color = color;
+		for (int i = 0; i < win.length; i++) {
+			getWinMoves().add(new MoveDTO(win[i][0], win[i][1], color));
+		}
+		return this;
+	}
 }

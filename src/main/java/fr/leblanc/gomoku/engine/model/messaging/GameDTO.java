@@ -4,19 +4,19 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-public class GameDto {
+public class GameDTO {
 
 	private int boardSize;
 	
-	private Set<MoveDto> moves = new HashSet<>();
+	private Set<MoveDTO> moves = new HashSet<>();
 	
-	private EngineSettingsDto settings;
+	private GameSettings settings;
 	
-	public GameDto() {
+	public GameDTO() {
 		
 	}
 	
-	public GameDto(int boardSize, Set<MoveDto> moves, EngineSettingsDto settings) {
+	public GameDTO(int boardSize, Set<MoveDTO> moves, GameSettings settings) {
 		super();
 		this.boardSize = boardSize;
 		this.moves = moves;
@@ -31,19 +31,19 @@ public class GameDto {
 		this.boardSize = boardSize;
 	}
 
-	public Set<MoveDto> getMoves() {
+	public Set<MoveDTO> getMoves() {
 		return moves;
 	}
 
-	public void setMoves(Set<MoveDto> moves) {
+	public void setMoves(Set<MoveDTO> moves) {
 		this.moves = moves;
 	}
 
-	public EngineSettingsDto getSettings() {
+	public GameSettings getSettings() {
 		return settings;
 	}
 
-	public void setSettings(EngineSettingsDto settings) {
+	public void setSettings(GameSettings settings) {
 		this.settings = settings;
 	}
 
@@ -60,7 +60,7 @@ public class GameDto {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		GameDto other = (GameDto) obj;
+		GameDTO other = (GameDTO) obj;
 		return boardSize == other.boardSize && Objects.equals(moves, other.moves)
 				&& Objects.equals(settings, other.settings);
 	}

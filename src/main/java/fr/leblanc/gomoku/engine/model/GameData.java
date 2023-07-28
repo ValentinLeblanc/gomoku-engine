@@ -1,17 +1,17 @@
 package fr.leblanc.gomoku.engine.model;
 
-import fr.leblanc.gomoku.engine.model.messaging.GameDto;
-import fr.leblanc.gomoku.engine.model.messaging.MoveDto;
+import fr.leblanc.gomoku.engine.model.messaging.GameDTO;
+import fr.leblanc.gomoku.engine.model.messaging.MoveDTO;
 
-public class DataWrapper {
+public class GameData {
 
 	private int[][] data;
 	
-	public DataWrapper(int[][] data) {
+	public GameData(int[][] data) {
 		this.data = data;
 	}
 	
-	public DataWrapper(DataWrapper dataWrapper) {
+	public GameData(GameData dataWrapper) {
 		data = new int[dataWrapper.getData().length][dataWrapper.getData().length];
 		for (int rowIndex = 0; rowIndex < dataWrapper.getData().length; rowIndex++) {
 			for (int columnIndex = 0; columnIndex < dataWrapper.getData().length; columnIndex++) {
@@ -20,7 +20,7 @@ public class DataWrapper {
 		}
 	}
 	
-	public DataWrapper(int boardSize) {
+	public GameData(int boardSize) {
 		data = new int[boardSize][boardSize];
 
 		for (int rowIndex = 0; rowIndex < boardSize; rowIndex++) {
@@ -42,7 +42,7 @@ public class DataWrapper {
 		return data[columnIndex][rowIndex];
 	}
 	
-	public static DataWrapper of(GameDto game) {
+	public static GameData of(GameDTO game) {
 
 		int boardSize = game.getBoardSize();
 
@@ -54,11 +54,54 @@ public class DataWrapper {
 			}
 		}
 
-		for (MoveDto move : game.getMoves()) {
+		for (MoveDTO move : game.getMoves()) {
 			data[move.getColumnIndex()][move.getRowIndex()] = move.getColor();
 		}
 
-		return new DataWrapper(data);
+		return new GameData(data);
+	}
+	
+	public static int extractPlayingColor(GameData dataWrapper) {
+		
+		int[][] data = dataWrapper.getData();
+		
+		int moveCount = 0;
+		
+		for (int i = 0; i < data[0].length; i++) {
+			for (int j = 0; j < data.length; j++) {
+				if (data[j][i] != EngineConstants.NONE_COLOR) {
+					moveCount++;
+				}
+			}
+		}
+		
+		return moveCount % 2 == 0 ? EngineConstants.BLACK_COLOR : EngineConstants.WHITE_COLOR;
+	}
+	
+	public static int countEmptyCells(GameData dataWrapper) {
+		int emptyCellsCount = 0;
+		
+		for (int i = 0; i < dataWrapper.getData().length; i++) {
+			for (int j = 0; j < dataWrapper.getData().length; j++) {
+				if (dataWrapper.getData()[i][j] == EngineConstants.NONE_COLOR) {
+					emptyCellsCount++;
+				}
+			}
+		}
+		return emptyCellsCount;
+	}
+	
+	public static int countPlainCells(GameData dataWrapper) {
+		int plainCellsCount = 0;
+		
+		for (int i = 0; i < dataWrapper.getData().length; i++) {
+			for (int j = 0; j < dataWrapper.getData().length; j++) {
+				if (dataWrapper.getData()[i][j] != EngineConstants.NONE_COLOR) {
+					plainCellsCount++;
+				}
+			}
+		}
+		return plainCellsCount;
 	}
 
 	public int[][] getData() {
@@ -82,7 +125,7 @@ public class DataWrapper {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		DataWrapper other = (DataWrapper) obj;
+		GameData other = (GameData) obj;
 		
 		if (data.length != other.data.length) {
 			return false;

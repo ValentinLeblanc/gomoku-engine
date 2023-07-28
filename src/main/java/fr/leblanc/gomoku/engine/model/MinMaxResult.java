@@ -10,6 +10,10 @@ public class MinMaxResult {
 	private Double finalEvaluation;
 	
 	private Map<Integer, Cell> optimalMoves = new HashMap<>();
+	
+	public Cell getResultCell() {
+		return optimalMoves.get(0);
+	}
 
 	public Double getFinalEvaluation() {
 		return finalEvaluation;

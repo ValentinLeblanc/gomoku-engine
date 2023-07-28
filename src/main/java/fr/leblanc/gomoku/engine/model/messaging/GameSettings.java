@@ -2,7 +2,7 @@ package fr.leblanc.gomoku.engine.model.messaging;
 
 import java.util.Objects;
 
-public class EngineSettingsDto {
+public class GameSettings {
 
 	private boolean strikeEnabled = true;
 	
@@ -77,7 +77,7 @@ public class EngineSettingsDto {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		EngineSettingsDto other = (EngineSettingsDto) obj;
+		GameSettings other = (GameSettings) obj;
 		return minMaxDepth == other.minMaxDepth && minMaxEnabled == other.minMaxEnabled
 				&& minMaxExtent == other.minMaxExtent && strikeDepth == other.strikeDepth
 				&& strikeEnabled == other.strikeEnabled && strikeTimeout == other.strikeTimeout;

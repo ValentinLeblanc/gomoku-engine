@@ -1,11 +1,11 @@
 package fr.leblanc.gomoku.engine.service;
 
-import fr.leblanc.gomoku.engine.model.DataWrapper;
+import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.EvaluationResult;
 
 public interface EvaluationService {
 	
-	EvaluationResult computeEvaluation(DataWrapper dataWrapper);
+	EvaluationResult computeEvaluation(GameData dataWrapper);
 	
-	EvaluationResult computeEvaluation(DataWrapper dataWrapper, boolean external);
+	EvaluationResult computeEvaluation(GameData dataWrapper, boolean external);
 }

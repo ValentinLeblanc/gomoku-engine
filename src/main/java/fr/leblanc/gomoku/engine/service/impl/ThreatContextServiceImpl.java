@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.CompoThreatType;
-import fr.leblanc.gomoku.engine.model.DataWrapper;
+import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.DoubleThreat;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
 import fr.leblanc.gomoku.engine.model.Threat;
@@ -26,7 +26,7 @@ import fr.leblanc.gomoku.engine.util.Pair;
 public class ThreatContextServiceImpl implements ThreatContextService {
 	
 	@Override
-	public ThreatContext computeThreatContext(DataWrapper dataWrapper, int playingColor) {
+	public ThreatContext computeThreatContext(GameData dataWrapper, int playingColor) {
 		
 		ThreatContext threatContext = new ThreatContext(dataWrapper.getData(), playingColor);
 		
@@ -66,7 +66,7 @@ public class ThreatContextServiceImpl implements ThreatContextService {
 	}
 	
 	@Override
-	public List<Cell> buildAnalyzedCells(DataWrapper dataWrapper, int color) {
+	public List<Cell> buildAnalyzedCells(GameData dataWrapper, int color) {
 
 		List<Cell> analysedMoves = new ArrayList<>();
 

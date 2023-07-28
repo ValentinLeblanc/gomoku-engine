@@ -4,24 +4,24 @@ import java.util.Objects;
 
 import fr.leblanc.gomoku.engine.model.Cell;
 
-public class MoveDto {
+public class MoveDTO {
 
 	private int columnIndex;
 	private int rowIndex;
 	private int color;
 	private int number;
 	
-	public MoveDto() {
+	public MoveDTO() {
 		
 	}
 	
-    public MoveDto(Cell cell, int color) {
+    public MoveDTO(Cell cell, int color) {
 		this.color = color;
 		this.columnIndex = cell.getColumn();
 		this.rowIndex = cell.getRow();
 	}
 
-	public MoveDto(int columnIndex, int rowIndex, int color) {
+	public MoveDTO(int columnIndex, int rowIndex, int color) {
 		this.color = color;
 		this.columnIndex = columnIndex;
 		this.rowIndex = rowIndex;
@@ -72,7 +72,7 @@ public class MoveDto {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		MoveDto other = (MoveDto) obj;
+		MoveDTO other = (MoveDTO) obj;
 		return color == other.color && columnIndex == other.columnIndex && number == other.number
 				&& rowIndex == other.rowIndex;
 	}

@@ -1,16 +1,15 @@
 package fr.leblanc.gomoku.engine.service;
 
-import fr.leblanc.gomoku.engine.model.Cell;
-import fr.leblanc.gomoku.engine.model.messaging.MoveDto;
+import fr.leblanc.gomoku.engine.model.messaging.MoveDTO;
 
-public interface MessageService {
+public interface WebSocketService {
 
-	public void sendAnalysisCell(Cell analysisCell, int color);
+	public void sendAnalysisMove(MoveDTO move);
 	
-	void sendPercentCompleted(int index, int percent);
+	void sendComputingProgress(int progress);
 	
-	void sendIsRunning(boolean isRunning);
+	void sendIsComputing(boolean isComputing);
 	
-	void sendRefreshMove(MoveDto move);
+	void sendRefreshMove(MoveDTO move);
 
 }

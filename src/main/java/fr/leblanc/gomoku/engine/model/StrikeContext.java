@@ -33,7 +33,7 @@ public class StrikeContext {
 	public void setStrikeTimeout(int strikeTimeout) {
 		this.strikeTimeout = strikeTimeout;
 	}
-
+	
 	@Override
 	public int hashCode() {
 		return Objects.hash(minMaxDepth, strikeDepth, strikeTimeout);
@@ -57,5 +57,6 @@ public class StrikeContext {
 		return "StrikeContext [strikeDepth=" + strikeDepth + ", minMaxDepth=" + minMaxDepth + ", strikeTimeout="
 				+ strikeTimeout + "]";
 	}
+
 	
 }
