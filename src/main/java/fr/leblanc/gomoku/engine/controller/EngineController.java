@@ -48,12 +48,15 @@ public class EngineController {
 		try {
 			webSocketService.sendIsComputing(true);
 			Cell computedMove = engineService.computeMove(gameData, gameSettings);
-			MoveDTO returnedMove = new MoveDTO(computedMove.getColumn(), computedMove.getRow(), playingColor);
-			webSocketService.sendRefreshMove(returnedMove);
-			return returnedMove;
+			if (computedMove != Cell.NONE_CELL) {
+				MoveDTO returnedMove = new MoveDTO(computedMove.getColumn(), computedMove.getRow(), playingColor);
+				webSocketService.sendRefreshMove(returnedMove);
+				return returnedMove;
+			}
 		} finally {
 			webSocketService.sendIsComputing(false);
 		}
+		return null;
 	}
 	
 	@PostMapping("/computeEvaluation")

@@ -93,7 +93,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 				for (int i = 0; i < extent; i++) {
 					if (!analyzedCells.isEmpty()) {
 						result = internalMinMax(dataWrapper, analyzedCells, context);
-						Cell tempResult = result != null ? result.getOptimalMoves().get(0) : null;
+						Cell tempResult = result != MinMaxResult.EMPTY_RESULT ? result.getOptimalMoves().get(0) : null;
 						if (tempResult != null) {
 							extentAnalyzedCells.add(tempResult);
 							analyzedCells.remove(tempResult);
@@ -115,7 +115,11 @@ public class MinMaxServiceImpl implements MinMaxService {
 			logger.error("Error while computing min/max : " + e.getMessage(), e);
 		} finally {
 			isComputing = false;
-			webSocketService.sendComputingProgress(100);
+			if (result == MinMaxResult.EMPTY_RESULT) {
+				webSocketService.sendComputingProgress(0);
+			} else {
+				webSocketService.sendComputingProgress(100);
+			}
 			stopWatch.stop();
 			
 			if (logger.isInfoEnabled()) {
@@ -180,7 +184,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 						logger.error("Error while executing minMax thread: " + e.getMessage(), e);
 					}
 				}
-				return new MinMaxResult();
+				return MinMaxResult.EMPTY_RESULT;
 			}).filter(r -> r.getFinalEvaluation() != null).collect(Collectors.toList());
 			results.sort(resultsComparator(context.isFindMax()));
 			if (!results.isEmpty()) {
@@ -189,7 +193,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}
-		return null;
+		return MinMaxResult.EMPTY_RESULT;
 	}
 
 	private Comparator<? super MinMaxResult> resultsComparator(boolean findMax) {

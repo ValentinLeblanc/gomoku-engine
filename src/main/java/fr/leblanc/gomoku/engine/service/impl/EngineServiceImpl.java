@@ -62,6 +62,11 @@ public class EngineServiceImpl implements EngineService {
 
 				// MINMAX
 				MinMaxResult minMaxResult = minMaxService.computeMinMax(gameData, null, gameSettings.getMinMaxDepth(), gameSettings.getMinMaxExtent());
+				
+				if (minMaxResult == MinMaxResult.EMPTY_RESULT) {
+					return Cell.NONE_CELL;
+				}
+				
 				return minMaxResult.getResultCell();
 			});
 

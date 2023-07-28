@@ -9,6 +9,8 @@ public class MinMaxResult {
 	private double evaluation;
 	private Double finalEvaluation;
 	
+	public static final MinMaxResult EMPTY_RESULT = new MinMaxResult();
+	
 	private Map<Integer, Cell> optimalMoves = new HashMap<>();
 	
 	public Cell getResultCell() {
