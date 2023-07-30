@@ -29,10 +29,10 @@ import fr.leblanc.gomoku.engine.model.StrikeResult.StrikeType;
 import fr.leblanc.gomoku.engine.model.Threat;
 import fr.leblanc.gomoku.engine.model.ThreatContext;
 import fr.leblanc.gomoku.engine.model.ThreatType;
+import fr.leblanc.gomoku.engine.service.ComputationService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.StrikeService;
 import fr.leblanc.gomoku.engine.service.ThreatContextService;
-import fr.leblanc.gomoku.engine.util.ComputingSupport;
 import fr.leblanc.gomoku.engine.util.cache.GomokuCache;
 import fr.leblanc.gomoku.engine.util.cache.GomokuCacheSupport;
 
@@ -46,6 +46,9 @@ public class StrikeServiceImpl implements StrikeService {
 	
 	@Autowired
 	private MinMaxService minMaxService;
+	
+	@Autowired
+	private ComputationService computationService;
 	
 	private ExecutorService executor = Executors.newSingleThreadExecutor();
 	
@@ -120,8 +123,8 @@ public class StrikeServiceImpl implements StrikeService {
 		return new StrikeResult(null, StrikeType.EMPTY_STRIKE);
 	}
 
-	private Cell executeSecondaryStrikeCommand(GameData dataWrapper, int playingColor, StrikeContext strikeContext) throws InterruptedException {
-		SecondaryStrikeCommand command = new SecondaryStrikeCommand(dataWrapper, playingColor, strikeContext, GomokuCacheSupport.getCurrentCache());
+	private Cell executeSecondaryStrikeCommand(GameData gameData, int playingColor, StrikeContext strikeContext) throws InterruptedException {
+		SecondaryStrikeCommand command = new SecondaryStrikeCommand(gameData, playingColor, strikeContext, GomokuCacheSupport.getCurrentCache(), computationService.getComputationId());
 		
 		Cell secondaryStrike = null;
 		
@@ -152,19 +155,23 @@ public class StrikeServiceImpl implements StrikeService {
 		private int playingColor;
 		private StrikeContext strikeContext;
 		private GomokuCache gomokuCache;
+		private Long gameId;
 		
-		private SecondaryStrikeCommand(GameData dataWrapper, int playingColor, StrikeContext strikeContext, GomokuCache gomokuCache) {
+		private SecondaryStrikeCommand(GameData dataWrapper, int playingColor, StrikeContext strikeContext, GomokuCache gomokuCache, Long gameId) {
 			this.dataWrapper = dataWrapper;
 			this.playingColor = playingColor;
 			this.strikeContext = strikeContext;
 			this.gomokuCache = gomokuCache;
+			this.gameId = gameId;
 		}
 		
 		@Override
 		public Cell call() throws InterruptedException {
 
 			return GomokuCacheSupport.doInCacheContext(() -> {
-
+				
+				computationService.setComputationId(gameId);
+				
 				StopWatch stopWatch = new StopWatch("findOrCounterStrike");
 				stopWatch.start();
 
@@ -178,27 +185,27 @@ public class StrikeServiceImpl implements StrikeService {
 					if (secondaryStrike != null) {
 						stopWatch.stop();
 						if (logger.isDebugEnabled()) {
-							logger.debug("secondary strike found in " + stopWatch.getTotalTimeMillis() + " ms for maxDepth = " + currentMaxDepth);
+							logger.debug("secondary strike found in " + stopWatch.getTotalTimeMillis()
+									+ " ms for maxDepth = " + currentMaxDepth);
 						}
 						return secondaryStrike;
 					}
 
 					if (logger.isDebugEnabled()) {
 						timeElapsed = System.currentTimeMillis() - timeElapsed;
-						logger.debug("secondary strike failed for maxDepth = " + currentMaxDepth + " (" + timeElapsed + " ms)");
+						logger.debug("secondary strike failed for maxDepth = " + currentMaxDepth + " (" + timeElapsed
+								+ " ms)");
 					}
 				}
 
 				return null;
 			}, gomokuCache);
-			
 		}
-		
 	}
 
 	private Cell directStrike(GameData gameData, int playingColor, StrikeContext strikeContext) throws InterruptedException {
 
-		if (ComputingSupport.isStopComputation(gameData.getId())) {
+		if (computationService.isStopComputation()) {
 			throw new InterruptedException();
 		}
 		

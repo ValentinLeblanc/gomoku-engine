@@ -7,18 +7,20 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import fr.leblanc.gomoku.engine.exception.EngineException;
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.CheckWinResult;
-import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
+import fr.leblanc.gomoku.engine.model.GameData;
+import fr.leblanc.gomoku.engine.model.messaging.EngineMessageType;
 import fr.leblanc.gomoku.engine.model.messaging.GameDTO;
 import fr.leblanc.gomoku.engine.model.messaging.GameSettings;
 import fr.leblanc.gomoku.engine.model.messaging.MoveDTO;
 import fr.leblanc.gomoku.engine.service.CheckWinService;
+import fr.leblanc.gomoku.engine.service.ComputationService;
 import fr.leblanc.gomoku.engine.service.EngineService;
 import fr.leblanc.gomoku.engine.service.EvaluationService;
 import fr.leblanc.gomoku.engine.service.WebSocketService;
-import fr.leblanc.gomoku.engine.util.ComputingSupport;
 
 @RestController
 public class EngineController {
@@ -35,9 +37,12 @@ public class EngineController {
 	@Autowired
 	private WebSocketService webSocketService;
 	
+	@Autowired
+	private ComputationService computationService;
+	
 	@GetMapping("isComputing/{gameId}")
 	public Boolean isComputing(@PathVariable Long gameId) {
-		return engineService.isComputing(gameId);
+		return computationService.isComputing(gameId);
 	}
 
 	@PostMapping("/checkWin")
@@ -54,14 +59,16 @@ public class EngineController {
 		int playingColor = GameData.extractPlayingColor(gameData);
 		
 		try {
-			webSocketService.sendIsComputing(gameDTO.getId(), true);
-			webSocketService.sendComputingProgress(gameDTO.getId(), 0);
-			Cell computedMove = engineService.computeMove(gameDTO.getId(), gameData, gameSettings);
+			webSocketService.sendMessage(EngineMessageType.IS_COMPUTING, gameDTO.getId(), true);
+			Cell computedMove = computationService.doInComputationContext(gameDTO.getId(), () -> engineService.computeMove(gameData, gameSettings));
 			MoveDTO returnedMove = new MoveDTO(computedMove.getColumn(), computedMove.getRow(), playingColor);
-			webSocketService.sendRefreshMove(gameDTO.getId(), returnedMove);
+			webSocketService.sendMessage(EngineMessageType.REFRESH_MOVE, gameDTO.getId(), returnedMove);
 			return returnedMove;
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new EngineException(e);
 		} finally {
-			webSocketService.sendIsComputing(gameDTO.getId(), false);
+			webSocketService.sendMessage(EngineMessageType.IS_COMPUTING, gameDTO.getId(), false);
 		}
 	}
 	
@@ -81,7 +88,7 @@ public class EngineController {
 	
 	@PostMapping("/stop/{gameId}")
 	public void stopComputation(@PathVariable Long gameId) {
-		ComputingSupport.stopComputation(gameId);
+		computationService.stopComputation(gameId);
 	}
 	
 }

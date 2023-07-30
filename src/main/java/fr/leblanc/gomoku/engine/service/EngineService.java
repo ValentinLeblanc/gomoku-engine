@@ -8,7 +8,7 @@ public interface EngineService {
 
 	void stopComputation(Long gameId);
 
-	Cell computeMove(Long gameId, GameData gameData, GameSettings gameSettings);
+	Cell computeMove(GameData gameData, GameSettings gameSettings);
 
 	Boolean isComputing(Long gameId);
 

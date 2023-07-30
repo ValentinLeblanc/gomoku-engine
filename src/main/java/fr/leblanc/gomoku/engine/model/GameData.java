@@ -5,20 +5,13 @@ import fr.leblanc.gomoku.engine.model.messaging.MoveDTO;
 
 public class GameData {
 
-	private Long id;
-	
 	private int[][] data;
 	
 	public GameData(int[][] data) {
 		this.data = data;
 	}
 	
-	public Long getId() {
-		return id;
-	}
-	
 	public GameData(GameData gameData) {
-		id = gameData.id;
 		data = new int[gameData.getData().length][gameData.getData().length];
 		for (int rowIndex = 0; rowIndex < gameData.getData().length; rowIndex++) {
 			for (int columnIndex = 0; columnIndex < gameData.getData().length; columnIndex++) {
@@ -66,8 +59,6 @@ public class GameData {
 		}
 
 		GameData gameData = new GameData(data);
-		
-		gameData.id = game.getId();
 		
 		return gameData;
 	}

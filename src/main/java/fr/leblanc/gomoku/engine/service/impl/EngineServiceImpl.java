@@ -13,10 +13,10 @@ import fr.leblanc.gomoku.engine.model.StrikeContext;
 import fr.leblanc.gomoku.engine.model.StrikeResult;
 import fr.leblanc.gomoku.engine.model.messaging.GameSettings;
 import fr.leblanc.gomoku.engine.service.CheckWinService;
+import fr.leblanc.gomoku.engine.service.ComputationService;
 import fr.leblanc.gomoku.engine.service.EngineService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.StrikeService;
-import fr.leblanc.gomoku.engine.util.ComputingSupport;
 import fr.leblanc.gomoku.engine.util.cache.GomokuCacheSupport;
 
 @Service
@@ -33,13 +33,16 @@ public class EngineServiceImpl implements EngineService {
 	@Autowired
 	private CheckWinService checkWinService;
 	
+	@Autowired
+	private ComputationService computationService;
+	
 	@Override
 	public Boolean isComputing(Long gameId) {
-		return ComputingSupport.isComputing(gameId);
+		return computationService.isComputing(gameId);
 	}
 	
 	@Override
-	public Cell computeMove(Long gameId, GameData gameData, GameSettings gameSettings) {
+	public Cell computeMove(GameData gameData, GameSettings gameSettings) {
 
 		try {
 			if (checkWinService.checkWin(gameData).isWin()) {
@@ -52,7 +55,7 @@ public class EngineServiceImpl implements EngineService {
 				return middleCell(gameData);
 			}
 			
-			return ComputingSupport.doInComputingContext(gameId, () -> GomokuCacheSupport.doInCacheContext(() -> {
+			return GomokuCacheSupport.doInCacheContext(() -> {
 
 				// STRIKE
 				if (gameSettings.isStrikeEnabled()) {
@@ -76,7 +79,7 @@ public class EngineServiceImpl implements EngineService {
 				}
 
 				return minMaxResult.getResultCell();
-			}));
+			});
 			
 
 		} catch (InterruptedException e) {
@@ -92,7 +95,7 @@ public class EngineServiceImpl implements EngineService {
 
 	@Override
 	public void stopComputation(Long gameId) {
-		ComputingSupport.stopComputation(gameId);
+		computationService.stopComputation(gameId);
 	}
 
 }
