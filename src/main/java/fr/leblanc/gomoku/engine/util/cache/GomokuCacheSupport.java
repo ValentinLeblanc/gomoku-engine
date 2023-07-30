@@ -9,6 +9,7 @@ import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.EvaluationResult;
 import fr.leblanc.gomoku.engine.model.MinMaxResult;
 import fr.leblanc.gomoku.engine.model.ThreatContext;
+import fr.leblanc.gomoku.engine.util.TypedAction;
 
 public class GomokuCacheSupport {
 
@@ -16,13 +17,13 @@ public class GomokuCacheSupport {
 		
 	}
 	
-	private static ThreadLocal<GomokuCache> threadLocalCache = ThreadLocal.withInitial(GomokuCache::new);
+	private static final ThreadLocal<GomokuCache> threadLocalCache = ThreadLocal.withInitial(GomokuCache::new);
 	
-	public static <T> T doInCacheContext(CachedAction<T> action) throws InterruptedException {
+	public static <T> T doInCacheContext(TypedAction<T> action) throws InterruptedException {
 		return doInCacheContext(action, threadLocalCache.get());
 	}
 	
-	public static <T> T doInCacheContext(CachedAction<T> action, GomokuCache gomokuCache) throws InterruptedException {
+	public static <T> T doInCacheContext(TypedAction<T> action, GomokuCache gomokuCache) throws InterruptedException {
 		try {
 			gomokuCache.setCacheEnabled(true);
 			threadLocalCache.set(gomokuCache);

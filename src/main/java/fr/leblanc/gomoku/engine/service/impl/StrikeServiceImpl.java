@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -33,6 +32,7 @@ import fr.leblanc.gomoku.engine.model.ThreatType;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.StrikeService;
 import fr.leblanc.gomoku.engine.service.ThreatContextService;
+import fr.leblanc.gomoku.engine.util.ComputingSupport;
 import fr.leblanc.gomoku.engine.util.cache.GomokuCache;
 import fr.leblanc.gomoku.engine.util.cache.GomokuCacheSupport;
 
@@ -47,9 +47,6 @@ public class StrikeServiceImpl implements StrikeService {
 	@Autowired
 	private MinMaxService minMaxService;
 	
-	private ConcurrentHashMap<Long, Boolean> isComputingMap = new ConcurrentHashMap<>();
-	private ConcurrentHashMap<Long, Boolean> stopComputationMap = new ConcurrentHashMap<>();
-	
 	private ExecutorService executor = Executors.newSingleThreadExecutor();
 	
 	private static final ThreatType[][] SECONDARY_THREAT_PAIRS = { { ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3 }
@@ -62,68 +59,62 @@ public class StrikeServiceImpl implements StrikeService {
 	@Override
 	public StrikeResult processStrike(GameData gameData, int playingColor, StrikeContext strikeContext) throws InterruptedException {
 		
-		isComputingMap.put(gameData.getId(), Boolean.TRUE);
+		StopWatch stopWatch = new StopWatch("processStrike");
+		stopWatch.start();
 		
-		try {
-			StopWatch stopWatch = new StopWatch("processStrike");
-			stopWatch.start();
+		if (logger.isDebugEnabled()) {
+			logger.debug("find direct strike...");
+		}
+		
+		Cell directThreat = directStrike(gameData, playingColor, strikeContext);
+		
+		if (directThreat != null) {
+			
+			stopWatch.stop();
 			
 			if (logger.isDebugEnabled()) {
-				logger.debug("find direct strike...");
+				logger.debug("direct strike found in " + stopWatch.getTotalTimeMillis() + " ms");
 			}
 			
-			Cell directThreat = directStrike(gameData, playingColor, strikeContext);
+			return new StrikeResult(directThreat, StrikeType.DIRECT_STRIKE);
+		}
+		
+		Cell opponentDirectThreat = directStrike(gameData, -playingColor, strikeContext);
+		
+		if (opponentDirectThreat != null) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("defend from opponent direct strike...");
+			}
+			List<Cell> counterOpponentThreats = counterDirectStrikeMoves(gameData, playingColor, strikeContext, false);
 			
-			if (directThreat != null) {
+			if (!counterOpponentThreats.isEmpty()) {
+				
+				Cell defense = counterOpponentThreats.get(0);
+				
+				if (counterOpponentThreats.size() > 1) {
+					defense = minMaxService.computeMinMax(gameData, counterOpponentThreats, strikeContext.getMinMaxDepth(), 0).getOptimalMoves().get(0);
+				}
 				
 				stopWatch.stop();
 				
 				if (logger.isDebugEnabled()) {
-					logger.debug("direct strike found in " + stopWatch.getTotalTimeMillis() + " ms");
+					logger.debug("best defense found in " + stopWatch.getTotalTimeMillis() + " ms");
 				}
 				
-				return new StrikeResult(directThreat, StrikeType.DIRECT_STRIKE);
+				return new StrikeResult(defense, StrikeType.DEFEND_STRIKE);
 			}
 			
-			Cell opponentDirectThreat = directStrike(gameData, -playingColor, strikeContext);
-			
-			if (opponentDirectThreat != null) {
-				if (logger.isDebugEnabled()) {
-					logger.debug("defend from opponent direct strike...");
-				}
-				List<Cell> counterOpponentThreats = counterDirectStrikeMoves(gameData, playingColor, strikeContext, false);
-				
-				if (!counterOpponentThreats.isEmpty()) {
-					
-					Cell defense = counterOpponentThreats.get(0);
-					
-					if (counterOpponentThreats.size() > 1) {
-						defense = minMaxService.computeMinMax(gameData, counterOpponentThreats, strikeContext.getMinMaxDepth(), 0).getOptimalMoves().get(0);
-					}
-					
-					stopWatch.stop();
-					
-					if (logger.isDebugEnabled()) {
-						logger.debug("best defense found in " + stopWatch.getTotalTimeMillis() + " ms");
-					}
-					
-					return new StrikeResult(defense, StrikeType.DEFEND_STRIKE);
-				}
-				
-				return new StrikeResult(null, StrikeType.EMPTY_STRIKE);
-			}
-			
-			if (logger.isDebugEnabled()) {
-				logger.debug("find secondary strike...");
-			}
-			
-			Cell secondaryStrike = executeSecondaryStrikeCommand(gameData, playingColor, strikeContext);
-			
-			if (secondaryStrike != null) {
-				return new StrikeResult(secondaryStrike, StrikeType.SECONDARY_STRIKE);
-			}
-		} finally {
-			isComputingMap.put(gameData.getId(), Boolean.FALSE);
+			return new StrikeResult(null, StrikeType.EMPTY_STRIKE);
+		}
+		
+		if (logger.isDebugEnabled()) {
+			logger.debug("find secondary strike...");
+		}
+		
+		Cell secondaryStrike = executeSecondaryStrikeCommand(gameData, playingColor, strikeContext);
+		
+		if (secondaryStrike != null) {
+			return new StrikeResult(secondaryStrike, StrikeType.SECONDARY_STRIKE);
 		}
 		
 		return new StrikeResult(null, StrikeType.EMPTY_STRIKE);
@@ -153,17 +144,6 @@ public class StrikeServiceImpl implements StrikeService {
 			logger.info("SecondaryStrikeCommand timeout (" + strikeContext.getStrikeTimeout() + "s)");
 		}
 		return secondaryStrike;
-	}
-	
-	@Override
-	public boolean isComputing(Long id) {
-		return isComputingMap.computeIfAbsent(id, k -> Boolean.FALSE);
-	}
-
-	@Override
-	public void stopComputation(Long id) {
-		stopComputationMap.put(id, Boolean.TRUE);
-		isComputingMap.put(id, Boolean.FALSE);
 	}
 	
 	private class SecondaryStrikeCommand implements Callable<Cell> {
@@ -218,8 +198,7 @@ public class StrikeServiceImpl implements StrikeService {
 
 	private Cell directStrike(GameData gameData, int playingColor, StrikeContext strikeContext) throws InterruptedException {
 
-		if (stopComputationMap.computeIfAbsent(gameData.getId(), k -> Boolean.FALSE).booleanValue()) {
-			stopComputationMap.put(gameData.getId(), Boolean.FALSE);
+		if (ComputingSupport.isStopComputation(gameData.getId())) {
 			throw new InterruptedException();
 		}
 		

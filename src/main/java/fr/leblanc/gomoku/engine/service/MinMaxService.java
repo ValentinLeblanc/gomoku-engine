@@ -6,7 +6,7 @@ import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.MinMaxResult;
 
-public interface MinMaxService extends StoppableService {
+public interface MinMaxService {
 
 	MinMaxResult computeMinMax(GameData gameData, int maxDepth, int extent) throws InterruptedException;
 	

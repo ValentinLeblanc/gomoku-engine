@@ -18,6 +18,7 @@ import fr.leblanc.gomoku.engine.service.CheckWinService;
 import fr.leblanc.gomoku.engine.service.EngineService;
 import fr.leblanc.gomoku.engine.service.EvaluationService;
 import fr.leblanc.gomoku.engine.service.WebSocketService;
+import fr.leblanc.gomoku.engine.util.ComputingSupport;
 
 @RestController
 public class EngineController {
@@ -80,8 +81,7 @@ public class EngineController {
 	
 	@PostMapping("/stop/{gameId}")
 	public void stopComputation(@PathVariable Long gameId) {
-		engineService.stopComputation(gameId);
-		webSocketService.sendComputingProgress(gameId, 0);
+		ComputingSupport.stopComputation(gameId);
 	}
 	
 }

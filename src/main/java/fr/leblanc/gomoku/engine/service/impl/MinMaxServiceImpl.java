@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -33,6 +32,7 @@ import fr.leblanc.gomoku.engine.service.EvaluationService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.ThreatContextService;
 import fr.leblanc.gomoku.engine.service.WebSocketService;
+import fr.leblanc.gomoku.engine.util.ComputingSupport;
 import fr.leblanc.gomoku.engine.util.cache.GomokuCache;
 import fr.leblanc.gomoku.engine.util.cache.GomokuCacheSupport;
 
@@ -52,9 +52,6 @@ public class MinMaxServiceImpl implements MinMaxService {
 	@Autowired
 	private WebSocketService webSocketService;
 	
-	private ConcurrentHashMap<Long, Boolean> isComputingMap = new ConcurrentHashMap<>();
-	private ConcurrentHashMap<Long, Boolean> stopComputationMap = new ConcurrentHashMap<>();
-	
 	@Override
 	public MinMaxResult computeMinMax(GameData gameData, int maxDepth, int extent) throws InterruptedException {
 		int playingColor = GameData.extractPlayingColor(gameData);
@@ -73,8 +70,6 @@ public class MinMaxServiceImpl implements MinMaxService {
 		
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
-		
-		isComputingMap.put(gameData.getId(), Boolean.TRUE);
 		
 		try {
 			
@@ -116,15 +111,11 @@ public class MinMaxServiceImpl implements MinMaxService {
 				result = internalMinMax(gameData, analyzedCells, context);
 			}
 			
+			webSocketService.sendComputingProgress(gameData.getId(), 100);
 		} catch (Exception e) {
 			logger.error("Error while computing min/max : " + e.getMessage(), e);
+			webSocketService.sendComputingProgress(gameData.getId(), 0);
 		} finally {
-			isComputingMap.put(gameData.getId(), Boolean.FALSE);
-			if (result == MinMaxResult.EMPTY_RESULT) {
-				webSocketService.sendComputingProgress(gameData.getId(), 0);
-			} else {
-				webSocketService.sendComputingProgress(gameData.getId(), 100);
-			}
 			stopWatch.stop();
 			
 			if (logger.isInfoEnabled()) {
@@ -135,26 +126,6 @@ public class MinMaxServiceImpl implements MinMaxService {
 		return result;
 	}
 
-	@Override
-	public boolean isComputing(Long id) {
-		return isComputingMap.computeIfAbsent(id, k -> Boolean.FALSE);
-	}
-
-	@Override
-	public void stopComputation(Long id) {
-		try {
-			stopComputationMap.put(id, Boolean.TRUE);
-			// need to wait for all threads to stop
-			Thread.sleep(150);
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-		} finally {
-			isComputingMap.put(id, Boolean.FALSE);
-			stopComputationMap.put(id, Boolean.FALSE);
-		}
-	}
-	
-	
 	private MinMaxResult internalMinMax(GameData gameData, List<Cell> analysedMoves, MinMaxContext context) {
 		
 		context.setOptimumReference(context.isFindMax() ? new AtomicReference<>(Double.NEGATIVE_INFINITY) : new AtomicReference<>(Double.POSITIVE_INFINITY));
@@ -188,7 +159,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 					Thread.currentThread().interrupt();
 					throw new EngineException(e);
 				} catch (ExecutionException e) {
-					if (e.getCause() instanceof InterruptedException && stopComputationMap.computeIfAbsent(gameData.getId(), k -> Boolean.FALSE).booleanValue()) {
+					if (e.getCause() instanceof InterruptedException && ComputingSupport.isStopComputation(gameData.getId())) {
 						throw new EngineException("engine was interrupted");
 					}
 					throw new EngineException(e);
@@ -260,7 +231,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 		
 		for (Cell analysedMove : analysedMoves) {
 			
-			if (stopComputationMap.computeIfAbsent(gameData.getId(), k -> Boolean.FALSE).booleanValue()) {
+			if (ComputingSupport.isStopComputation(gameData.getId())) {
 				throw new InterruptedException();
 			}
 			

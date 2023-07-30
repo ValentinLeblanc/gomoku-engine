@@ -16,6 +16,7 @@ import fr.leblanc.gomoku.engine.service.CheckWinService;
 import fr.leblanc.gomoku.engine.service.EngineService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.StrikeService;
+import fr.leblanc.gomoku.engine.util.ComputingSupport;
 import fr.leblanc.gomoku.engine.util.cache.GomokuCacheSupport;
 
 @Service
@@ -34,7 +35,7 @@ public class EngineServiceImpl implements EngineService {
 	
 	@Override
 	public Boolean isComputing(Long gameId) {
-		return strikeService.isComputing(gameId) || minMaxService.isComputing(gameId);
+		return ComputingSupport.isComputing(gameId);
 	}
 	
 	@Override
@@ -51,7 +52,7 @@ public class EngineServiceImpl implements EngineService {
 				return middleCell(gameData);
 			}
 			
-			return GomokuCacheSupport.doInCacheContext(() -> {
+			return ComputingSupport.doInComputingContext(gameId, () -> GomokuCacheSupport.doInCacheContext(() -> {
 
 				// STRIKE
 				if (gameSettings.isStrikeEnabled()) {
@@ -59,21 +60,24 @@ public class EngineServiceImpl implements EngineService {
 					strikeContext.setStrikeDepth(gameSettings.getStrikeDepth());
 					strikeContext.setMinMaxDepth(gameSettings.getMinMaxDepth());
 					strikeContext.setStrikeTimeout(gameSettings.getStrikeTimeout());
-					StrikeResult strikeOrCounterStrike = strikeService.processStrike(gameData, playingColor, strikeContext);
+					StrikeResult strikeOrCounterStrike = strikeService.processStrike(gameData, playingColor,
+							strikeContext);
 					if (strikeOrCounterStrike.hasResult()) {
 						return strikeOrCounterStrike.getResultCell();
 					}
 				}
 
 				// MINMAX
-				MinMaxResult minMaxResult = minMaxService.computeMinMax(gameData, gameSettings.getMinMaxDepth(), gameSettings.getMinMaxExtent());
-				
+				MinMaxResult minMaxResult = minMaxService.computeMinMax(gameData, gameSettings.getMinMaxDepth(),
+						gameSettings.getMinMaxExtent());
+
 				if (minMaxResult == MinMaxResult.EMPTY_RESULT) {
 					throw new EngineException("MinMaxService has no result!");
 				}
-				
+
 				return minMaxResult.getResultCell();
-			});
+			}));
+			
 
 		} catch (InterruptedException e) {
 			logger.info("Interrupted engine service");
@@ -88,11 +92,7 @@ public class EngineServiceImpl implements EngineService {
 
 	@Override
 	public void stopComputation(Long gameId) {
-		if (strikeService.isComputing(gameId)) {
-			strikeService.stopComputation(gameId);
-		} else if (minMaxService.isComputing(gameId)) {
-			minMaxService.stopComputation(gameId);
-		}
+		ComputingSupport.stopComputation(gameId);
 	}
 
 }
