@@ -16,27 +16,28 @@ public class WebSocketServiceImpl implements WebSocketService {
     private SimpMessagingTemplate template;
 
 	@Override
-	public void sendAnalysisMove(MoveDTO move) {
-		sendWebSocketMessage(EngineMessageType.ANALYSIS_MOVE, move);
+	public void sendAnalysisMove(Long id, MoveDTO move) {
+		sendWebSocketMessage(EngineMessageType.ANALYSIS_MOVE, id, move);
 	}
 
 	@Override
-	public void sendComputingProgress(int progress) {
-		sendWebSocketMessage(EngineMessageType.COMPUTING_PROGRESS, progress);
+	public void sendComputingProgress(Long id, int progress) {
+		sendWebSocketMessage(EngineMessageType.COMPUTING_PROGRESS, id, progress);
 	}
 
 	@Override
-	public void sendIsComputing(boolean isComputing) {
-		sendWebSocketMessage(EngineMessageType.IS_COMPUTING, isComputing);
+	public void sendIsComputing(Long id, boolean isComputing) {
+		sendWebSocketMessage(EngineMessageType.IS_COMPUTING, id, isComputing);
 	}
 	
 	@Override
-	public void sendRefreshMove(MoveDTO move) {
-		sendWebSocketMessage(EngineMessageType.REFRESH_MOVE, move);
+	public void sendRefreshMove(Long id, MoveDTO move) {
+		sendWebSocketMessage(EngineMessageType.REFRESH_MOVE, id, move);
 	}
 	
-	private void sendWebSocketMessage(EngineMessageType type, Object content) {
+	private void sendWebSocketMessage(EngineMessageType type, Long gameId, Object content) {
 		EngineWebSocketMessage webSocketMessage = new EngineWebSocketMessage();
+		webSocketMessage.setGameId(gameId);
 		webSocketMessage.setType(type);
 		webSocketMessage.setContent(content);
 		template.convertAndSend("/engine/public", webSocketMessage);

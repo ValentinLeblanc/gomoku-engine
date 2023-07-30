@@ -5,17 +5,24 @@ import fr.leblanc.gomoku.engine.model.messaging.MoveDTO;
 
 public class GameData {
 
+	private Long id;
+	
 	private int[][] data;
 	
 	public GameData(int[][] data) {
 		this.data = data;
 	}
 	
-	public GameData(GameData dataWrapper) {
-		data = new int[dataWrapper.getData().length][dataWrapper.getData().length];
-		for (int rowIndex = 0; rowIndex < dataWrapper.getData().length; rowIndex++) {
-			for (int columnIndex = 0; columnIndex < dataWrapper.getData().length; columnIndex++) {
-				data[columnIndex][rowIndex] = dataWrapper.getData()[columnIndex][rowIndex];
+	public Long getId() {
+		return id;
+	}
+	
+	public GameData(GameData gameData) {
+		id = gameData.id;
+		data = new int[gameData.getData().length][gameData.getData().length];
+		for (int rowIndex = 0; rowIndex < gameData.getData().length; rowIndex++) {
+			for (int columnIndex = 0; columnIndex < gameData.getData().length; columnIndex++) {
+				data[columnIndex][rowIndex] = gameData.getData()[columnIndex][rowIndex];
 			}
 		}
 	}
@@ -58,7 +65,11 @@ public class GameData {
 			data[move.getColumnIndex()][move.getRowIndex()] = move.getColor();
 		}
 
-		return new GameData(data);
+		GameData gameData = new GameData(data);
+		
+		gameData.id = game.getId();
+		
+		return gameData;
 	}
 	
 	public static int extractPlayingColor(GameData dataWrapper) {

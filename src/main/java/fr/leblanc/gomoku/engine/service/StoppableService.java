@@ -2,8 +2,8 @@ package fr.leblanc.gomoku.engine.service;
 
 public interface StoppableService {
 
-	boolean isComputing();
+	boolean isComputing(Long id);
 	
-	void stopComputation();
+	void stopComputation(Long id);
 	
 }

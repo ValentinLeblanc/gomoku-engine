@@ -33,6 +33,11 @@ public class EngineServiceImpl implements EngineService {
 	private CheckWinService checkWinService;
 	
 	@Override
+	public Boolean isComputing(Long gameId) {
+		return strikeService.isComputing(gameId) || minMaxService.isComputing(gameId);
+	}
+	
+	@Override
 	public Cell computeMove(GameData gameData, GameSettings gameSettings) {
 
 		try {
@@ -82,11 +87,11 @@ public class EngineServiceImpl implements EngineService {
 	}
 
 	@Override
-	public void stopComputation() {
-		if (strikeService.isComputing()) {
-			strikeService.stopComputation();
-		} else if (minMaxService.isComputing()) {
-			minMaxService.stopComputation();
+	public void stopComputation(Long gameId) {
+		if (strikeService.isComputing(gameId)) {
+			strikeService.stopComputation(gameId);
+		} else if (minMaxService.isComputing(gameId)) {
+			minMaxService.stopComputation(gameId);
 		}
 	}
 

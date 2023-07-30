@@ -6,6 +6,16 @@ public class EngineWebSocketMessage
     
     private Object content;
     
+    private Long gameId;
+    
+    public Long getGameId() {
+		return gameId;
+	}
+    
+    public void setGameId(Long gameId) {
+		this.gameId = gameId;
+	}
+    
 	public EngineMessageType getType() {
 		return type;
 	}

@@ -1,6 +1,8 @@
 package fr.leblanc.gomoku.engine.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -31,6 +33,11 @@ public class EngineController {
 
 	@Autowired
 	private WebSocketService webSocketService;
+	
+	@GetMapping("isComputing/{gameId}")
+	public Boolean isComputing(@PathVariable Long gameId) {
+		return engineService.isComputing(gameId);
+	}
 
 	@PostMapping("/checkWin")
 	public CheckWinResult checkWin(@RequestBody GameDTO gameDTO) {
@@ -46,15 +53,16 @@ public class EngineController {
 		int playingColor = GameData.extractPlayingColor(gameData);
 		
 		try {
-			webSocketService.sendIsComputing(true);
+			webSocketService.sendIsComputing(gameDTO.getId(), true);
+			webSocketService.sendComputingProgress(gameData.getId(), 0);
 			Cell computedMove = engineService.computeMove(gameData, gameSettings);
 			if (computedMove != Cell.NONE_CELL) {
 				MoveDTO returnedMove = new MoveDTO(computedMove.getColumn(), computedMove.getRow(), playingColor);
-				webSocketService.sendRefreshMove(returnedMove);
+				webSocketService.sendRefreshMove(gameDTO.getId(), returnedMove);
 				return returnedMove;
 			}
 		} finally {
-			webSocketService.sendIsComputing(false);
+			webSocketService.sendIsComputing(gameDTO.getId(), false);
 		}
 		return null;
 	}
@@ -73,9 +81,10 @@ public class EngineController {
 		throw new IllegalArgumentException("Game has no valid playing color");
 	}
 	
-	@PostMapping("/stop")
-	public void stopComputation() {
-		engineService.stopComputation();
+	@PostMapping("/stop/{gameId}")
+	public void stopComputation(@PathVariable Long gameId) {
+		engineService.stopComputation(gameId);
+		webSocketService.sendComputingProgress(gameId, 0);
 	}
 	
 }

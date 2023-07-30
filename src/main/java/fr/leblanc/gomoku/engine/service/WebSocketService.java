@@ -4,12 +4,12 @@ import fr.leblanc.gomoku.engine.model.messaging.MoveDTO;
 
 public interface WebSocketService {
 
-	public void sendAnalysisMove(MoveDTO move);
-	
-	void sendComputingProgress(int progress);
-	
-	void sendIsComputing(boolean isComputing);
-	
-	void sendRefreshMove(MoveDTO move);
+	void sendRefreshMove(Long id, MoveDTO move);
+
+	void sendIsComputing(Long id, boolean isComputing);
+
+	void sendComputingProgress(Long id, int progress);
+
+	void sendAnalysisMove(Long id, MoveDTO move);
 
 }

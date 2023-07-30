@@ -6,6 +6,8 @@ import java.util.Set;
 
 public class GameDTO {
 
+	private Long id;
+	
 	private int boardSize;
 	
 	private Set<MoveDTO> moves = new HashSet<>();
@@ -16,11 +18,20 @@ public class GameDTO {
 		
 	}
 	
-	public GameDTO(int boardSize, Set<MoveDTO> moves, GameSettings settings) {
+	public GameDTO(Long id, int boardSize, Set<MoveDTO> moves, GameSettings settings) {
 		super();
+		this.id = id;
 		this.boardSize = boardSize;
 		this.moves = moves;
 		this.settings = settings;
+	}
+	
+	public Long getId() {
+		return id;
+	}
+	
+	public void setId(Long id) {
+		this.id = id;
 	}
 
 	public int getBoardSize() {

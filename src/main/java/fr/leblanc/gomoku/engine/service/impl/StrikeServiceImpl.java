@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -46,9 +47,8 @@ public class StrikeServiceImpl implements StrikeService {
 	@Autowired
 	private MinMaxService minMaxService;
 	
-	private Boolean isComputing = false;
-	
-	private Boolean stopComputation = false;
+	private ConcurrentHashMap<Long, Boolean> isComputingMap = new ConcurrentHashMap<>();
+	private ConcurrentHashMap<Long, Boolean> stopComputationMap = new ConcurrentHashMap<>();
 	
 	private ExecutorService executor = Executors.newSingleThreadExecutor();
 	
@@ -60,9 +60,9 @@ public class StrikeServiceImpl implements StrikeService {
 		};
 
 	@Override
-	public StrikeResult processStrike(GameData dataWrapper, int playingColor, StrikeContext strikeContext) throws InterruptedException {
+	public StrikeResult processStrike(GameData gameData, int playingColor, StrikeContext strikeContext) throws InterruptedException {
 		
-		isComputing = true;
+		isComputingMap.put(gameData.getId(), Boolean.TRUE);
 		
 		try {
 			StopWatch stopWatch = new StopWatch("processStrike");
@@ -72,7 +72,7 @@ public class StrikeServiceImpl implements StrikeService {
 				logger.debug("find direct strike...");
 			}
 			
-			Cell directThreat = directStrike(dataWrapper, playingColor, strikeContext);
+			Cell directThreat = directStrike(gameData, playingColor, strikeContext);
 			
 			if (directThreat != null) {
 				
@@ -85,20 +85,20 @@ public class StrikeServiceImpl implements StrikeService {
 				return new StrikeResult(directThreat, StrikeType.DIRECT_STRIKE);
 			}
 			
-			Cell opponentDirectThreat = directStrike(dataWrapper, -playingColor, strikeContext);
+			Cell opponentDirectThreat = directStrike(gameData, -playingColor, strikeContext);
 			
 			if (opponentDirectThreat != null) {
 				if (logger.isDebugEnabled()) {
 					logger.debug("defend from opponent direct strike...");
 				}
-				List<Cell> counterOpponentThreats = counterDirectStrikeMoves(dataWrapper, playingColor, strikeContext, false);
+				List<Cell> counterOpponentThreats = counterDirectStrikeMoves(gameData, playingColor, strikeContext, false);
 				
 				if (!counterOpponentThreats.isEmpty()) {
 					
 					Cell defense = counterOpponentThreats.get(0);
 					
 					if (counterOpponentThreats.size() > 1) {
-						defense = minMaxService.computeMinMax(dataWrapper, counterOpponentThreats, strikeContext.getMinMaxDepth(), 0).getOptimalMoves().get(0);
+						defense = minMaxService.computeMinMax(gameData, counterOpponentThreats, strikeContext.getMinMaxDepth(), 0).getOptimalMoves().get(0);
 					}
 					
 					stopWatch.stop();
@@ -117,13 +117,13 @@ public class StrikeServiceImpl implements StrikeService {
 				logger.debug("find secondary strike...");
 			}
 			
-			Cell secondaryStrike = executeSecondaryStrikeCommand(dataWrapper, playingColor, strikeContext);
+			Cell secondaryStrike = executeSecondaryStrikeCommand(gameData, playingColor, strikeContext);
 			
 			if (secondaryStrike != null) {
 				return new StrikeResult(secondaryStrike, StrikeType.SECONDARY_STRIKE);
 			}
 		} finally {
-			isComputing = false;
+			isComputingMap.put(gameData.getId(), Boolean.FALSE);
 		}
 		
 		return new StrikeResult(null, StrikeType.EMPTY_STRIKE);
@@ -156,14 +156,14 @@ public class StrikeServiceImpl implements StrikeService {
 	}
 	
 	@Override
-	public boolean isComputing() {
-		return isComputing;
+	public boolean isComputing(Long id) {
+		return isComputingMap.computeIfAbsent(id, k -> Boolean.FALSE);
 	}
 
 	@Override
-	public void stopComputation() {
-		stopComputation = true;
-		isComputing = false;
+	public void stopComputation(Long id) {
+		stopComputationMap.put(id, Boolean.TRUE);
+		isComputingMap.put(id, Boolean.FALSE);
 	}
 	
 	private class SecondaryStrikeCommand implements Callable<Cell> {
@@ -216,18 +216,18 @@ public class StrikeServiceImpl implements StrikeService {
 		
 	}
 
-	private Cell directStrike(GameData dataWrapper, int playingColor, StrikeContext strikeContext) throws InterruptedException {
+	private Cell directStrike(GameData gameData, int playingColor, StrikeContext strikeContext) throws InterruptedException {
 
-		if (Boolean.TRUE.equals(stopComputation)) {
-			stopComputation = false;
+		if (stopComputationMap.computeIfAbsent(gameData.getId(), k -> Boolean.FALSE).booleanValue()) {
+			stopComputationMap.put(gameData.getId(), Boolean.FALSE);
 			throw new InterruptedException();
 		}
 		
-		if (L2CacheSupport.isCacheEnabled() && L2CacheSupport.getDirectStrikeAttempts().containsKey(playingColor) && L2CacheSupport.getDirectStrikeAttempts().get(playingColor).containsKey(dataWrapper)) {
-			return L2CacheSupport.getDirectStrikeAttempts().get(playingColor).get(dataWrapper).orElse(null);
+		if (L2CacheSupport.isCacheEnabled() && L2CacheSupport.getDirectStrikeAttempts().containsKey(playingColor) && L2CacheSupport.getDirectStrikeAttempts().get(playingColor).containsKey(gameData)) {
+			return L2CacheSupport.getDirectStrikeAttempts().get(playingColor).get(gameData).orElse(null);
 		}
 		
-		ThreatContext computeThreatContext = threatContextService.computeThreatContext(dataWrapper, playingColor);
+		ThreatContext computeThreatContext = threatContextService.computeThreatContext(gameData, playingColor);
 		
 		Map<ThreatType, List<Threat>> threatMap = computeThreatContext.getThreatTypeToThreatMap();
 		
@@ -239,13 +239,13 @@ public class StrikeServiceImpl implements StrikeService {
 			Cell move = threatMap.get(ThreatType.THREAT_5).iterator().next().getEmptyCells().iterator().next();
 			
 			if (L2CacheSupport.isCacheEnabled()) {
-				L2CacheSupport.getDirectStrikeAttempts().get(playingColor).put(new GameData(dataWrapper), Optional.of(move));
+				L2CacheSupport.getDirectStrikeAttempts().get(playingColor).put(new GameData(gameData), Optional.of(move));
 			}
 			
 			return move;
 		}
 
-		Map<ThreatType, List<Threat>> opponentThreatMap = threatContextService.computeThreatContext(dataWrapper, -playingColor).getThreatTypeToThreatMap();
+		Map<ThreatType, List<Threat>> opponentThreatMap = threatContextService.computeThreatContext(gameData, -playingColor).getThreatTypeToThreatMap();
 
 		// check for an opponent threat5
 		if (!opponentThreatMap.get(ThreatType.THREAT_5).isEmpty()) {
@@ -260,36 +260,36 @@ public class StrikeServiceImpl implements StrikeService {
 				
 				try {
 					// defend
-					dataWrapper.addMove(opponentThreat, playingColor);
+					gameData.addMove(opponentThreat, playingColor);
 					
 					// check for another threat5
-					threatMap = threatContextService.computeThreatContext(dataWrapper, playingColor).getThreatTypeToThreatMap();
+					threatMap = threatContextService.computeThreatContext(gameData, playingColor).getThreatTypeToThreatMap();
 					if (!threatMap.get(ThreatType.THREAT_5).isEmpty()) {
 						
 						Cell newThreat = threatMap.get(ThreatType.THREAT_5).iterator().next().getEmptyCells().iterator().next();
 						
 						// opponent defends
-						dataWrapper.addMove(newThreat, -playingColor);
+						gameData.addMove(newThreat, -playingColor);
 						
 						// check for another strike
-						Cell nextThreat = directStrike(dataWrapper, playingColor, strikeContext);
+						Cell nextThreat = directStrike(gameData, playingColor, strikeContext);
 						
-						dataWrapper.removeMove(newThreat);
+						gameData.removeMove(newThreat);
 						
 						if (nextThreat != null) {
 							if (L2CacheSupport.isCacheEnabled()) {
-								L2CacheSupport.getDirectStrikeAttempts().get(playingColor).put(new GameData(dataWrapper), Optional.of(opponentThreat));
+								L2CacheSupport.getDirectStrikeAttempts().get(playingColor).put(new GameData(gameData), Optional.of(opponentThreat));
 							}
 							return opponentThreat;
 						}
 					}
 				} finally {
-					dataWrapper.removeMove(opponentThreat);
+					gameData.removeMove(opponentThreat);
 				}
 			}
 			
 			if (L2CacheSupport.isCacheEnabled()) {
-				L2CacheSupport.getDirectStrikeAttempts().get(playingColor).put(new GameData(dataWrapper), Optional.empty());
+				L2CacheSupport.getDirectStrikeAttempts().get(playingColor).put(new GameData(gameData), Optional.empty());
 			}
 			
 			return null;
@@ -298,7 +298,7 @@ public class StrikeServiceImpl implements StrikeService {
 		// check for a double threat4 move
 		if (!doubleThreatMap.get(ThreatType.DOUBLE_THREAT_4).isEmpty()) {
 			if (L2CacheSupport.isCacheEnabled()) {
-				L2CacheSupport.getDirectStrikeAttempts().get(playingColor).put(new GameData(dataWrapper), Optional.of(doubleThreatMap.get(ThreatType.DOUBLE_THREAT_4).iterator().next().getTargetCell()));
+				L2CacheSupport.getDirectStrikeAttempts().get(playingColor).put(new GameData(gameData), Optional.of(doubleThreatMap.get(ThreatType.DOUBLE_THREAT_4).iterator().next().getTargetCell()));
 			}
 			return doubleThreatMap.get(ThreatType.DOUBLE_THREAT_4).iterator().next().getTargetCell();
 		}
@@ -312,30 +312,30 @@ public class StrikeServiceImpl implements StrikeService {
 		
 		for (Cell threat4Move : cells) {
 
-			dataWrapper.addMove(threat4Move, playingColor);
+			gameData.addMove(threat4Move, playingColor);
 			
 			// opponent defends
-			opponentThreatMap = threatContextService.computeThreatContext(dataWrapper, playingColor).getThreatTypeToThreatMap();
+			opponentThreatMap = threatContextService.computeThreatContext(gameData, playingColor).getThreatTypeToThreatMap();
 
 			Cell counterMove = opponentThreatMap.get(ThreatType.THREAT_5).iterator().next().getEmptyCells().iterator().next();
 
-			dataWrapper.addMove(counterMove, -playingColor);
+			gameData.addMove(counterMove, -playingColor);
 			
-			Cell nextAttempt = directStrike(dataWrapper, playingColor, strikeContext);
+			Cell nextAttempt = directStrike(gameData, playingColor, strikeContext);
 
-			dataWrapper.removeMove(counterMove);
-			dataWrapper.removeMove(threat4Move);
+			gameData.removeMove(counterMove);
+			gameData.removeMove(threat4Move);
 			
 			if (nextAttempt != null) {
 				if (L2CacheSupport.isCacheEnabled()) {
-					L2CacheSupport.getDirectStrikeAttempts().get(playingColor).put(new GameData(dataWrapper), Optional.of(threat4Move));
+					L2CacheSupport.getDirectStrikeAttempts().get(playingColor).put(new GameData(gameData), Optional.of(threat4Move));
 				}
 				return threat4Move;
 			}
 		}
 		
 		if (L2CacheSupport.isCacheEnabled()) {
-			L2CacheSupport.getDirectStrikeAttempts().get(playingColor).put(new GameData(dataWrapper), Optional.empty());
+			L2CacheSupport.getDirectStrikeAttempts().get(playingColor).put(new GameData(gameData), Optional.empty());
 		}
 
 		return null;

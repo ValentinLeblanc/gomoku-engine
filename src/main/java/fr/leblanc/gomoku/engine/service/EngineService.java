@@ -6,8 +6,10 @@ import fr.leblanc.gomoku.engine.model.messaging.GameSettings;
 
 public interface EngineService {
 
-	void stopComputation();
+	void stopComputation(Long gameId);
 
 	Cell computeMove(GameData gameData, GameSettings gameSettings);
+
+	Boolean isComputing(Long gameId);
 
 }
