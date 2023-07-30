@@ -38,7 +38,6 @@ public class ComputationServiceImpl implements ComputationService {
 	public <T> T doInComputationContext(Long computationId, TypedAction<T> action) throws InterruptedException {
 		setComputationId(computationId);
 		isComputingMap.put(computationId, Boolean.TRUE);
-		updateComputationProgress(0);
 		try {
 			return action.run();
 		} finally {
@@ -53,7 +52,7 @@ public class ComputationServiceImpl implements ComputationService {
 	}
 	
 	@Override
-	public boolean isStopComputation() {
+	public boolean isComputationStopped() {
 		Long computationId = threadComputationId.get();
 		if (computationId != null) {
 			return stopComputationMap.computeIfAbsent(computationId, k -> Boolean.FALSE).booleanValue();
@@ -76,12 +75,17 @@ public class ComputationServiceImpl implements ComputationService {
 	}
 	
 	@Override
-	public void updateComputationProgress(int progress) {
-		webSocketService.sendMessage(EngineMessageType.COMPUTING_PROGRESS, threadComputationId.get(), progress);
+	public void sendMinMaxProgress(int progress) {
+		webSocketService.sendMessage(EngineMessageType.MINMAX_PROGRESS, threadComputationId.get(), progress);
 	}
 
 	@Override
 	public void sendAnalysisMove(Cell analysedMove, int playingColor) {
 		webSocketService.sendMessage(EngineMessageType.ANALYSIS_MOVE, threadComputationId.get(), new MoveDTO(analysedMove, playingColor));
+	}
+	
+	@Override
+	public void sendStrikeProgress(boolean strikeProgress) {
+		webSocketService.sendMessage(EngineMessageType.STRIKE_PROGRESS, threadComputationId.get(), strikeProgress);
 	}
 }

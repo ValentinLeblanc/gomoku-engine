@@ -4,7 +4,8 @@ package fr.leblanc.gomoku.engine.model.messaging;
 public enum EngineMessageType
 {
     REFRESH_MOVE,
-    COMPUTING_PROGRESS,
+    MINMAX_PROGRESS,
+    STRIKE_PROGRESS,
     ANALYSIS_MOVE,
     IS_COMPUTING;
 }

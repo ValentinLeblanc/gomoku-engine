@@ -35,7 +35,7 @@ class MinMaxServiceTest {
 		gameDto.getMoves().add(new MoveDTO(7, 7, EngineConstants.BLACK_COLOR));
 		
 		MinMaxResult minMaxResult = GomokuCacheSupport.doInCacheContext(() -> {
-			return minMaxService.computeMinMax(GameData.of(gameDto), null, 2, 2);
+			return minMaxService.computeMinMax(GameData.of(gameDto), 2, 2);
 		});
 		
 		assertNotNull(minMaxResult);
@@ -67,7 +67,7 @@ class MinMaxServiceTest {
 	
 			int color = playingColor;
 	
-			MinMaxResult minMaxResult = minMaxService.computeMinMax(GameData.of(gameDto), null, depth, 0);
+			MinMaxResult minMaxResult = minMaxService.computeMinMax(GameData.of(gameDto), depth, 0);
 			assertNotNull(minMaxResult);
 	
 			double evaluation = minMaxResult.getEvaluation();
@@ -99,7 +99,7 @@ class MinMaxServiceTest {
 		int playingColor = EngineConstants.WHITE_COLOR;
 		
 		MinMaxResult minMaxResult = GomokuCacheSupport.doInCacheContext(() -> {
-			return minMaxService.computeMinMax(GameData.of(gameDto), null, 4, 0);
+			return minMaxService.computeMinMax(GameData.of(gameDto), 4, 0);
 		});
 
 		assertEquals(4, minMaxResult.getOptimalMoves().size());
@@ -115,7 +115,7 @@ class MinMaxServiceTest {
 		gameDto.getMoves().add(newMove);
 		
 		minMaxResult = GomokuCacheSupport.doInCacheContext(() -> {
-			return minMaxService.computeMinMax(GameData.of(gameDto), null, 3, 0);
+			return minMaxService.computeMinMax(GameData.of(gameDto), 3, 0);
 		});
 
 		assertEquals(3, minMaxResult.getOptimalMoves().size());
@@ -131,7 +131,7 @@ class MinMaxServiceTest {
 		gameDto.getMoves().add(newMove);
 
 		minMaxResult = GomokuCacheSupport.doInCacheContext(() -> {
-			return minMaxService.computeMinMax(GameData.of(gameDto), null, 2, 0);
+			return minMaxService.computeMinMax(GameData.of(gameDto), 2, 0);
 		});
 
 		assertEquals(2, minMaxResult.getOptimalMoves().size());

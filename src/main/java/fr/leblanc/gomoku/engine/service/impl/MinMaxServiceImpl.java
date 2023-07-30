@@ -60,6 +60,8 @@ public class MinMaxServiceImpl implements MinMaxService {
 	@Override
 	public MinMaxResult computeMinMax(GameData gameData, List<Cell> analyzedCells, int maxDepth, int extent) throws InterruptedException {
 		
+		computationService.sendMinMaxProgress(0);
+		
 		MinMaxResult result = null;
 		
 		if (logger.isInfoEnabled()) {
@@ -109,10 +111,10 @@ public class MinMaxServiceImpl implements MinMaxService {
 				result = internalMinMax(gameData, analyzedCells, context);
 			}
 			
-			computationService.updateComputationProgress(100);
+			computationService.sendMinMaxProgress(100);
 		} catch (Exception e) {
 			logger.error("Error while computing min/max : " + e.getMessage(), e);
-			computationService.updateComputationProgress(0);
+			computationService.sendMinMaxProgress(0);
 		} finally {
 			stopWatch.stop();
 			
@@ -157,7 +159,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 					Thread.currentThread().interrupt();
 					throw new EngineException(e);
 				} catch (ExecutionException e) {
-					if (e.getCause() instanceof InterruptedException && computationService.isStopComputation()) {
+					if (e.getCause() instanceof InterruptedException && computationService.isComputationStopped()) {
 						throw new EngineException("engine was interrupted");
 					}
 					throw new EngineException(e);
@@ -198,21 +200,21 @@ public class MinMaxServiceImpl implements MinMaxService {
 		private GameData gameData;
 		private List<Cell> cells;
 		private GomokuCache cache;
-		private Long gameId;
+		private Long computationId;
 		
-		private RecursiveMinMaxCommand(GameData gameData, List<Cell> cells, MinMaxContext context, GomokuCache cache, Long gameId) {
+		private RecursiveMinMaxCommand(GameData gameData, List<Cell> cells, MinMaxContext context, GomokuCache cache, Long computationId) {
 			this.context = new MinMaxContext(context);
 			this.gameData = new GameData(gameData);
 			this.cells = cells;
 			this.cache = cache;
-			this.gameId = gameId;
+			this.computationId = computationId;
 		}
 		
 		@Override
 		public MinMaxResult call() throws InterruptedException {
 			try {
 				return GomokuCacheSupport.doInCacheContext(() -> {
-					computationService.setComputationId(gameId);
+					computationService.setComputationId(computationId);
 					return recursiveMinMax(gameData, context.getPlayingColor(), cells, context.isFindMax(), 0, context);
 				}, cache);
 			} catch (InterruptedException e) {
@@ -234,7 +236,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 		
 		for (Cell analysedMove : analysedMoves) {
 			
-			if (computationService.isStopComputation()) {
+			if (computationService.isComputationStopped()) {
 				throw new InterruptedException();
 			}
 			
@@ -296,7 +298,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			if (currentDepth == context.getIndexDepth()) {
 				context.getCurrentIndex().set(context.getCurrentIndex().get() + 1);
 				Integer percentCompleted = context.getCurrentIndex().get() * 100 / context.getEndIndex();
-				computationService.updateComputationProgress(percentCompleted);
+				computationService.sendMinMaxProgress(percentCompleted);
 			}
 		}
 	

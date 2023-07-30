@@ -12,8 +12,6 @@ import fr.leblanc.gomoku.engine.model.MinMaxResult;
 import fr.leblanc.gomoku.engine.model.StrikeContext;
 import fr.leblanc.gomoku.engine.model.StrikeResult;
 import fr.leblanc.gomoku.engine.model.messaging.GameSettings;
-import fr.leblanc.gomoku.engine.service.CheckWinService;
-import fr.leblanc.gomoku.engine.service.ComputationService;
 import fr.leblanc.gomoku.engine.service.EngineService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.StrikeService;
@@ -30,24 +28,10 @@ public class EngineServiceImpl implements EngineService {
 	@Autowired
 	private MinMaxService minMaxService;
 	
-	@Autowired
-	private CheckWinService checkWinService;
-	
-	@Autowired
-	private ComputationService computationService;
-	
-	@Override
-	public Boolean isComputing(Long gameId) {
-		return computationService.isComputing(gameId);
-	}
-	
 	@Override
 	public Cell computeMove(GameData gameData, GameSettings gameSettings) {
 
 		try {
-			if (checkWinService.checkWin(gameData).isWin()) {
-				throw new EngineException("Game is already finished!");
-			}
 			
 			int playingColor = GameData.extractPlayingColor(gameData);
 			
@@ -91,11 +75,6 @@ public class EngineServiceImpl implements EngineService {
 
 	private Cell middleCell(GameData gameData) {
 		return new Cell(gameData.getData().length / 2, gameData.getData().length / 2);
-	}
-
-	@Override
-	public void stopComputation(Long gameId) {
-		computationService.stopComputation(gameId);
 	}
 
 }

@@ -7,15 +7,17 @@ public interface ComputationService {
 
 	Long getComputationId();
 
-	void setComputationId(Long gameId);
+	void setComputationId(Long computationId);
 
-	boolean isComputing(Long gameId);
+	boolean isComputing(Long computationId);
 
-	boolean isStopComputation();
+	boolean isComputationStopped();
 
-	void stopComputation(Long gameId);
+	void stopComputation(Long computationId);
 
-	void updateComputationProgress(int progress);
+	void sendMinMaxProgress(int progress);
+	
+	void sendStrikeProgress(boolean strikeProgress);
 
 	<T> T doInComputationContext(Long computationId, TypedAction<T> action) throws InterruptedException;
 
