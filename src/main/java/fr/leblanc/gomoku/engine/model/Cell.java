@@ -4,8 +4,6 @@ import java.util.Objects;
 
 public class Cell {
 	
-	public static final Cell NONE_CELL = new Cell(-1, -1);
-	
 	private int column;
 	private int row;
 

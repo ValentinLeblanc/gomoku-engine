@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
 
+import fr.leblanc.gomoku.engine.exception.EngineException;
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
 import fr.leblanc.gomoku.engine.model.GameData;
@@ -33,7 +34,7 @@ import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.ThreatContextService;
 import fr.leblanc.gomoku.engine.service.WebSocketService;
 import fr.leblanc.gomoku.engine.util.cache.GomokuCache;
-import fr.leblanc.gomoku.engine.util.cache.L2CacheSupport;
+import fr.leblanc.gomoku.engine.util.cache.GomokuCacheSupport;
 
 @Service
 public class MinMaxServiceImpl implements MinMaxService {
@@ -53,6 +54,13 @@ public class MinMaxServiceImpl implements MinMaxService {
 	
 	private ConcurrentHashMap<Long, Boolean> isComputingMap = new ConcurrentHashMap<>();
 	private ConcurrentHashMap<Long, Boolean> stopComputationMap = new ConcurrentHashMap<>();
+	
+	@Override
+	public MinMaxResult computeMinMax(GameData gameData, int maxDepth, int extent) throws InterruptedException {
+		int playingColor = GameData.extractPlayingColor(gameData);
+		List<Cell> analyzedCells = threatContextService.buildAnalyzedCells(gameData, playingColor);
+		return computeMinMax(gameData, analyzedCells, maxDepth, extent);
+	}
 	
 	@Override
 	public MinMaxResult computeMinMax(GameData gameData, List<Cell> analyzedCells, int maxDepth, int extent) throws InterruptedException {
@@ -168,7 +176,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 		}
 		
 		for (List<Cell> cells : batchMap.values()) {
-			commands.add(new RecursiveMinMaxCommand(gameData, cells, context, L2CacheSupport.getCurrentCache()));
+			commands.add(new RecursiveMinMaxCommand(gameData, cells, context, GomokuCacheSupport.getCurrentCache()));
 		}
 		
 		try {
@@ -178,16 +186,13 @@ public class MinMaxServiceImpl implements MinMaxService {
 					return r.get();
 				} catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
+					throw new EngineException(e);
 				} catch (ExecutionException e) {
-					if (e.getCause() instanceof InterruptedException) {
-						if (stopComputationMap.computeIfAbsent(gameData.getId(), k -> Boolean.FALSE).booleanValue()) {
-							logger.warn("engine was interrupted");
-						}
-					} else {
-						logger.error("Error while executing minMax thread: " + e.getMessage(), e);
+					if (e.getCause() instanceof InterruptedException && stopComputationMap.computeIfAbsent(gameData.getId(), k -> Boolean.FALSE).booleanValue()) {
+						throw new EngineException("engine was interrupted");
 					}
+					throw new EngineException(e);
 				}
-				return MinMaxResult.EMPTY_RESULT;
 			}).filter(r -> r.getFinalEvaluation() != null).collect(Collectors.toList());
 			results.sort(resultsComparator(context.isFindMax()));
 			if (!results.isEmpty()) {
@@ -195,8 +200,9 @@ public class MinMaxServiceImpl implements MinMaxService {
 			}
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
+			throw new EngineException(e);
 		}
-		return MinMaxResult.EMPTY_RESULT;
+		throw new EngineException("MinMax service failed");
 	}
 
 	private Comparator<? super MinMaxResult> resultsComparator(boolean findMax) {
@@ -234,7 +240,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 		@Override
 		public MinMaxResult call() throws InterruptedException {
 			try {
-				return L2CacheSupport.doInCacheContext(() -> recursiveMinMax(gameData, context.getPlayingColor(), cells, context.isFindMax(), 0, context), cache);
+				return GomokuCacheSupport.doInCacheContext(() -> recursiveMinMax(gameData, context.getPlayingColor(), cells, context.isFindMax(), 0, context), cache);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 				throw e;

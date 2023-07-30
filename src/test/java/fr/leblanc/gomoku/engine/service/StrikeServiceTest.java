@@ -15,7 +15,7 @@ import fr.leblanc.gomoku.engine.model.StrikeContext;
 import fr.leblanc.gomoku.engine.model.StrikeResult;
 import fr.leblanc.gomoku.engine.model.StrikeResult.StrikeType;
 import fr.leblanc.gomoku.engine.util.GomokuTestsHelper;
-import fr.leblanc.gomoku.engine.util.cache.L2CacheSupport;
+import fr.leblanc.gomoku.engine.util.cache.GomokuCacheSupport;
 
 @SpringBootTest
 class StrikeServiceTest {
@@ -26,7 +26,7 @@ class StrikeServiceTest {
 	@Test
 	void findOrCounterStrikeTest() throws InterruptedException {
 		
-		L2CacheSupport.doInCacheContext(() -> {
+		GomokuCacheSupport.doInCacheContext(() -> {
 			try {
 				GameData dataWrapper = new GameData(15);
 				
@@ -91,7 +91,7 @@ class StrikeServiceTest {
 	@Test
 	void secondaryStrikeTest() throws JsonProcessingException, InterruptedException {
 		
-		L2CacheSupport.doInCacheContext(() -> {
+		GomokuCacheSupport.doInCacheContext(() -> {
 			try {
 				StrikeContext strikeContext = new StrikeContext();
 				strikeContext.setStrikeDepth(2);

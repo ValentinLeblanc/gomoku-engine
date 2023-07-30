@@ -16,7 +16,7 @@ import fr.leblanc.gomoku.engine.service.CheckWinService;
 import fr.leblanc.gomoku.engine.service.EngineService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.StrikeService;
-import fr.leblanc.gomoku.engine.util.cache.L2CacheSupport;
+import fr.leblanc.gomoku.engine.util.cache.GomokuCacheSupport;
 
 @Service
 public class EngineServiceImpl implements EngineService {
@@ -38,11 +38,11 @@ public class EngineServiceImpl implements EngineService {
 	}
 	
 	@Override
-	public Cell computeMove(GameData gameData, GameSettings gameSettings) {
+	public Cell computeMove(Long gameId, GameData gameData, GameSettings gameSettings) {
 
 		try {
 			if (checkWinService.checkWin(gameData).isWin()) {
-				return Cell.NONE_CELL;
+				throw new EngineException("Game is already finished!");
 			}
 			
 			int playingColor = GameData.extractPlayingColor(gameData);
@@ -51,7 +51,7 @@ public class EngineServiceImpl implements EngineService {
 				return middleCell(gameData);
 			}
 			
-			return L2CacheSupport.doInCacheContext(() -> {
+			return GomokuCacheSupport.doInCacheContext(() -> {
 
 				// STRIKE
 				if (gameSettings.isStrikeEnabled()) {
@@ -66,10 +66,10 @@ public class EngineServiceImpl implements EngineService {
 				}
 
 				// MINMAX
-				MinMaxResult minMaxResult = minMaxService.computeMinMax(gameData, null, gameSettings.getMinMaxDepth(), gameSettings.getMinMaxExtent());
+				MinMaxResult minMaxResult = minMaxService.computeMinMax(gameData, gameSettings.getMinMaxDepth(), gameSettings.getMinMaxExtent());
 				
 				if (minMaxResult == MinMaxResult.EMPTY_RESULT) {
-					return Cell.NONE_CELL;
+					throw new EngineException("MinMaxService has no result!");
 				}
 				
 				return minMaxResult.getResultCell();

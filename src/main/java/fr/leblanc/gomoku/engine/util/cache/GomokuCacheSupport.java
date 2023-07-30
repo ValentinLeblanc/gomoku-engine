@@ -10,9 +10,9 @@ import fr.leblanc.gomoku.engine.model.EvaluationResult;
 import fr.leblanc.gomoku.engine.model.MinMaxResult;
 import fr.leblanc.gomoku.engine.model.ThreatContext;
 
-public class L2CacheSupport {
+public class GomokuCacheSupport {
 
-	private L2CacheSupport() {
+	private GomokuCacheSupport() {
 		
 	}
 	

@@ -11,6 +11,10 @@ public class EngineException extends RuntimeException {
 	 */
 	private static final long serialVersionUID = 1L;
 	
+	public EngineException(String message) {
+		super(message);
+	}
+	
 	public EngineException(Exception e) {
 		super(e);
 	}

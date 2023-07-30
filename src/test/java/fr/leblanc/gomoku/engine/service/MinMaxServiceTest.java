@@ -17,7 +17,7 @@ import fr.leblanc.gomoku.engine.model.MinMaxResult;
 import fr.leblanc.gomoku.engine.model.messaging.GameDTO;
 import fr.leblanc.gomoku.engine.model.messaging.MoveDTO;
 import fr.leblanc.gomoku.engine.util.GomokuTestsHelper;
-import fr.leblanc.gomoku.engine.util.cache.L2CacheSupport;
+import fr.leblanc.gomoku.engine.util.cache.GomokuCacheSupport;
 
 @SpringBootTest
 class MinMaxServiceTest {
@@ -34,7 +34,7 @@ class MinMaxServiceTest {
 		gameDto.setBoardSize(15);
 		gameDto.getMoves().add(new MoveDTO(7, 7, EngineConstants.BLACK_COLOR));
 		
-		MinMaxResult minMaxResult = L2CacheSupport.doInCacheContext(() -> {
+		MinMaxResult minMaxResult = GomokuCacheSupport.doInCacheContext(() -> {
 			return minMaxService.computeMinMax(GameData.of(gameDto), null, 2, 2);
 		});
 		
@@ -63,7 +63,7 @@ class MinMaxServiceTest {
 	
 	private void computeMinMaxAndTestEvaluation(GameDTO gameDto, int depth, int playingColor) throws InterruptedException {
 	
-		L2CacheSupport.doInCacheContext(() -> {
+		GomokuCacheSupport.doInCacheContext(() -> {
 	
 			int color = playingColor;
 	
@@ -98,7 +98,7 @@ class MinMaxServiceTest {
 
 		int playingColor = EngineConstants.WHITE_COLOR;
 		
-		MinMaxResult minMaxResult = L2CacheSupport.doInCacheContext(() -> {
+		MinMaxResult minMaxResult = GomokuCacheSupport.doInCacheContext(() -> {
 			return minMaxService.computeMinMax(GameData.of(gameDto), null, 4, 0);
 		});
 
@@ -114,7 +114,7 @@ class MinMaxServiceTest {
 
 		gameDto.getMoves().add(newMove);
 		
-		minMaxResult = L2CacheSupport.doInCacheContext(() -> {
+		minMaxResult = GomokuCacheSupport.doInCacheContext(() -> {
 			return minMaxService.computeMinMax(GameData.of(gameDto), null, 3, 0);
 		});
 
@@ -130,7 +130,7 @@ class MinMaxServiceTest {
 
 		gameDto.getMoves().add(newMove);
 
-		minMaxResult = L2CacheSupport.doInCacheContext(() -> {
+		minMaxResult = GomokuCacheSupport.doInCacheContext(() -> {
 			return minMaxService.computeMinMax(GameData.of(gameDto), null, 2, 0);
 		});
 

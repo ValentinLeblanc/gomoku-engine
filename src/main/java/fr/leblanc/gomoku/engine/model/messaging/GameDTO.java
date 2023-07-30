@@ -6,7 +6,7 @@ import java.util.Set;
 
 public class GameDTO {
 
-	private Long id;
+	private Long id = 0l;
 	
 	private int boardSize;
 	

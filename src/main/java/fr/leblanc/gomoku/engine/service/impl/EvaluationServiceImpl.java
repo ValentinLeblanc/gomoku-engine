@@ -28,7 +28,7 @@ import fr.leblanc.gomoku.engine.service.CheckWinService;
 import fr.leblanc.gomoku.engine.service.EvaluationService;
 import fr.leblanc.gomoku.engine.service.ThreatContextService;
 import fr.leblanc.gomoku.engine.util.Pair;
-import fr.leblanc.gomoku.engine.util.cache.L2CacheSupport;
+import fr.leblanc.gomoku.engine.util.cache.GomokuCacheSupport;
 
 @Service
 public class EvaluationServiceImpl implements EvaluationService {
@@ -51,14 +51,14 @@ public class EvaluationServiceImpl implements EvaluationService {
 		
 		int playingColor = GameData.extractPlayingColor(dataWrapper);
 		
-		if (L2CacheSupport.isCacheEnabled() && L2CacheSupport.getEvaluationCache().get(playingColor).containsKey(dataWrapper)) {
-			return L2CacheSupport.getEvaluationCache().get(playingColor).get(dataWrapper);
+		if (GomokuCacheSupport.isCacheEnabled() && GomokuCacheSupport.getEvaluationCache().get(playingColor).containsKey(dataWrapper)) {
+			return GomokuCacheSupport.getEvaluationCache().get(playingColor).get(dataWrapper);
 		}
 		
 		EvaluationResult evaluation =  evaluateThreats(new EvaluationContext(dataWrapper, playingColor, -1, 0, logEnabled));
 		
-		if (L2CacheSupport.isCacheEnabled()) {
-			L2CacheSupport.getEvaluationCache().get(playingColor).put(new GameData(dataWrapper), evaluation);
+		if (GomokuCacheSupport.isCacheEnabled()) {
+			GomokuCacheSupport.getEvaluationCache().get(playingColor).put(new GameData(dataWrapper), evaluation);
 		}
 		
 		return evaluation;
