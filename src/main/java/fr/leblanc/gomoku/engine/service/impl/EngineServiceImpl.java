@@ -12,6 +12,7 @@ import fr.leblanc.gomoku.engine.model.MinMaxResult;
 import fr.leblanc.gomoku.engine.model.StrikeContext;
 import fr.leblanc.gomoku.engine.model.StrikeResult;
 import fr.leblanc.gomoku.engine.model.messaging.GameSettings;
+import fr.leblanc.gomoku.engine.service.CheckWinService;
 import fr.leblanc.gomoku.engine.service.EngineService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.StrikeService;
@@ -23,6 +24,9 @@ public class EngineServiceImpl implements EngineService {
 	private static final Logger logger = LoggerFactory.getLogger(EngineServiceImpl.class);
 	
 	@Autowired
+	private CheckWinService checkWinService;
+
+	@Autowired
 	private StrikeService strikeService;
 	
 	@Autowired
@@ -32,6 +36,9 @@ public class EngineServiceImpl implements EngineService {
 	public Cell computeMove(GameData gameData, GameSettings gameSettings) {
 
 		try {
+			if (checkWinService.checkWin(gameData).isWin()) {
+				throw new IllegalStateException("Game is already over");
+			}
 			
 			int playingColor = GameData.extractPlayingColor(gameData);
 			
@@ -39,38 +46,45 @@ public class EngineServiceImpl implements EngineService {
 				return middleCell(gameData);
 			}
 			
-			return GomokuCacheSupport.doInCacheContext(() -> {
-
-				// STRIKE
-				if (gameSettings.isStrikeEnabled()) {
-					StrikeContext strikeContext = new StrikeContext();
-					strikeContext.setStrikeDepth(gameSettings.getStrikeDepth());
-					strikeContext.setMinMaxDepth(gameSettings.getMinMaxDepth());
-					strikeContext.setStrikeTimeout(gameSettings.getStrikeTimeout());
-					StrikeResult strikeOrCounterStrike = strikeService.processStrike(gameData, playingColor,
-							strikeContext);
-					if (strikeOrCounterStrike.hasResult()) {
-						return strikeOrCounterStrike.getResultCell();
-					}
-				}
-
-				// MINMAX
-				MinMaxResult minMaxResult = minMaxService.computeMinMax(gameData, gameSettings.getMinMaxDepth(),
-						gameSettings.getMinMaxExtent());
-
-				if (minMaxResult == MinMaxResult.EMPTY_RESULT) {
-					throw new EngineException("MinMaxService has no result!");
-				}
-
-				return minMaxResult.getResultCell();
-			});
+			Cell strikeResult = computeStrike(new GameData(gameData), gameSettings, playingColor);
+			if (strikeResult != null) {
+				return strikeResult;
+			}
 			
-
+			return computeMinMax(gameData, gameSettings);
+			
 		} catch (InterruptedException e) {
 			logger.info("Interrupted engine service");
 			Thread.currentThread().interrupt();
 			throw new EngineException(e);
 		}
+	}
+
+	private Cell computeMinMax(GameData gameData, GameSettings gameSettings) throws InterruptedException {
+		return GomokuCacheSupport.doInCacheContext(() -> {
+			MinMaxResult minMaxResult = minMaxService.computeMinMax(gameData, gameSettings.getMinMaxDepth(),
+					gameSettings.getMinMaxExtent());
+			if (minMaxResult == MinMaxResult.EMPTY_RESULT) {
+				throw new EngineException("MinMaxService has no result!");
+			}
+			return minMaxResult.getResultCell();
+		});
+	}
+
+	private Cell computeStrike(GameData gameData, GameSettings gameSettings, int playingColor) throws InterruptedException {
+		return GomokuCacheSupport.doInCacheContext(() -> {
+			if (gameSettings.isStrikeEnabled()) {
+				StrikeContext strikeContext = new StrikeContext();
+				strikeContext.setStrikeDepth(gameSettings.getStrikeDepth());
+				strikeContext.setMinMaxDepth(gameSettings.getMinMaxDepth());
+				strikeContext.setStrikeTimeout(gameSettings.getStrikeTimeout());
+				StrikeResult strikeOrCounterStrike = strikeService.processStrike(gameData, playingColor, strikeContext);
+				if (strikeOrCounterStrike.hasResult()) {
+					return strikeOrCounterStrike.getResultCell();
+				}
+			}
+			return null;
+		});
 	}
 
 	private Cell middleCell(GameData gameData) {

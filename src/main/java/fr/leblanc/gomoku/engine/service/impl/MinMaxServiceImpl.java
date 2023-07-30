@@ -27,10 +27,13 @@ import fr.leblanc.gomoku.engine.model.EngineConstants;
 import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.MinMaxContext;
 import fr.leblanc.gomoku.engine.model.MinMaxResult;
+import fr.leblanc.gomoku.engine.model.messaging.EngineMessageType;
+import fr.leblanc.gomoku.engine.model.messaging.MoveDTO;
 import fr.leblanc.gomoku.engine.service.ComputationService;
 import fr.leblanc.gomoku.engine.service.EvaluationService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.ThreatContextService;
+import fr.leblanc.gomoku.engine.service.WebSocketService;
 import fr.leblanc.gomoku.engine.util.cache.GomokuCache;
 import fr.leblanc.gomoku.engine.util.cache.GomokuCacheSupport;
 
@@ -48,6 +51,9 @@ public class MinMaxServiceImpl implements MinMaxService {
 	private EvaluationService evaluationService;
 
 	@Autowired
+	private WebSocketService webSocketService;
+	
+	@Autowired
 	private ComputationService computationService;
 	
 	@Override
@@ -60,7 +66,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 	@Override
 	public MinMaxResult computeMinMax(GameData gameData, List<Cell> analyzedCells, int maxDepth, int extent) throws InterruptedException {
 		
-		computationService.sendMinMaxProgress(0);
+		webSocketService.sendMessage(EngineMessageType.MINMAX_PROGRESS, computationService.getCurrentThreadComputationId(), 0);
 		
 		MinMaxResult result = null;
 		
@@ -111,10 +117,10 @@ public class MinMaxServiceImpl implements MinMaxService {
 				result = internalMinMax(gameData, analyzedCells, context);
 			}
 			
-			computationService.sendMinMaxProgress(100);
+			webSocketService.sendMessage(EngineMessageType.MINMAX_PROGRESS, computationService.getCurrentThreadComputationId(), 100);
 		} catch (Exception e) {
 			logger.error("Error while computing min/max : " + e.getMessage(), e);
-			computationService.sendMinMaxProgress(0);
+			webSocketService.sendMessage(EngineMessageType.MINMAX_PROGRESS, computationService.getCurrentThreadComputationId(), 0);
 		} finally {
 			stopWatch.stop();
 			
@@ -147,7 +153,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 		}
 		
 		for (List<Cell> cells : batchMap.values()) {
-			commands.add(new RecursiveMinMaxCommand(gameData, cells, context, GomokuCacheSupport.getCurrentCache(), computationService.getComputationId()));
+			commands.add(new RecursiveMinMaxCommand(gameData, cells, context, GomokuCacheSupport.getCurrentCache(), computationService.getCurrentThreadComputationId()));
 		}
 		
 		try {
@@ -214,7 +220,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 		public MinMaxResult call() throws InterruptedException {
 			try {
 				return GomokuCacheSupport.doInCacheContext(() -> {
-					computationService.setComputationId(computationId);
+					computationService.setCurrentThreadComputationId(computationId);
 					return recursiveMinMax(gameData, context.getPlayingColor(), cells, context.isFindMax(), 0, context);
 				}, cache);
 			} catch (InterruptedException e) {
@@ -243,7 +249,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			gameData.addMove(analysedMove, playingColor);
 
 			if (currentDepth <= 1) {
-				computationService.sendAnalysisMove(analysedMove, playingColor);
+				webSocketService.sendMessage(EngineMessageType.ANALYSIS_MOVE, computationService.getCurrentThreadComputationId(), new MoveDTO(analysedMove, playingColor));
 			}
 			
 			MinMaxResult subResult = new MinMaxResult();
@@ -261,7 +267,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			gameData.removeMove(analysedMove);
 			
 			if (currentDepth <= 1) {
-				computationService.sendAnalysisMove(analysedMove, EngineConstants.NONE_COLOR);
+				webSocketService.sendMessage(EngineMessageType.ANALYSIS_MOVE, computationService.getCurrentThreadComputationId(), new MoveDTO(analysedMove, EngineConstants.NONE_COLOR));
 			}
 			
 			int factor = findMax ? 1 : -1;
@@ -298,7 +304,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			if (currentDepth == context.getIndexDepth()) {
 				context.getCurrentIndex().set(context.getCurrentIndex().get() + 1);
 				Integer percentCompleted = context.getCurrentIndex().get() * 100 / context.getEndIndex();
-				computationService.sendMinMaxProgress(percentCompleted);
+				webSocketService.sendMessage(EngineMessageType.MINMAX_PROGRESS, computationService.getCurrentThreadComputationId(), percentCompleted);
 			}
 		}
 	

@@ -54,18 +54,15 @@ public class EngineController {
 	@PostMapping("/computeMove")
 	public MoveDTO computeMove(@RequestBody GameDTO gameDTO) {
 		
-		GameData gameData = GameData.of(gameDTO);
-		
-		if (checkWinService.checkWin(gameData).isWin()) {
-			throw new IllegalStateException("Game is already finished!");
-		}
-		
 		try {
 			webSocketService.sendMessage(EngineMessageType.IS_COMPUTING, gameDTO.getId(), true);
+			
+			GameData gameData = GameData.of(gameDTO);
 			GameSettings gameSettings = gameDTO.getSettings();
-			Cell computedMove = computationService.doInComputationContext(gameDTO.getId(), () -> engineService.computeMove(gameData, gameSettings));
-			int playingColor = GameData.extractPlayingColor(gameData);
-			MoveDTO returnedMove = new MoveDTO(computedMove.getColumn(), computedMove.getRow(), playingColor);
+			Cell computedMove = computationService.startComputation(gameDTO.getId(), () -> engineService.computeMove(gameData, gameSettings));
+			
+			MoveDTO returnedMove = new MoveDTO(computedMove.getColumn(), computedMove.getRow(), GameData.extractPlayingColor(gameData));
+			
 			webSocketService.sendMessage(EngineMessageType.REFRESH_MOVE, gameDTO.getId(), returnedMove);
 			return returnedMove;
 		} catch (InterruptedException e) {

@@ -26,6 +26,7 @@ import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.StrikeContext;
 import fr.leblanc.gomoku.engine.model.StrikeResult;
 import fr.leblanc.gomoku.engine.model.StrikeResult.StrikeType;
+import fr.leblanc.gomoku.engine.model.messaging.EngineMessageType;
 import fr.leblanc.gomoku.engine.model.Threat;
 import fr.leblanc.gomoku.engine.model.ThreatContext;
 import fr.leblanc.gomoku.engine.model.ThreatType;
@@ -33,6 +34,7 @@ import fr.leblanc.gomoku.engine.service.ComputationService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.StrikeService;
 import fr.leblanc.gomoku.engine.service.ThreatContextService;
+import fr.leblanc.gomoku.engine.service.WebSocketService;
 import fr.leblanc.gomoku.engine.util.cache.GomokuCache;
 import fr.leblanc.gomoku.engine.util.cache.GomokuCacheSupport;
 
@@ -50,6 +52,9 @@ public class StrikeServiceImpl implements StrikeService {
 	@Autowired
 	private ComputationService computationService;
 	
+	@Autowired
+	private WebSocketService webSocketService;
+	
 	private ExecutorService executor = Executors.newSingleThreadExecutor();
 	
 	private static final ThreatType[][] SECONDARY_THREAT_PAIRS = { { ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3 }
@@ -62,7 +67,7 @@ public class StrikeServiceImpl implements StrikeService {
 	@Override
 	public StrikeResult processStrike(GameData gameData, int playingColor, StrikeContext strikeContext) throws InterruptedException {
 		
-		computationService.sendStrikeProgress(true);
+		webSocketService.sendMessage(EngineMessageType.STRIKE_PROGRESS, computationService.getCurrentThreadComputationId(), true);
 		
 		try {
 			StopWatch stopWatch = new StopWatch("processStrike");
@@ -75,13 +80,10 @@ public class StrikeServiceImpl implements StrikeService {
 			Cell directThreat = directStrike(gameData, playingColor, strikeContext);
 			
 			if (directThreat != null) {
-				
 				stopWatch.stop();
-				
 				if (logger.isDebugEnabled()) {
 					logger.debug("direct strike found in " + stopWatch.getTotalTimeMillis() + " ms");
 				}
-				
 				return new StrikeResult(directThreat, StrikeType.DIRECT_STRIKE);
 			}
 			
@@ -100,13 +102,10 @@ public class StrikeServiceImpl implements StrikeService {
 					if (counterOpponentThreats.size() > 1) {
 						defense = minMaxService.computeMinMax(gameData, counterOpponentThreats, strikeContext.getMinMaxDepth(), 0).getOptimalMoves().get(0);
 					}
-					
 					stopWatch.stop();
-					
 					if (logger.isDebugEnabled()) {
 						logger.debug("best defense found in " + stopWatch.getTotalTimeMillis() + " ms");
 					}
-					
 					return new StrikeResult(defense, StrikeType.DEFEND_STRIKE);
 				}
 				
@@ -125,12 +124,12 @@ public class StrikeServiceImpl implements StrikeService {
 			
 			return new StrikeResult(null, StrikeType.EMPTY_STRIKE);
 		} finally {
-			computationService.sendStrikeProgress(false);
+			webSocketService.sendMessage(EngineMessageType.STRIKE_PROGRESS, computationService.getCurrentThreadComputationId(), false);
 		}
 	}
 
 	private Cell executeSecondaryStrikeCommand(GameData gameData, int playingColor, StrikeContext strikeContext) throws InterruptedException {
-		SecondaryStrikeCommand command = new SecondaryStrikeCommand(gameData, playingColor, strikeContext, GomokuCacheSupport.getCurrentCache(), computationService.getComputationId());
+		SecondaryStrikeCommand command = new SecondaryStrikeCommand(gameData, playingColor, strikeContext, GomokuCacheSupport.getCurrentCache(), computationService.getCurrentThreadComputationId());
 		
 		Cell secondaryStrike = null;
 		
@@ -176,7 +175,7 @@ public class StrikeServiceImpl implements StrikeService {
 
 			return GomokuCacheSupport.doInCacheContext(() -> {
 				
-				computationService.setComputationId(computationId);
+				computationService.setCurrentThreadComputationId(computationId);
 				
 				StopWatch stopWatch = new StopWatch("findOrCounterStrike");
 				stopWatch.start();
