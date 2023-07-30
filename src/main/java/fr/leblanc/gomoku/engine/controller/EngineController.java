@@ -1,5 +1,7 @@
 package fr.leblanc.gomoku.engine.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -7,7 +9,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import fr.leblanc.gomoku.engine.exception.EngineException;
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.CheckWinResult;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
@@ -25,6 +26,8 @@ import fr.leblanc.gomoku.engine.service.WebSocketService;
 @RestController
 public class EngineController {
 
+	private static final Logger logger = LoggerFactory.getLogger(EngineController.class);
+	
 	@Autowired
 	private EngineService engineService;
 	
@@ -53,7 +56,6 @@ public class EngineController {
 	
 	@PostMapping("/computeMove")
 	public MoveDTO computeMove(@RequestBody GameDTO gameDTO) {
-		
 		try {
 			webSocketService.sendMessage(EngineMessageType.IS_COMPUTING, gameDTO.getId(), true);
 			
@@ -67,10 +69,11 @@ public class EngineController {
 			return returnedMove;
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
-			throw new EngineException(e);
+			logger.warn("Computation was interrupted");
 		} finally {
 			webSocketService.sendMessage(EngineMessageType.IS_COMPUTING, gameDTO.getId(), false);
 		}
+		return null;
 	}
 	
 	@PostMapping("/computeEvaluation")

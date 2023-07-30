@@ -4,18 +4,22 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ResponseStatus(code = HttpStatus.INTERNAL_SERVER_ERROR)
-public class EngineException extends RuntimeException {
+public class ComputationStoppedException extends RuntimeException {
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
 	
-	public EngineException(String message) {
+	public ComputationStoppedException() {
+		super();
+	}
+	
+	public ComputationStoppedException(String message) {
 		super(message);
 	}
 	
-	public EngineException(Exception e) {
+	public ComputationStoppedException(Exception e) {
 		super(e);
 	}
 }

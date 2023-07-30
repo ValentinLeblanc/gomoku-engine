@@ -21,7 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
 
-import fr.leblanc.gomoku.engine.exception.EngineException;
+import fr.leblanc.gomoku.engine.exception.ComputationStoppedException;
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
 import fr.leblanc.gomoku.engine.model.GameData;
@@ -118,12 +118,12 @@ public class MinMaxServiceImpl implements MinMaxService {
 			}
 			
 			webSocketService.sendMessage(EngineMessageType.MINMAX_PROGRESS, computationService.getCurrentThreadComputationId(), 100);
-		} catch (Exception e) {
-			logger.error("Error while computing min/max : " + e.getMessage(), e);
+		} catch (InterruptedException e) {
 			webSocketService.sendMessage(EngineMessageType.MINMAX_PROGRESS, computationService.getCurrentThreadComputationId(), 0);
+			Thread.currentThread().interrupt();
+			throw new InterruptedException();
 		} finally {
 			stopWatch.stop();
-			
 			if (logger.isInfoEnabled()) {
 				logger.info(String.format("minMax elpased time : %d ms", stopWatch.getTotalTimeMillis()));
 				logger.info(String.format("result = %s", result));
@@ -132,7 +132,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 		return result;
 	}
 
-	private MinMaxResult internalMinMax(GameData gameData, List<Cell> analysedMoves, MinMaxContext context) {
+	private MinMaxResult internalMinMax(GameData gameData, List<Cell> analysedMoves, MinMaxContext context) throws InterruptedException {
 		
 		context.setOptimumReference(context.isFindMax() ? new AtomicReference<>(Double.NEGATIVE_INFINITY) : new AtomicReference<>(Double.POSITIVE_INFINITY));
 
@@ -163,23 +163,23 @@ public class MinMaxServiceImpl implements MinMaxService {
 					return r.get();
 				} catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
-					throw new EngineException(e);
+					throw new ComputationStoppedException(e);
 				} catch (ExecutionException e) {
-					if (e.getCause() instanceof InterruptedException && computationService.isComputationStopped()) {
-						throw new EngineException("engine was interrupted");
+					if (e.getCause() instanceof InterruptedException) {
+						throw new ComputationStoppedException(e);
 					}
-					throw new EngineException(e);
+					throw new IllegalStateException(e);
 				}
 			}).filter(r -> r.getFinalEvaluation() != null).collect(Collectors.toList());
 			results.sort(resultsComparator(context.isFindMax()));
 			if (!results.isEmpty()) {
 				return results.get(0);
 			}
-		} catch (InterruptedException e) {
+		} catch (InterruptedException | ComputationStoppedException e) {
 			Thread.currentThread().interrupt();
-			throw new EngineException(e);
+			throw new InterruptedException();
 		}
-		throw new EngineException("MinMax service failed");
+		throw new IllegalStateException("MinMax service failed");
 	}
 
 	private Comparator<? super MinMaxResult> resultsComparator(boolean findMax) {

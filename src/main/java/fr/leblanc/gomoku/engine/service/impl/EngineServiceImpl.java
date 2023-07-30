@@ -1,11 +1,8 @@
 package fr.leblanc.gomoku.engine.service.impl;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import fr.leblanc.gomoku.engine.exception.EngineException;
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.MinMaxResult;
@@ -21,8 +18,6 @@ import fr.leblanc.gomoku.engine.util.cache.GomokuCacheSupport;
 @Service
 public class EngineServiceImpl implements EngineService {
 
-	private static final Logger logger = LoggerFactory.getLogger(EngineServiceImpl.class);
-	
 	@Autowired
 	private CheckWinService checkWinService;
 
@@ -33,40 +28,31 @@ public class EngineServiceImpl implements EngineService {
 	private MinMaxService minMaxService;
 	
 	@Override
-	public Cell computeMove(GameData gameData, GameSettings gameSettings) {
+	public Cell computeMove(GameData gameData, GameSettings gameSettings) throws InterruptedException {
 
-		try {
-			if (checkWinService.checkWin(gameData).isWin()) {
-				throw new IllegalStateException("Game is already over");
-			}
-			
-			int playingColor = GameData.extractPlayingColor(gameData);
-			
-			if (GameData.countPlainCells(gameData) == 0) {
-				return middleCell(gameData);
-			}
-			
-			Cell strikeResult = computeStrike(new GameData(gameData), gameSettings, playingColor);
-			if (strikeResult != null) {
-				return strikeResult;
-			}
-			
-			return computeMinMax(gameData, gameSettings);
-			
-		} catch (InterruptedException e) {
-			logger.info("Interrupted engine service");
-			Thread.currentThread().interrupt();
-			throw new EngineException(e);
+		if (checkWinService.checkWin(gameData).isWin()) {
+			throw new IllegalStateException("Game is already over");
 		}
+		
+		int playingColor = GameData.extractPlayingColor(gameData);
+		
+		if (GameData.countPlainCells(gameData) == 0) {
+			return middleCell(gameData);
+		}
+		
+		Cell strikeResult = computeStrike(new GameData(gameData), gameSettings, playingColor);
+		if (strikeResult != null) {
+			return strikeResult;
+		}
+		
+		return computeMinMax(gameData, gameSettings);
+			
 	}
 
 	private Cell computeMinMax(GameData gameData, GameSettings gameSettings) throws InterruptedException {
 		return GomokuCacheSupport.doInCacheContext(() -> {
 			MinMaxResult minMaxResult = minMaxService.computeMinMax(gameData, gameSettings.getMinMaxDepth(),
 					gameSettings.getMinMaxExtent());
-			if (minMaxResult == MinMaxResult.EMPTY_RESULT) {
-				throw new EngineException("MinMaxService has no result!");
-			}
 			return minMaxResult.getResultCell();
 		});
 	}
