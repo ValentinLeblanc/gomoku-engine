@@ -29,7 +29,7 @@ import fr.leblanc.gomoku.engine.model.MinMaxContext;
 import fr.leblanc.gomoku.engine.model.MinMaxResult;
 import fr.leblanc.gomoku.engine.model.messaging.EngineMessageType;
 import fr.leblanc.gomoku.engine.model.messaging.MoveDTO;
-import fr.leblanc.gomoku.engine.service.ComputationService;
+import fr.leblanc.gomoku.engine.service.GameComputationService;
 import fr.leblanc.gomoku.engine.service.EvaluationService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.ThreatContextService;
@@ -54,7 +54,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 	private WebSocketService webSocketService;
 	
 	@Autowired
-	private ComputationService computationService;
+	private GameComputationService computationService;
 	
 	@Override
 	public MinMaxResult computeMinMax(GameData gameData, int maxDepth, int extent) throws InterruptedException {
@@ -66,7 +66,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 	@Override
 	public MinMaxResult computeMinMax(GameData gameData, List<Cell> analyzedCells, int maxDepth, int extent) throws InterruptedException {
 		
-		webSocketService.sendMessage(EngineMessageType.MINMAX_PROGRESS, computationService.getCurrentThreadComputationId(), 0);
+		webSocketService.sendMessage(EngineMessageType.MINMAX_PROGRESS, computationService.getCurrentGameId(), 0);
 		
 		MinMaxResult result = null;
 		
@@ -117,9 +117,9 @@ public class MinMaxServiceImpl implements MinMaxService {
 				result = internalMinMax(gameData, analyzedCells, context);
 			}
 			
-			webSocketService.sendMessage(EngineMessageType.MINMAX_PROGRESS, computationService.getCurrentThreadComputationId(), 100);
+			webSocketService.sendMessage(EngineMessageType.MINMAX_PROGRESS, computationService.getCurrentGameId(), 100);
 		} catch (InterruptedException e) {
-			webSocketService.sendMessage(EngineMessageType.MINMAX_PROGRESS, computationService.getCurrentThreadComputationId(), 0);
+			webSocketService.sendMessage(EngineMessageType.MINMAX_PROGRESS, computationService.getCurrentGameId(), 0);
 			Thread.currentThread().interrupt();
 			throw new InterruptedException();
 		} finally {
@@ -153,7 +153,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 		}
 		
 		for (List<Cell> cells : batchMap.values()) {
-			commands.add(new RecursiveMinMaxCommand(gameData, cells, context, GomokuCacheSupport.getCurrentCache(), computationService.getCurrentThreadComputationId()));
+			commands.add(new RecursiveMinMaxCommand(gameData, cells, context, GomokuCacheSupport.getCurrentCache(), computationService.getCurrentGameId()));
 		}
 		
 		try {
@@ -206,21 +206,21 @@ public class MinMaxServiceImpl implements MinMaxService {
 		private GameData gameData;
 		private List<Cell> cells;
 		private GomokuCache cache;
-		private Long computationId;
+		private Long gameId;
 		
-		private RecursiveMinMaxCommand(GameData gameData, List<Cell> cells, MinMaxContext context, GomokuCache cache, Long computationId) {
+		private RecursiveMinMaxCommand(GameData gameData, List<Cell> cells, MinMaxContext context, GomokuCache cache, Long gameId) {
 			this.context = new MinMaxContext(context);
 			this.gameData = new GameData(gameData);
 			this.cells = cells;
 			this.cache = cache;
-			this.computationId = computationId;
+			this.gameId = gameId;
 		}
 		
 		@Override
 		public MinMaxResult call() throws InterruptedException {
 			try {
 				return GomokuCacheSupport.doInCacheContext(() -> {
-					computationService.setCurrentThreadComputationId(computationId);
+					computationService.setCurrentGameId(gameId);
 					return recursiveMinMax(gameData, context.getPlayingColor(), cells, context.isFindMax(), 0, context);
 				}, cache);
 			} catch (InterruptedException e) {
@@ -242,14 +242,14 @@ public class MinMaxServiceImpl implements MinMaxService {
 		
 		for (Cell analysedMove : analysedMoves) {
 			
-			if (computationService.isComputationStopped()) {
+			if (computationService.isGameComputationStopped()) {
 				throw new InterruptedException();
 			}
 			
 			gameData.addMove(analysedMove, playingColor);
 
 			if (currentDepth <= 1) {
-				webSocketService.sendMessage(EngineMessageType.ANALYSIS_MOVE, computationService.getCurrentThreadComputationId(), new MoveDTO(analysedMove, playingColor));
+				webSocketService.sendMessage(EngineMessageType.ANALYSIS_MOVE, computationService.getCurrentGameId(), new MoveDTO(analysedMove, playingColor));
 			}
 			
 			MinMaxResult subResult = new MinMaxResult();
@@ -267,7 +267,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			gameData.removeMove(analysedMove);
 			
 			if (currentDepth <= 1) {
-				webSocketService.sendMessage(EngineMessageType.ANALYSIS_MOVE, computationService.getCurrentThreadComputationId(), new MoveDTO(analysedMove, EngineConstants.NONE_COLOR));
+				webSocketService.sendMessage(EngineMessageType.ANALYSIS_MOVE, computationService.getCurrentGameId(), new MoveDTO(analysedMove, EngineConstants.NONE_COLOR));
 			}
 			
 			int factor = findMax ? 1 : -1;
@@ -304,7 +304,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			if (currentDepth == context.getIndexDepth()) {
 				context.getCurrentIndex().set(context.getCurrentIndex().get() + 1);
 				Integer percentCompleted = context.getCurrentIndex().get() * 100 / context.getEndIndex();
-				webSocketService.sendMessage(EngineMessageType.MINMAX_PROGRESS, computationService.getCurrentThreadComputationId(), percentCompleted);
+				webSocketService.sendMessage(EngineMessageType.MINMAX_PROGRESS, computationService.getCurrentGameId(), percentCompleted);
 			}
 		}
 	

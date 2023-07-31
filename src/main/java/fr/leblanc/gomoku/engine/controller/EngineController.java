@@ -18,7 +18,7 @@ import fr.leblanc.gomoku.engine.model.messaging.GameDTO;
 import fr.leblanc.gomoku.engine.model.messaging.GameSettings;
 import fr.leblanc.gomoku.engine.model.messaging.MoveDTO;
 import fr.leblanc.gomoku.engine.service.CheckWinService;
-import fr.leblanc.gomoku.engine.service.ComputationService;
+import fr.leblanc.gomoku.engine.service.GameComputationService;
 import fr.leblanc.gomoku.engine.service.EngineService;
 import fr.leblanc.gomoku.engine.service.EvaluationService;
 import fr.leblanc.gomoku.engine.service.WebSocketService;
@@ -41,11 +41,11 @@ public class EngineController {
 	private WebSocketService webSocketService;
 	
 	@Autowired
-	private ComputationService computationService;
+	private GameComputationService computationService;
 	
 	@GetMapping("isComputing/{gameId}")
 	public Boolean isComputing(@PathVariable Long gameId) {
-		return computationService.isComputing(gameId);
+		return computationService.isGameComputing(gameId);
 	}
 
 	@PostMapping("/checkWin")
@@ -61,7 +61,7 @@ public class EngineController {
 			
 			GameData gameData = GameData.of(gameDTO);
 			GameSettings gameSettings = gameDTO.getSettings();
-			Cell computedMove = computationService.startComputation(gameDTO.getId(), () -> engineService.computeMove(gameData, gameSettings));
+			Cell computedMove = computationService.startGameComputation(gameDTO.getId(), () -> engineService.computeMove(gameData, gameSettings));
 			
 			MoveDTO returnedMove = new MoveDTO(computedMove.getColumn(), computedMove.getRow(), GameData.extractPlayingColor(gameData));
 			
@@ -92,7 +92,7 @@ public class EngineController {
 	
 	@PostMapping("/stop/{gameId}")
 	public void stopComputation(@PathVariable Long gameId) {
-		computationService.stopComputation(gameId);
+		computationService.stopGameComputation(gameId);
 	}
 	
 }

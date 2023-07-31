@@ -5,10 +5,9 @@ import java.util.Map;
 import java.util.Optional;
 
 import fr.leblanc.gomoku.engine.model.Cell;
-import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.EvaluationResult;
+import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.MinMaxResult;
-import fr.leblanc.gomoku.engine.model.ThreatContext;
 import fr.leblanc.gomoku.engine.util.TypedAction;
 
 public class GomokuCacheSupport {
@@ -55,10 +54,6 @@ public class GomokuCacheSupport {
 
 	public static Map<Integer, Map<GameData, List<Cell>>> getRecordedCounterMoves() {
 		return threadLocalCache.get().getRecordedCounterMoves();
-	}
-
-	public static Map<Integer,  Map<GameData, ThreatContext>> getThreatContextCache() {
-		return threadLocalCache.get().getThreatContextCache();
 	}
 
 	public static Map<Integer, Map<GameData, EvaluationResult>> getEvaluationCache() {

@@ -26,11 +26,11 @@ import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.StrikeContext;
 import fr.leblanc.gomoku.engine.model.StrikeResult;
 import fr.leblanc.gomoku.engine.model.StrikeResult.StrikeType;
-import fr.leblanc.gomoku.engine.model.messaging.EngineMessageType;
 import fr.leblanc.gomoku.engine.model.Threat;
 import fr.leblanc.gomoku.engine.model.ThreatContext;
 import fr.leblanc.gomoku.engine.model.ThreatType;
-import fr.leblanc.gomoku.engine.service.ComputationService;
+import fr.leblanc.gomoku.engine.model.messaging.EngineMessageType;
+import fr.leblanc.gomoku.engine.service.GameComputationService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.StrikeService;
 import fr.leblanc.gomoku.engine.service.ThreatContextService;
@@ -50,7 +50,7 @@ public class StrikeServiceImpl implements StrikeService {
 	private MinMaxService minMaxService;
 	
 	@Autowired
-	private ComputationService computationService;
+	private GameComputationService computationService;
 	
 	@Autowired
 	private WebSocketService webSocketService;
@@ -67,7 +67,7 @@ public class StrikeServiceImpl implements StrikeService {
 	@Override
 	public StrikeResult processStrike(GameData gameData, int playingColor, StrikeContext strikeContext) throws InterruptedException {
 		
-		webSocketService.sendMessage(EngineMessageType.STRIKE_PROGRESS, computationService.getCurrentThreadComputationId(), true);
+		webSocketService.sendMessage(EngineMessageType.STRIKE_PROGRESS, computationService.getCurrentGameId(), true);
 		
 		try {
 			StopWatch stopWatch = new StopWatch("processStrike");
@@ -124,12 +124,12 @@ public class StrikeServiceImpl implements StrikeService {
 			
 			return new StrikeResult(null, StrikeType.EMPTY_STRIKE);
 		} finally {
-			webSocketService.sendMessage(EngineMessageType.STRIKE_PROGRESS, computationService.getCurrentThreadComputationId(), false);
+			webSocketService.sendMessage(EngineMessageType.STRIKE_PROGRESS, computationService.getCurrentGameId(), false);
 		}
 	}
 
 	private Cell executeSecondaryStrikeCommand(GameData gameData, int playingColor, StrikeContext strikeContext) throws InterruptedException {
-		SecondaryStrikeCommand command = new SecondaryStrikeCommand(gameData, playingColor, strikeContext, GomokuCacheSupport.getCurrentCache(), computationService.getCurrentThreadComputationId());
+		SecondaryStrikeCommand command = new SecondaryStrikeCommand(gameData, playingColor, strikeContext, GomokuCacheSupport.getCurrentCache(), computationService.getCurrentGameId());
 		
 		Cell secondaryStrike = null;
 		
@@ -160,14 +160,14 @@ public class StrikeServiceImpl implements StrikeService {
 		private int playingColor;
 		private StrikeContext strikeContext;
 		private GomokuCache gomokuCache;
-		private Long computationId;
+		private Long gameId;
 		
-		private SecondaryStrikeCommand(GameData dataWrapper, int playingColor, StrikeContext strikeContext, GomokuCache gomokuCache, Long computationId) {
+		private SecondaryStrikeCommand(GameData dataWrapper, int playingColor, StrikeContext strikeContext, GomokuCache gomokuCache, Long gameId) {
 			this.dataWrapper = dataWrapper;
 			this.playingColor = playingColor;
 			this.strikeContext = strikeContext;
 			this.gomokuCache = gomokuCache;
-			this.computationId = computationId;
+			this.gameId = gameId;
 		}
 		
 		@Override
@@ -175,7 +175,7 @@ public class StrikeServiceImpl implements StrikeService {
 
 			return GomokuCacheSupport.doInCacheContext(() -> {
 				
-				computationService.setCurrentThreadComputationId(computationId);
+				computationService.setCurrentGameId(gameId);
 				
 				StopWatch stopWatch = new StopWatch("findOrCounterStrike");
 				stopWatch.start();
@@ -210,7 +210,7 @@ public class StrikeServiceImpl implements StrikeService {
 
 	private Cell directStrike(GameData gameData, int playingColor, StrikeContext strikeContext) throws InterruptedException {
 
-		if (computationService.isComputationStopped()) {
+		if (computationService.isGameComputationStopped()) {
 			throw new InterruptedException();
 		}
 		

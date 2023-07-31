@@ -6,11 +6,10 @@ import java.util.Map;
 import java.util.Optional;
 
 import fr.leblanc.gomoku.engine.model.Cell;
-import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
 import fr.leblanc.gomoku.engine.model.EvaluationResult;
+import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.MinMaxResult;
-import fr.leblanc.gomoku.engine.model.ThreatContext;
 
 public class GomokuCache {
 	
@@ -19,7 +18,6 @@ public class GomokuCache {
 	private Map<Integer, Map<GameData, Optional<Cell>>> directStrikeAttempts = new HashMap<>();
 	private Map<Integer, Map<GameData, Optional<Cell>>> secondaryStrikeAttempts = new HashMap<>();
 	private Map<Integer, Map<GameData, List<Cell>>> recordedCounterMoves = new HashMap<>();
-	private Map<Integer,  Map<GameData, ThreatContext>> threatContextCache = new HashMap<>();
 	private Map<Integer, Map<GameData, EvaluationResult>> evaluationCache = new HashMap<>();
 	private Map<Integer, Map<GameData, MinMaxResult>> minMaxCache = new HashMap<>();
 
@@ -30,8 +28,6 @@ public class GomokuCache {
 		secondaryStrikeAttempts.put(EngineConstants.WHITE_COLOR, new HashMap<>());
 		recordedCounterMoves.put(EngineConstants.BLACK_COLOR, new HashMap<>());
 		recordedCounterMoves.put(EngineConstants.WHITE_COLOR, new HashMap<>());
-		threatContextCache.put(EngineConstants.BLACK_COLOR, new HashMap<>());
-		threatContextCache.put(EngineConstants.WHITE_COLOR, new HashMap<>());
 		evaluationCache.put(EngineConstants.BLACK_COLOR, new HashMap<>());
 		evaluationCache.put(EngineConstants.WHITE_COLOR, new HashMap<>());
 		minMaxCache.put(EngineConstants.BLACK_COLOR, new HashMap<>());
@@ -60,14 +56,6 @@ public class GomokuCache {
 
 	public void setRecordedCounterMoves(Map<Integer, Map<GameData, List<Cell>>> recordedCounterMoves) {
 		this.recordedCounterMoves = recordedCounterMoves;
-	}
-
-	public Map<Integer,  Map<GameData, ThreatContext>> getThreatContextCache() {
-		return threatContextCache;
-	}
-
-	public void setThreatContextCache(Map<Integer,  Map<GameData, ThreatContext>> threatContextCache) {
-		this.threatContextCache = threatContextCache;
 	}
 
 	public Map<Integer, Map<GameData, EvaluationResult>> getEvaluationCache() {
