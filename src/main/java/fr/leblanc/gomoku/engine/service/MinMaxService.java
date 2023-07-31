@@ -8,8 +8,8 @@ import fr.leblanc.gomoku.engine.model.MinMaxResult;
 
 public interface MinMaxService {
 
-	MinMaxResult computeMinMax(GameData gameData, int maxDepth, int extent) throws InterruptedException;
-	
-	MinMaxResult computeMinMax(GameData gameData, List<Cell> cells, int maxDepth, int extent) throws InterruptedException;
+	MinMaxResult computeMinMax(Long gameId, GameData gameData, int maxDepth, int extent) throws InterruptedException;
+
+	MinMaxResult computeMinMax(Long gameId, GameData gameData, List<Cell> analyzedCells, int maxDepth, int extent) throws InterruptedException;
 
 }

@@ -55,16 +55,16 @@ public class MinMaxServiceImpl implements MinMaxService {
 	private GameComputationService computationService;
 	
 	@Override
-	public MinMaxResult computeMinMax(GameData gameData, int maxDepth, int extent) throws InterruptedException {
+	public MinMaxResult computeMinMax(Long gameId, GameData gameData, int maxDepth, int extent) throws InterruptedException {
 		int playingColor = GameData.extractPlayingColor(gameData);
 		List<Cell> analyzedCells = threatContextService.buildAnalyzedCells(gameData, playingColor);
-		return computeMinMax(gameData, analyzedCells, maxDepth, extent);
+		return computeMinMax(gameId, gameData, analyzedCells, maxDepth, extent);
 	}
 	
 	@Override
-	public MinMaxResult computeMinMax(GameData gameData, List<Cell> analyzedCells, int maxDepth, int extent) throws InterruptedException {
+	public MinMaxResult computeMinMax(Long gameId, GameData gameData, List<Cell> analyzedCells, int maxDepth, int extent) throws InterruptedException {
 		
-		webSocketService.sendMessage(EngineMessageType.MINMAX_PROGRESS, computationService.getCurrentGameId(), 0);
+		webSocketService.sendMessage(EngineMessageType.MINMAX_PROGRESS, gameId, 0);
 		
 		MinMaxResult result = null;
 		
@@ -81,6 +81,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			context.setPlayingColor(GameData.extractPlayingColor(gameData));
 			context.setMaxDepth(maxDepth);
 			context.setFindMax(maxDepth % 2 == 0);
+			context.setGameId(gameId);
 
 			if (analyzedCells == null) {
 				analyzedCells = threatContextService.buildAnalyzedCells(gameData, context.getPlayingColor());
@@ -115,9 +116,9 @@ public class MinMaxServiceImpl implements MinMaxService {
 				result = internalMinMax(gameData, analyzedCells, context);
 			}
 			
-			webSocketService.sendMessage(EngineMessageType.MINMAX_PROGRESS, computationService.getCurrentGameId(), 100);
+			webSocketService.sendMessage(EngineMessageType.MINMAX_PROGRESS, gameId, 100);
 		} catch (InterruptedException e) {
-			webSocketService.sendMessage(EngineMessageType.MINMAX_PROGRESS, computationService.getCurrentGameId(), 0);
+			webSocketService.sendMessage(EngineMessageType.MINMAX_PROGRESS, gameId, 0);
 			Thread.currentThread().interrupt();
 			throw new InterruptedException();
 		} finally {
@@ -151,7 +152,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 		}
 		
 		for (List<Cell> cells : batchMap.values()) {
-			commands.add(new RecursiveMinMaxCommand(gameData, cells, context, computationService.getCurrentGameId()));
+			commands.add(new RecursiveMinMaxCommand(gameData, cells, context));
 		}
 		
 		try {
@@ -203,19 +204,16 @@ public class MinMaxServiceImpl implements MinMaxService {
 		private MinMaxContext context;
 		private GameData gameData;
 		private List<Cell> cells;
-		private Long gameId;
 		
-		private RecursiveMinMaxCommand(GameData gameData, List<Cell> cells, MinMaxContext context, Long gameId) {
+		private RecursiveMinMaxCommand(GameData gameData, List<Cell> cells, MinMaxContext context) {
 			this.context = new MinMaxContext(context);
 			this.gameData = new GameData(gameData);
 			this.cells = cells;
-			this.gameId = gameId;
 		}
 		
 		@Override
 		public MinMaxResult call() throws InterruptedException {
 			try {
-				computationService.setCurrentGameId(gameId);
 				return recursiveMinMax(gameData, context.getPlayingColor(), cells, context.isFindMax(), 0, context);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
@@ -236,14 +234,14 @@ public class MinMaxServiceImpl implements MinMaxService {
 		
 		for (Cell analysedMove : analysedMoves) {
 			
-			if (computationService.isGameComputationStopped()) {
+			if (computationService.isGameComputationStopped(context.getGameId())) {
 				throw new InterruptedException();
 			}
 			
 			gameData.addMove(analysedMove, playingColor);
 
 			if (currentDepth <= 1) {
-				webSocketService.sendMessage(EngineMessageType.ANALYSIS_MOVE, computationService.getCurrentGameId(), new MoveDTO(analysedMove, playingColor));
+				webSocketService.sendMessage(EngineMessageType.ANALYSIS_MOVE, context.getGameId(), new MoveDTO(analysedMove, playingColor));
 			}
 			
 			MinMaxResult subResult = new MinMaxResult();
@@ -251,7 +249,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			double currentEvaluation = 0;
 			
 			if (currentDepth == context.getMaxDepth() - 1) {
-				currentEvaluation = evaluationService.computeEvaluation(gameData).getEvaluation();
+				currentEvaluation = evaluationService.computeEvaluation(context.getGameId(), gameData).getEvaluation();
 			} else {
 				List<Cell> subAnalyzedMoves = threatContextService.buildAnalyzedCells(gameData, -playingColor);
 				subResult = recursiveMinMax(gameData, -playingColor, subAnalyzedMoves, !findMax, currentDepth + 1, context);
@@ -261,7 +259,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			gameData.removeMove(analysedMove);
 			
 			if (currentDepth <= 1) {
-				webSocketService.sendMessage(EngineMessageType.ANALYSIS_MOVE, computationService.getCurrentGameId(), new MoveDTO(analysedMove, EngineConstants.NONE_COLOR));
+				webSocketService.sendMessage(EngineMessageType.ANALYSIS_MOVE, context.getGameId(), new MoveDTO(analysedMove, EngineConstants.NONE_COLOR));
 			}
 			
 			int factor = findMax ? 1 : -1;
@@ -298,7 +296,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			if (currentDepth == context.getIndexDepth()) {
 				context.getCurrentIndex().set(context.getCurrentIndex().get() + 1);
 				Integer percentCompleted = context.getCurrentIndex().get() * 100 / context.getEndIndex();
-				webSocketService.sendMessage(EngineMessageType.MINMAX_PROGRESS, computationService.getCurrentGameId(), percentCompleted);
+				webSocketService.sendMessage(EngineMessageType.MINMAX_PROGRESS, context.getGameId(), percentCompleted);
 			}
 		}
 	

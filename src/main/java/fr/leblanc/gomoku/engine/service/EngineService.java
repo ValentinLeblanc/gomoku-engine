@@ -6,6 +6,6 @@ import fr.leblanc.gomoku.engine.model.messaging.GameSettings;
 
 public interface EngineService {
 
-	Cell computeMove(GameData gameData, GameSettings gameSettings) throws InterruptedException;
+	Cell computeMove(Long gameId, GameData gameData, GameSettings gameSettings) throws InterruptedException;
 
 }

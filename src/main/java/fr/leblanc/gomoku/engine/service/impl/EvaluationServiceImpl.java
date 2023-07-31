@@ -16,11 +16,11 @@ import org.springframework.stereotype.Service;
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.CheckWinResult;
 import fr.leblanc.gomoku.engine.model.CompoThreatType;
-import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.DoubleThreat;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
 import fr.leblanc.gomoku.engine.model.EvaluationContext;
 import fr.leblanc.gomoku.engine.model.EvaluationResult;
+import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.Threat;
 import fr.leblanc.gomoku.engine.model.ThreatContext;
 import fr.leblanc.gomoku.engine.model.ThreatType;
@@ -45,23 +45,23 @@ public class EvaluationServiceImpl implements EvaluationService {
 	private CacheService cacheService;
 	
 	@Override
-	public EvaluationResult computeEvaluation(GameData dataWrapper) {
-		return computeEvaluation(dataWrapper, false);
+	public EvaluationResult computeEvaluation(Long gameId, GameData dataWrapper) {
+		return computeEvaluation(gameId, dataWrapper, false);
 	}
 	
 	@Override
-	public EvaluationResult computeEvaluation(GameData dataWrapper, boolean externalCall) {
+	public EvaluationResult computeEvaluation(Long gameId, GameData dataWrapper, boolean externalCall) {
 		
 		int playingColor = GameData.extractPlayingColor(dataWrapper);
 		
-		if (!externalCall && cacheService.isCacheEnabled() && cacheService.getEvaluationCache().get(playingColor).containsKey(dataWrapper)) {
-			return cacheService.getEvaluationCache().get(playingColor).get(dataWrapper);
+		if (gameId != null && cacheService.isCacheEnabled() && cacheService.getEvaluationCache(gameId).get(playingColor).containsKey(dataWrapper)) {
+			return cacheService.getEvaluationCache(gameId).get(playingColor).get(dataWrapper);
 		}
 		
 		EvaluationResult evaluation =  evaluateThreats(new EvaluationContext(dataWrapper, playingColor, -1, 0, externalCall));
 		
-		if (!externalCall && cacheService.isCacheEnabled()) {
-			cacheService.getEvaluationCache().get(playingColor).put(new GameData(dataWrapper), evaluation);
+		if (gameId != null && cacheService.isCacheEnabled()) {
+			cacheService.getEvaluationCache(gameId).get(playingColor).put(new GameData(dataWrapper), evaluation);
 		}
 		
 		return evaluation;

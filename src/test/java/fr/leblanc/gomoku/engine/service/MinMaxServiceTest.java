@@ -4,8 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -21,7 +19,7 @@ import fr.leblanc.gomoku.engine.model.messaging.MoveDTO;
 import fr.leblanc.gomoku.engine.util.GomokuTestsHelper;
 
 @SpringBootTest
-class MinMaxServiceTest {
+class MinMaxServiceTest extends AbstractGomokuTest {
 
 	@Autowired
 	private MinMaxService minMaxService;
@@ -29,29 +27,13 @@ class MinMaxServiceTest {
 	@Autowired
 	private EvaluationService evaluationService;
 	
-	@Autowired
-	private GameComputationService gameComputationService;
-	
-	@Autowired
-	private CacheService cacheService;
-	
-	@BeforeEach
-	public void beforeEach() {
-		gameComputationService.setCurrentGameId(-1l);
-	}
-	
-	@AfterEach
-	public void afterEach() {
-		cacheService.clearCache(-1l);
-	}
-	
 	@Test
 	void testMinMaxExtent() throws InterruptedException {
 		GameDTO gameDto = new GameDTO();
 		gameDto.setBoardSize(15);
 		gameDto.getMoves().add(new MoveDTO(7, 7, EngineConstants.BLACK_COLOR));
 		
-		MinMaxResult minMaxResult = minMaxService.computeMinMax(GameData.of(gameDto), 2, 2);
+		MinMaxResult minMaxResult = minMaxService.computeMinMax(TEST_GAME_ID, GameData.of(gameDto), 2, 2);
 		
 		assertNotNull(minMaxResult);
 		assertFalse(minMaxResult.getOptimalMoves().isEmpty());
@@ -79,7 +61,7 @@ class MinMaxServiceTest {
 	private void computeMinMaxAndTestEvaluation(GameDTO gameDto, int depth, int playingColor) throws InterruptedException {
 		int color = playingColor;
 
-		MinMaxResult minMaxResult = minMaxService.computeMinMax(GameData.of(gameDto), depth, 0);
+		MinMaxResult minMaxResult = minMaxService.computeMinMax(TEST_GAME_ID, GameData.of(gameDto), depth, 0);
 		assertNotNull(minMaxResult);
 
 		double evaluation = minMaxResult.getEvaluation();
@@ -97,7 +79,7 @@ class MinMaxServiceTest {
 			color = -color;
 		}
 
-		assertEquals(evaluation, evaluationService.computeEvaluation(GameData.of(gameDto)).getEvaluation(), 0.0001);
+		assertEquals(evaluation, evaluationService.computeEvaluation(TEST_GAME_ID, GameData.of(gameDto)).getEvaluation(), 0.0001);
 	
 	}
 
@@ -108,7 +90,7 @@ class MinMaxServiceTest {
 
 		int playingColor = EngineConstants.WHITE_COLOR;
 		
-		MinMaxResult minMaxResult = minMaxService.computeMinMax(GameData.of(gameDto), 4, 0);
+		MinMaxResult minMaxResult = minMaxService.computeMinMax(TEST_GAME_ID, GameData.of(gameDto), 4, 0);
 
 		assertEquals(4, minMaxResult.getOptimalMoves().size());
 
@@ -122,7 +104,7 @@ class MinMaxServiceTest {
 
 		gameDto.getMoves().add(newMove);
 		
-		minMaxResult = minMaxService.computeMinMax(GameData.of(gameDto), 3, 0);
+		minMaxResult = minMaxService.computeMinMax(TEST_GAME_ID, GameData.of(gameDto), 3, 0);
 
 		assertEquals(3, minMaxResult.getOptimalMoves().size());
 
@@ -136,7 +118,7 @@ class MinMaxServiceTest {
 
 		gameDto.getMoves().add(newMove);
 
-		minMaxResult = minMaxService.computeMinMax(GameData.of(gameDto), 2, 0);
+		minMaxResult = minMaxService.computeMinMax(TEST_GAME_ID, GameData.of(gameDto), 2, 0);
 
 		assertEquals(2, minMaxResult.getOptimalMoves().size());
 

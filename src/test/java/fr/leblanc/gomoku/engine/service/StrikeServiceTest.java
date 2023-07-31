@@ -2,8 +2,6 @@ package fr.leblanc.gomoku.engine.service;
 
 import static org.junit.Assert.assertEquals;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -19,26 +17,10 @@ import fr.leblanc.gomoku.engine.model.StrikeResult.StrikeType;
 import fr.leblanc.gomoku.engine.util.GomokuTestsHelper;
 
 @SpringBootTest
-class StrikeServiceTest {
+class StrikeServiceTest extends AbstractGomokuTest {
 
 	@Autowired
 	private StrikeService strikeService;
-	
-	@Autowired
-	private GameComputationService gameComputationService;
-	
-	@Autowired
-	private CacheService cacheService;
-	
-	@BeforeEach
-	public void beforeEach() {
-		gameComputationService.setCurrentGameId(-1l);
-	}
-	
-	@AfterEach
-	public void afterEach() {
-		cacheService.clearCache(-1l);
-	}
 
 	@Test
 	void findOrCounterStrikeTest() throws InterruptedException {

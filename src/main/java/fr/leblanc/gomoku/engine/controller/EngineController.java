@@ -66,8 +66,7 @@ public class EngineController {
 			
 			GameData gameData = GameData.of(gameDTO);
 			GameSettings gameSettings = gameDTO.getSettings();
-			Cell computedMove = computationService.startGameComputation(gameDTO.getId(), () -> engineService.computeMove(gameData, gameSettings));
-			
+			Cell computedMove = computationService.startGameComputation(gameDTO.getId(), () -> engineService.computeMove(gameDTO.getId(), gameData, gameSettings));
 			MoveDTO returnedMove = new MoveDTO(computedMove.getColumn(), computedMove.getRow(), GameData.extractPlayingColor(gameData));
 			
 			webSocketService.sendMessage(EngineMessageType.REFRESH_MOVE, gameDTO.getId(), returnedMove);
@@ -87,9 +86,9 @@ public class EngineController {
 		int playingColor = GameData.extractPlayingColor(gameData);
 		
 		if (playingColor == EngineConstants.BLACK_COLOR) {
-			return evaluationService.computeEvaluation(gameData, true).getEvaluation();
+			return evaluationService.computeEvaluation(gameDTO.getId(), gameData, true).getEvaluation();
 		} else if (playingColor == EngineConstants.WHITE_COLOR) {
-			return -evaluationService.computeEvaluation(gameData, true).getEvaluation();
+			return -evaluationService.computeEvaluation(gameDTO.getId(), gameData, true).getEvaluation();
 		}
 		
 		throw new IllegalArgumentException("Game has no valid playing color");

@@ -5,7 +5,7 @@ import fr.leblanc.gomoku.engine.model.EvaluationResult;
 
 public interface EvaluationService {
 	
-	EvaluationResult computeEvaluation(GameData dataWrapper);
-	
-	EvaluationResult computeEvaluation(GameData dataWrapper, boolean externalCall);
+	EvaluationResult computeEvaluation(Long gameId, GameData dataWrapper, boolean externalCall);
+
+	EvaluationResult computeEvaluation(Long gameId, GameData dataWrapper);
 }

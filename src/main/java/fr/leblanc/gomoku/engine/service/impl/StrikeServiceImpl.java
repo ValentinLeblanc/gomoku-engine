@@ -69,7 +69,7 @@ public class StrikeServiceImpl implements StrikeService {
 	@Override
 	public StrikeResult processStrike(GameData gameData, int playingColor, StrikeContext strikeContext) throws InterruptedException {
 		
-		webSocketService.sendMessage(EngineMessageType.STRIKE_PROGRESS, computationService.getCurrentGameId(), true);
+		webSocketService.sendMessage(EngineMessageType.STRIKE_PROGRESS, strikeContext.getGameId(), true);
 		
 		try {
 			StopWatch stopWatch = new StopWatch("processStrike");
@@ -102,7 +102,7 @@ public class StrikeServiceImpl implements StrikeService {
 					Cell defense = counterOpponentThreats.get(0);
 					
 					if (counterOpponentThreats.size() > 1) {
-						defense = minMaxService.computeMinMax(gameData, counterOpponentThreats, strikeContext.getMinMaxDepth(), 0).getOptimalMoves().get(0);
+						defense = minMaxService.computeMinMax(strikeContext.getGameId(), gameData, counterOpponentThreats, strikeContext.getMinMaxDepth(), 0).getOptimalMoves().get(0);
 					}
 					stopWatch.stop();
 					if (logger.isDebugEnabled()) {
@@ -126,12 +126,12 @@ public class StrikeServiceImpl implements StrikeService {
 			
 			return new StrikeResult(null, StrikeType.EMPTY_STRIKE);
 		} finally {
-			webSocketService.sendMessage(EngineMessageType.STRIKE_PROGRESS, computationService.getCurrentGameId(), false);
+			webSocketService.sendMessage(EngineMessageType.STRIKE_PROGRESS, strikeContext.getGameId(), false);
 		}
 	}
 
 	private Cell executeSecondaryStrikeCommand(GameData gameData, int playingColor, StrikeContext strikeContext) throws InterruptedException {
-		SecondaryStrikeCommand command = new SecondaryStrikeCommand(gameData, playingColor, strikeContext, computationService.getCurrentGameId());
+		SecondaryStrikeCommand command = new SecondaryStrikeCommand(gameData, playingColor, strikeContext);
 		
 		Cell secondaryStrike = null;
 		
@@ -161,20 +161,16 @@ public class StrikeServiceImpl implements StrikeService {
 		private GameData dataWrapper;
 		private int playingColor;
 		private StrikeContext strikeContext;
-		private Long gameId;
 		
-		private SecondaryStrikeCommand(GameData dataWrapper, int playingColor, StrikeContext strikeContext, Long gameId) {
+		private SecondaryStrikeCommand(GameData dataWrapper, int playingColor, StrikeContext strikeContext) {
 			this.dataWrapper = dataWrapper;
 			this.playingColor = playingColor;
 			this.strikeContext = strikeContext;
-			this.gameId = gameId;
 		}
 		
 		@Override
 		public Cell call() throws InterruptedException {
 
-			computationService.setCurrentGameId(gameId);
-			
 			StopWatch stopWatch = new StopWatch("findOrCounterStrike");
 			stopWatch.start();
 
@@ -207,12 +203,12 @@ public class StrikeServiceImpl implements StrikeService {
 
 	private Cell directStrike(GameData gameData, int playingColor, StrikeContext strikeContext) throws InterruptedException {
 
-		if (computationService.isGameComputationStopped()) {
+		if (computationService.isGameComputationStopped(strikeContext.getGameId())) {
 			throw new InterruptedException();
 		}
 		
-		if (cacheService.isCacheEnabled() && cacheService.getDirectStrikeCache().containsKey(playingColor) && cacheService.getDirectStrikeCache().get(playingColor).containsKey(gameData)) {
-			return cacheService.getDirectStrikeCache().get(playingColor).get(gameData).orElse(null);
+		if (cacheService.isCacheEnabled() && cacheService.getDirectStrikeCache(strikeContext.getGameId()).containsKey(playingColor) && cacheService.getDirectStrikeCache(strikeContext.getGameId()).get(playingColor).containsKey(gameData)) {
+			return cacheService.getDirectStrikeCache(strikeContext.getGameId()).get(playingColor).get(gameData).orElse(null);
 		}
 		
 		ThreatContext computeThreatContext = threatContextService.computeThreatContext(gameData, playingColor);
@@ -227,7 +223,7 @@ public class StrikeServiceImpl implements StrikeService {
 			Cell move = threatMap.get(ThreatType.THREAT_5).iterator().next().getEmptyCells().iterator().next();
 			
 			if (cacheService.isCacheEnabled()) {
-				cacheService.getDirectStrikeCache().get(playingColor).put(new GameData(gameData), Optional.of(move));
+				cacheService.getDirectStrikeCache(strikeContext.getGameId()).get(playingColor).put(new GameData(gameData), Optional.of(move));
 			}
 			
 			return move;
@@ -266,7 +262,7 @@ public class StrikeServiceImpl implements StrikeService {
 						
 						if (nextThreat != null) {
 							if (cacheService.isCacheEnabled()) {
-								cacheService.getDirectStrikeCache().get(playingColor).put(new GameData(gameData), Optional.of(opponentThreat));
+								cacheService.getDirectStrikeCache(strikeContext.getGameId()).get(playingColor).put(new GameData(gameData), Optional.of(opponentThreat));
 							}
 							return opponentThreat;
 						}
@@ -277,7 +273,7 @@ public class StrikeServiceImpl implements StrikeService {
 			}
 			
 			if (cacheService.isCacheEnabled()) {
-				cacheService.getDirectStrikeCache().get(playingColor).put(new GameData(gameData), Optional.empty());
+				cacheService.getDirectStrikeCache(strikeContext.getGameId()).get(playingColor).put(new GameData(gameData), Optional.empty());
 			}
 			
 			return null;
@@ -286,7 +282,7 @@ public class StrikeServiceImpl implements StrikeService {
 		// check for a double threat4 move
 		if (!doubleThreatMap.get(ThreatType.DOUBLE_THREAT_4).isEmpty()) {
 			if (cacheService.isCacheEnabled()) {
-				cacheService.getDirectStrikeCache().get(playingColor).put(new GameData(gameData), Optional.of(doubleThreatMap.get(ThreatType.DOUBLE_THREAT_4).iterator().next().getTargetCell()));
+				cacheService.getDirectStrikeCache(strikeContext.getGameId()).get(playingColor).put(new GameData(gameData), Optional.of(doubleThreatMap.get(ThreatType.DOUBLE_THREAT_4).iterator().next().getTargetCell()));
 			}
 			return doubleThreatMap.get(ThreatType.DOUBLE_THREAT_4).iterator().next().getTargetCell();
 		}
@@ -316,14 +312,14 @@ public class StrikeServiceImpl implements StrikeService {
 			
 			if (nextAttempt != null) {
 				if (cacheService.isCacheEnabled()) {
-					cacheService.getDirectStrikeCache().get(playingColor).put(new GameData(gameData), Optional.of(threat4Move));
+					cacheService.getDirectStrikeCache(strikeContext.getGameId()).get(playingColor).put(new GameData(gameData), Optional.of(threat4Move));
 				}
 				return threat4Move;
 			}
 		}
 		
 		if (cacheService.isCacheEnabled()) {
-			cacheService.getDirectStrikeCache().get(playingColor).put(new GameData(gameData), Optional.empty());
+			cacheService.getDirectStrikeCache(strikeContext.getGameId()).get(playingColor).put(new GameData(gameData), Optional.empty());
 		}
 
 		return null;
@@ -331,8 +327,8 @@ public class StrikeServiceImpl implements StrikeService {
 	
 	private List<Cell> counterDirectStrikeMoves(GameData dataWrapper, int playingColor, StrikeContext strikeContext, boolean onlyOne) throws InterruptedException {
 	
-		if (cacheService.isCacheEnabled() && cacheService.getCounterStrikeCache().containsKey(playingColor) && cacheService.getCounterStrikeCache().get(playingColor).containsKey(dataWrapper)) {
-			return cacheService.getCounterStrikeCache().get(playingColor).get(dataWrapper);
+		if (cacheService.isCacheEnabled() && cacheService.getCounterStrikeCache(strikeContext.getGameId()).containsKey(playingColor) && cacheService.getCounterStrikeCache(strikeContext.getGameId()).get(playingColor).containsKey(dataWrapper)) {
+			return cacheService.getCounterStrikeCache(strikeContext.getGameId()).get(playingColor).get(dataWrapper);
 		}
 		
 		List<Cell> defendingMoves = new ArrayList<>();
@@ -388,7 +384,7 @@ public class StrikeServiceImpl implements StrikeService {
 		}
 		
 		if (cacheService.isCacheEnabled()) {
-			cacheService.getCounterStrikeCache().get(playingColor).put(new GameData(dataWrapper), defendingMoves);
+			cacheService.getCounterStrikeCache(strikeContext.getGameId()).get(playingColor).put(new GameData(dataWrapper), defendingMoves);
 		}
 		
 		return defendingMoves;
@@ -404,8 +400,8 @@ public class StrikeServiceImpl implements StrikeService {
 			return null;
 		}
 		
-		if (cacheService.isCacheEnabled() && cacheService.getSecondaryStrikeCache().containsKey(playingColor) && cacheService.getSecondaryStrikeCache().get(playingColor).containsKey(dataWrapper)) {
-			return cacheService.getSecondaryStrikeCache().get(playingColor).get(dataWrapper).orElse(null);
+		if (cacheService.isCacheEnabled() && cacheService.getSecondaryStrikeCache(strikeContext.getGameId()).containsKey(playingColor) && cacheService.getSecondaryStrikeCache(strikeContext.getGameId()).get(playingColor).containsKey(dataWrapper)) {
+			return cacheService.getSecondaryStrikeCache(strikeContext.getGameId()).get(playingColor).get(dataWrapper).orElse(null);
 		}
 		
 		// check for a strike
@@ -425,10 +421,10 @@ public class StrikeServiceImpl implements StrikeService {
 			if (cacheService.isCacheEnabled()) {
 				if (defend == null) {
 					if (depth + 1 == strikeContext.getStrikeDepth()) {
-						cacheService.getSecondaryStrikeCache().get(playingColor).put(new GameData(dataWrapper), Optional.empty());
+						cacheService.getSecondaryStrikeCache(strikeContext.getGameId()).get(playingColor).put(new GameData(dataWrapper), Optional.empty());
 					}
 				} else {
-					cacheService.getSecondaryStrikeCache().get(playingColor).put(new GameData(dataWrapper), Optional.of(defend));
+					cacheService.getSecondaryStrikeCache(strikeContext.getGameId()).get(playingColor).put(new GameData(dataWrapper), Optional.of(defend));
 				}
 			}
 			
@@ -443,7 +439,7 @@ public class StrikeServiceImpl implements StrikeService {
 			
 			if (retry != null) {
 				if (cacheService.isCacheEnabled()) {
-					cacheService.getSecondaryStrikeCache().get(playingColor).put(new GameData(dataWrapper), Optional.of(retry));
+					cacheService.getSecondaryStrikeCache(strikeContext.getGameId()).get(playingColor).put(new GameData(dataWrapper), Optional.of(retry));
 				}
 				return retry;
 			}
@@ -453,13 +449,13 @@ public class StrikeServiceImpl implements StrikeService {
 		
 		if (retry != null) {
 			if (cacheService.isCacheEnabled()) {
-				cacheService.getSecondaryStrikeCache().get(playingColor).put(new GameData(dataWrapper), Optional.of(retry));
+				cacheService.getSecondaryStrikeCache(strikeContext.getGameId()).get(playingColor).put(new GameData(dataWrapper), Optional.of(retry));
 			}
 			return retry;
 		}
 		
 		if (cacheService.isCacheEnabled() && depth + 1 == strikeContext.getStrikeDepth()) {
-			cacheService.getSecondaryStrikeCache().get(playingColor).put(new GameData(dataWrapper), Optional.empty());
+			cacheService.getSecondaryStrikeCache(strikeContext.getGameId()).get(playingColor).put(new GameData(dataWrapper), Optional.empty());
 		}
 		
 		return null;

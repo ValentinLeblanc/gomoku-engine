@@ -11,19 +11,8 @@ import fr.leblanc.gomoku.engine.util.TypedAction;
 @Service
 public class GameComputationServiceImpl implements GameComputationService {
 	
-	private final ThreadLocal<Long> gameComputationId = new ThreadLocal<>();
 	private ConcurrentMap<Long, Boolean> isGameComputingMap = new ConcurrentHashMap<>();
 	private ConcurrentMap<Long, Boolean> stopGameComputationMap = new ConcurrentHashMap<>();
-
-	@Override
-	public Long getCurrentGameId() {
-		return gameComputationId.get();
-	}
-	
-	@Override
-	public void setCurrentGameId(Long gameId) {
-		gameComputationId.set(gameId);
-	}
 	
 	@Override
 	public <T> T startGameComputation(Long gameId, TypedAction<T> action) throws InterruptedException {
@@ -32,13 +21,11 @@ public class GameComputationServiceImpl implements GameComputationService {
 			throw new IllegalStateException("Computation is already ongoing: " + gameId);
 		}
 		
-		setCurrentGameId(gameId);
 		isGameComputingMap.put(gameId, Boolean.TRUE);
 		try {
 			return action.run();
 		} finally {
 			isGameComputingMap.put(gameId, Boolean.FALSE);
-			gameComputationId.remove();
 		}
 	}
 	
@@ -48,8 +35,7 @@ public class GameComputationServiceImpl implements GameComputationService {
 	}
 	
 	@Override
-	public boolean isGameComputationStopped() {
-		Long gameId = gameComputationId.get();
+	public boolean isGameComputationStopped(Long gameId) {
 		if (gameId != null) {
 			return stopGameComputationMap.computeIfAbsent(gameId, k -> Boolean.FALSE).booleanValue();
 		}

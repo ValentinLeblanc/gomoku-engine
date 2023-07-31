@@ -14,6 +14,7 @@ public class MinMaxContext {
 	private int maxDepth;
 	private int playingColor;
 	private boolean findMax;
+	private Long gameId;
 	private Map<Integer, Double> minList = new HashMap<>();
 	private Map<Integer, Double> maxList = new HashMap<>();
 	private AtomicReference<Double> optimumReference;
@@ -31,6 +32,15 @@ public class MinMaxContext {
 		this.currentIndex = context.currentIndex;
 		this.optimumReference = context.optimumReference;
 		this.playingColor = context.playingColor;
+		this.gameId = context.gameId;
+	}
+	
+	public void setGameId(Long gameId) {
+		this.gameId = gameId;
+	}
+	
+	public Long getGameId() {
+		return gameId;
 	}
 	
 	public int getPlayingColor() {

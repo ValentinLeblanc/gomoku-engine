@@ -27,7 +27,7 @@ public class EngineServiceImpl implements EngineService {
 	private MinMaxService minMaxService;
 	
 	@Override
-	public Cell computeMove(GameData gameData, GameSettings gameSettings) throws InterruptedException {
+	public Cell computeMove(Long gameId, GameData gameData, GameSettings gameSettings) throws InterruptedException {
 
 		if (checkWinService.checkWin(gameData).isWin()) {
 			throw new IllegalStateException("Game is already over");
@@ -39,23 +39,9 @@ public class EngineServiceImpl implements EngineService {
 			return middleCell(gameData);
 		}
 		
-		Cell strikeResult = computeStrike(new GameData(gameData), gameSettings, playingColor);
-		if (strikeResult != null) {
-			return strikeResult;
-		}
-		
-		return computeMinMax(gameData, gameSettings);
-			
-	}
-
-	private Cell computeMinMax(GameData gameData, GameSettings gameSettings) throws InterruptedException {
-		MinMaxResult minMaxResult = minMaxService.computeMinMax(gameData, gameSettings.getMinMaxDepth(), gameSettings.getMinMaxExtent());
-		return minMaxResult.getResultCell();
-	}
-
-	private Cell computeStrike(GameData gameData, GameSettings gameSettings, int playingColor) throws InterruptedException {
 		if (gameSettings.isStrikeEnabled()) {
 			StrikeContext strikeContext = new StrikeContext();
+			strikeContext.setGameId(gameId);
 			strikeContext.setStrikeDepth(gameSettings.getStrikeDepth());
 			strikeContext.setMinMaxDepth(gameSettings.getMinMaxDepth());
 			strikeContext.setStrikeTimeout(gameSettings.getStrikeTimeout());
@@ -64,7 +50,10 @@ public class EngineServiceImpl implements EngineService {
 				return strikeOrCounterStrike.getResultCell();
 			}
 		}
-		return null;
+		
+		MinMaxResult minMaxResult = minMaxService.computeMinMax(gameId, gameData, gameSettings.getMinMaxDepth(), gameSettings.getMinMaxExtent());
+		return minMaxResult.getResultCell();
+			
 	}
 
 	private Cell middleCell(GameData gameData) {
