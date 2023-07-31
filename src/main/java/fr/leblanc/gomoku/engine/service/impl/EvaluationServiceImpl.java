@@ -24,11 +24,11 @@ import fr.leblanc.gomoku.engine.model.EvaluationResult;
 import fr.leblanc.gomoku.engine.model.Threat;
 import fr.leblanc.gomoku.engine.model.ThreatContext;
 import fr.leblanc.gomoku.engine.model.ThreatType;
+import fr.leblanc.gomoku.engine.service.CacheService;
 import fr.leblanc.gomoku.engine.service.CheckWinService;
 import fr.leblanc.gomoku.engine.service.EvaluationService;
 import fr.leblanc.gomoku.engine.service.ThreatContextService;
 import fr.leblanc.gomoku.engine.util.Pair;
-import fr.leblanc.gomoku.engine.util.cache.GomokuCacheSupport;
 
 @Service
 public class EvaluationServiceImpl implements EvaluationService {
@@ -41,24 +41,27 @@ public class EvaluationServiceImpl implements EvaluationService {
 	@Autowired
 	private CheckWinService checkWinService;
 	
+	@Autowired
+	private CacheService cacheService;
+	
 	@Override
 	public EvaluationResult computeEvaluation(GameData dataWrapper) {
 		return computeEvaluation(dataWrapper, false);
 	}
 	
 	@Override
-	public EvaluationResult computeEvaluation(GameData dataWrapper, boolean logEnabled) {
+	public EvaluationResult computeEvaluation(GameData dataWrapper, boolean externalCall) {
 		
 		int playingColor = GameData.extractPlayingColor(dataWrapper);
 		
-		if (GomokuCacheSupport.isCacheEnabled() && GomokuCacheSupport.getEvaluationCache().get(playingColor).containsKey(dataWrapper)) {
-			return GomokuCacheSupport.getEvaluationCache().get(playingColor).get(dataWrapper);
+		if (!externalCall && cacheService.isCacheEnabled() && cacheService.getEvaluationCache().get(playingColor).containsKey(dataWrapper)) {
+			return cacheService.getEvaluationCache().get(playingColor).get(dataWrapper);
 		}
 		
-		EvaluationResult evaluation =  evaluateThreats(new EvaluationContext(dataWrapper, playingColor, -1, 0, logEnabled));
+		EvaluationResult evaluation =  evaluateThreats(new EvaluationContext(dataWrapper, playingColor, -1, 0, externalCall));
 		
-		if (GomokuCacheSupport.isCacheEnabled()) {
-			GomokuCacheSupport.getEvaluationCache().get(playingColor).put(new GameData(dataWrapper), evaluation);
+		if (!externalCall && cacheService.isCacheEnabled()) {
+			cacheService.getEvaluationCache().get(playingColor).put(new GameData(dataWrapper), evaluation);
 		}
 		
 		return evaluation;

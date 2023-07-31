@@ -29,13 +29,11 @@ import fr.leblanc.gomoku.engine.model.MinMaxContext;
 import fr.leblanc.gomoku.engine.model.MinMaxResult;
 import fr.leblanc.gomoku.engine.model.messaging.EngineMessageType;
 import fr.leblanc.gomoku.engine.model.messaging.MoveDTO;
-import fr.leblanc.gomoku.engine.service.GameComputationService;
 import fr.leblanc.gomoku.engine.service.EvaluationService;
+import fr.leblanc.gomoku.engine.service.GameComputationService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.ThreatContextService;
 import fr.leblanc.gomoku.engine.service.WebSocketService;
-import fr.leblanc.gomoku.engine.util.cache.GomokuCache;
-import fr.leblanc.gomoku.engine.util.cache.GomokuCacheSupport;
 
 @Service
 public class MinMaxServiceImpl implements MinMaxService {
@@ -153,7 +151,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 		}
 		
 		for (List<Cell> cells : batchMap.values()) {
-			commands.add(new RecursiveMinMaxCommand(gameData, cells, context, GomokuCacheSupport.getCurrentCache(), computationService.getCurrentGameId()));
+			commands.add(new RecursiveMinMaxCommand(gameData, cells, context, computationService.getCurrentGameId()));
 		}
 		
 		try {
@@ -205,24 +203,20 @@ public class MinMaxServiceImpl implements MinMaxService {
 		private MinMaxContext context;
 		private GameData gameData;
 		private List<Cell> cells;
-		private GomokuCache cache;
 		private Long gameId;
 		
-		private RecursiveMinMaxCommand(GameData gameData, List<Cell> cells, MinMaxContext context, GomokuCache cache, Long gameId) {
+		private RecursiveMinMaxCommand(GameData gameData, List<Cell> cells, MinMaxContext context, Long gameId) {
 			this.context = new MinMaxContext(context);
 			this.gameData = new GameData(gameData);
 			this.cells = cells;
-			this.cache = cache;
 			this.gameId = gameId;
 		}
 		
 		@Override
 		public MinMaxResult call() throws InterruptedException {
 			try {
-				return GomokuCacheSupport.doInCacheContext(() -> {
-					computationService.setCurrentGameId(gameId);
-					return recursiveMinMax(gameData, context.getPlayingColor(), cells, context.isFindMax(), 0, context);
-				}, cache);
+				computationService.setCurrentGameId(gameId);
+				return recursiveMinMax(gameData, context.getPlayingColor(), cells, context.isFindMax(), 0, context);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 				throw e;

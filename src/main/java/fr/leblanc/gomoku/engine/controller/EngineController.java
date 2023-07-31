@@ -3,6 +3,7 @@ package fr.leblanc.gomoku.engine.controller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,10 +18,11 @@ import fr.leblanc.gomoku.engine.model.messaging.EngineMessageType;
 import fr.leblanc.gomoku.engine.model.messaging.GameDTO;
 import fr.leblanc.gomoku.engine.model.messaging.GameSettings;
 import fr.leblanc.gomoku.engine.model.messaging.MoveDTO;
+import fr.leblanc.gomoku.engine.service.CacheService;
 import fr.leblanc.gomoku.engine.service.CheckWinService;
-import fr.leblanc.gomoku.engine.service.GameComputationService;
 import fr.leblanc.gomoku.engine.service.EngineService;
 import fr.leblanc.gomoku.engine.service.EvaluationService;
+import fr.leblanc.gomoku.engine.service.GameComputationService;
 import fr.leblanc.gomoku.engine.service.WebSocketService;
 
 @RestController
@@ -42,6 +44,9 @@ public class EngineController {
 	
 	@Autowired
 	private GameComputationService computationService;
+	
+	@Autowired
+	private CacheService cacheService;
 	
 	@GetMapping("isComputing/{gameId}")
 	public Boolean isComputing(@PathVariable Long gameId) {
@@ -93,6 +98,11 @@ public class EngineController {
 	@PostMapping("/stop/{gameId}")
 	public void stopComputation(@PathVariable Long gameId) {
 		computationService.stopGameComputation(gameId);
+	}
+	
+	@DeleteMapping("/clearGame")
+	public void clearGame(@RequestBody Long gameId) {
+		cacheService.clearCache(gameId);
 	}
 	
 }

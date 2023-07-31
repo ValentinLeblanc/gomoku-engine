@@ -13,7 +13,6 @@ import fr.leblanc.gomoku.engine.service.CheckWinService;
 import fr.leblanc.gomoku.engine.service.EngineService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.StrikeService;
-import fr.leblanc.gomoku.engine.util.cache.GomokuCacheSupport;
 
 @Service
 public class EngineServiceImpl implements EngineService {
@@ -50,27 +49,22 @@ public class EngineServiceImpl implements EngineService {
 	}
 
 	private Cell computeMinMax(GameData gameData, GameSettings gameSettings) throws InterruptedException {
-		return GomokuCacheSupport.doInCacheContext(() -> {
-			MinMaxResult minMaxResult = minMaxService.computeMinMax(gameData, gameSettings.getMinMaxDepth(),
-					gameSettings.getMinMaxExtent());
-			return minMaxResult.getResultCell();
-		});
+		MinMaxResult minMaxResult = minMaxService.computeMinMax(gameData, gameSettings.getMinMaxDepth(), gameSettings.getMinMaxExtent());
+		return minMaxResult.getResultCell();
 	}
 
 	private Cell computeStrike(GameData gameData, GameSettings gameSettings, int playingColor) throws InterruptedException {
-		return GomokuCacheSupport.doInCacheContext(() -> {
-			if (gameSettings.isStrikeEnabled()) {
-				StrikeContext strikeContext = new StrikeContext();
-				strikeContext.setStrikeDepth(gameSettings.getStrikeDepth());
-				strikeContext.setMinMaxDepth(gameSettings.getMinMaxDepth());
-				strikeContext.setStrikeTimeout(gameSettings.getStrikeTimeout());
-				StrikeResult strikeOrCounterStrike = strikeService.processStrike(gameData, playingColor, strikeContext);
-				if (strikeOrCounterStrike.hasResult()) {
-					return strikeOrCounterStrike.getResultCell();
-				}
+		if (gameSettings.isStrikeEnabled()) {
+			StrikeContext strikeContext = new StrikeContext();
+			strikeContext.setStrikeDepth(gameSettings.getStrikeDepth());
+			strikeContext.setMinMaxDepth(gameSettings.getMinMaxDepth());
+			strikeContext.setStrikeTimeout(gameSettings.getStrikeTimeout());
+			StrikeResult strikeOrCounterStrike = strikeService.processStrike(gameData, playingColor, strikeContext);
+			if (strikeOrCounterStrike.hasResult()) {
+				return strikeOrCounterStrike.getResultCell();
 			}
-			return null;
-		});
+		}
+		return null;
 	}
 
 	private Cell middleCell(GameData gameData) {

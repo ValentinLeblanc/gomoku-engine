@@ -7,5 +7,5 @@ public interface EvaluationService {
 	
 	EvaluationResult computeEvaluation(GameData dataWrapper);
 	
-	EvaluationResult computeEvaluation(GameData dataWrapper, boolean external);
+	EvaluationResult computeEvaluation(GameData dataWrapper, boolean externalCall);
 }

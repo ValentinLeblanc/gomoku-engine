@@ -15,55 +15,39 @@ public class GomokuCache {
 	
 	private boolean isCacheEnabled = false;
 	
-	private Map<Integer, Map<GameData, Optional<Cell>>> directStrikeAttempts = new HashMap<>();
-	private Map<Integer, Map<GameData, Optional<Cell>>> secondaryStrikeAttempts = new HashMap<>();
-	private Map<Integer, Map<GameData, List<Cell>>> recordedCounterMoves = new HashMap<>();
+	private Map<Integer, Map<GameData, Optional<Cell>>> directStrikeCache = new HashMap<>();
+	private Map<Integer, Map<GameData, Optional<Cell>>> secondaryStrikeCache = new HashMap<>();
+	private Map<Integer, Map<GameData, List<Cell>>> counterStrikeCache = new HashMap<>();
 	private Map<Integer, Map<GameData, EvaluationResult>> evaluationCache = new HashMap<>();
 	private Map<Integer, Map<GameData, MinMaxResult>> minMaxCache = new HashMap<>();
 
 	public GomokuCache() {
-		directStrikeAttempts.put(EngineConstants.BLACK_COLOR, new HashMap<>());
-		directStrikeAttempts.put(EngineConstants.WHITE_COLOR, new HashMap<>());
-		secondaryStrikeAttempts.put(EngineConstants.BLACK_COLOR, new HashMap<>());
-		secondaryStrikeAttempts.put(EngineConstants.WHITE_COLOR, new HashMap<>());
-		recordedCounterMoves.put(EngineConstants.BLACK_COLOR, new HashMap<>());
-		recordedCounterMoves.put(EngineConstants.WHITE_COLOR, new HashMap<>());
+		directStrikeCache.put(EngineConstants.BLACK_COLOR, new HashMap<>());
+		directStrikeCache.put(EngineConstants.WHITE_COLOR, new HashMap<>());
+		secondaryStrikeCache.put(EngineConstants.BLACK_COLOR, new HashMap<>());
+		secondaryStrikeCache.put(EngineConstants.WHITE_COLOR, new HashMap<>());
+		counterStrikeCache.put(EngineConstants.BLACK_COLOR, new HashMap<>());
+		counterStrikeCache.put(EngineConstants.WHITE_COLOR, new HashMap<>());
 		evaluationCache.put(EngineConstants.BLACK_COLOR, new HashMap<>());
 		evaluationCache.put(EngineConstants.WHITE_COLOR, new HashMap<>());
 		minMaxCache.put(EngineConstants.BLACK_COLOR, new HashMap<>());
 		minMaxCache.put(EngineConstants.WHITE_COLOR, new HashMap<>());
 	}
 	
-	public Map<Integer, Map<GameData, Optional<Cell>>> getDirectStrikeAttempts() {
-		return directStrikeAttempts;
+	public Map<Integer, Map<GameData, Optional<Cell>>> getDirectStrikeCache() {
+		return directStrikeCache;
 	}
 
-	public void setDirectStrikeAttempts(Map<Integer, Map<GameData, Optional<Cell>>> directStrikeAttempts) {
-		this.directStrikeAttempts = directStrikeAttempts;
+	public Map<Integer, Map<GameData, Optional<Cell>>> getSecondaryStrikeCache() {
+		return secondaryStrikeCache;
 	}
 
-	public Map<Integer, Map<GameData, Optional<Cell>>> getSecondaryStrikeAttempts() {
-		return secondaryStrikeAttempts;
-	}
-
-	public void setSecondaryStrikeAttempts(Map<Integer, Map<GameData, Optional<Cell>>> secondaryStrikeAttempts) {
-		this.secondaryStrikeAttempts = secondaryStrikeAttempts;
-	}
-
-	public Map<Integer, Map<GameData, List<Cell>>> getRecordedCounterMoves() {
-		return recordedCounterMoves;
-	}
-
-	public void setRecordedCounterMoves(Map<Integer, Map<GameData, List<Cell>>> recordedCounterMoves) {
-		this.recordedCounterMoves = recordedCounterMoves;
+	public Map<Integer, Map<GameData, List<Cell>>> getCounterStrikeCache() {
+		return counterStrikeCache;
 	}
 
 	public Map<Integer, Map<GameData, EvaluationResult>> getEvaluationCache() {
 		return evaluationCache;
-	}
-
-	public void setEvaluationCache(Map<Integer, Map<GameData, EvaluationResult>> evaluationCache) {
-		this.evaluationCache = evaluationCache;
 	}
 
 	public boolean isCacheEnabled() {
@@ -78,8 +62,4 @@ public class GomokuCache {
 		return minMaxCache;
 	}
 
-	public void setMinMaxCache(Map<Integer, Map<GameData, MinMaxResult>> minMaxCache) {
-		this.minMaxCache = minMaxCache;
-	}
-	
 }
