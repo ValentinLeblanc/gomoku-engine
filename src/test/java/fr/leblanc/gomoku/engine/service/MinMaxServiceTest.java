@@ -4,6 +4,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -26,6 +28,22 @@ class MinMaxServiceTest {
 	
 	@Autowired
 	private EvaluationService evaluationService;
+	
+	@Autowired
+	private GameComputationService gameComputationService;
+	
+	@Autowired
+	private CacheService cacheService;
+	
+	@BeforeEach
+	public void beforeEach() {
+		gameComputationService.setCurrentGameId(-1l);
+	}
+	
+	@AfterEach
+	public void afterEach() {
+		cacheService.clearCache(-1l);
+	}
 	
 	@Test
 	void testMinMaxExtent() throws InterruptedException {

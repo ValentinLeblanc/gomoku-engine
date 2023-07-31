@@ -32,12 +32,12 @@ class StrikeServiceTest {
 	
 	@BeforeEach
 	public void beforeEach() {
-		gameComputationService.setCurrentGameId(1l);
+		gameComputationService.setCurrentGameId(-1l);
 	}
 	
 	@AfterEach
 	public void afterEach() {
-		cacheService.clearCache(1l);
+		cacheService.clearCache(-1l);
 	}
 
 	@Test
