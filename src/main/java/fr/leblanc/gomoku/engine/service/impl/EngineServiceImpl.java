@@ -45,7 +45,7 @@ public class EngineServiceImpl implements EngineService {
 			strikeContext.setStrikeDepth(gameSettings.getStrikeDepth());
 			strikeContext.setMinMaxDepth(gameSettings.getMinMaxDepth());
 			strikeContext.setStrikeTimeout(gameSettings.getStrikeTimeout());
-			StrikeResult strikeOrCounterStrike = strikeService.processStrike(gameData, playingColor, strikeContext);
+			StrikeResult strikeOrCounterStrike = strikeService.processStrike(new GameData(gameData), playingColor, strikeContext);
 			if (strikeOrCounterStrike.hasResult()) {
 				return strikeOrCounterStrike.getResultCell();
 			}

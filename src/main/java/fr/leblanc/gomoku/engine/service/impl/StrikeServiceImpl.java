@@ -75,8 +75,8 @@ public class StrikeServiceImpl implements StrikeService {
 			StopWatch stopWatch = new StopWatch("processStrike");
 			stopWatch.start();
 			
-			if (logger.isDebugEnabled()) {
-				logger.debug("find direct strike...");
+			if (logger.isInfoEnabled()) {
+				logger.info("find direct strike...");
 			}
 			
 			Cell directThreat = directStrike(gameData, playingColor, strikeContext);
@@ -84,7 +84,7 @@ public class StrikeServiceImpl implements StrikeService {
 			if (directThreat != null) {
 				stopWatch.stop();
 				if (logger.isDebugEnabled()) {
-					logger.debug("direct strike found in " + stopWatch.getTotalTimeMillis() + " ms");
+					logger.info("direct strike found in {} ms", stopWatch.getTotalTimeMillis());
 				}
 				return new StrikeResult(directThreat, StrikeType.DIRECT_STRIKE);
 			}
@@ -92,8 +92,8 @@ public class StrikeServiceImpl implements StrikeService {
 			Cell opponentDirectThreat = directStrike(gameData, -playingColor, strikeContext);
 			
 			if (opponentDirectThreat != null) {
-				if (logger.isDebugEnabled()) {
-					logger.debug("defend from opponent direct strike...");
+				if (logger.isInfoEnabled()) {
+					logger.info("defend from opponent direct strike...");
 				}
 				List<Cell> counterOpponentThreats = counterDirectStrikeMoves(gameData, playingColor, strikeContext, false);
 				
@@ -105,8 +105,8 @@ public class StrikeServiceImpl implements StrikeService {
 						defense = minMaxService.computeMinMax(strikeContext.getGameId(), gameData, counterOpponentThreats, strikeContext.getMinMaxDepth(), 0).getOptimalMoves().get(0);
 					}
 					stopWatch.stop();
-					if (logger.isDebugEnabled()) {
-						logger.debug("best defense found in " + stopWatch.getTotalTimeMillis() + " ms");
+					if (logger.isInfoEnabled()) {
+						logger.info("best defense found in {} ms", stopWatch.getTotalTimeMillis());
 					}
 					return new StrikeResult(defense, StrikeType.DEFEND_STRIKE);
 				}
@@ -114,8 +114,8 @@ public class StrikeServiceImpl implements StrikeService {
 				return new StrikeResult(null, StrikeType.EMPTY_STRIKE);
 			}
 			
-			if (logger.isDebugEnabled()) {
-				logger.debug("find secondary strike...");
+			if (logger.isInfoEnabled()) {
+				logger.info("find secondary strike...");
 			}
 			
 			Cell secondaryStrike = executeSecondaryStrikeCommand(gameData, playingColor, strikeContext);
@@ -151,7 +151,7 @@ public class StrikeServiceImpl implements StrikeService {
 			
 			logger.error("Error while SecondaryStrikeCommand : " + e.getMessage(), e);
 		} catch (TimeoutException e) {
-			logger.info("SecondaryStrikeCommand timeout (" + strikeContext.getStrikeTimeout() + "s)");
+			logger.info("SecondaryStrikeCommand timeout ({}s)", strikeContext.getStrikeTimeout());
 		}
 		return secondaryStrike;
 	}
@@ -183,17 +183,15 @@ public class StrikeServiceImpl implements StrikeService {
 
 				if (secondaryStrike != null) {
 					stopWatch.stop();
-					if (logger.isDebugEnabled()) {
-						logger.debug("secondary strike found in " + stopWatch.getTotalTimeMillis()
-								+ " ms for maxDepth = " + currentMaxDepth);
+					if (logger.isInfoEnabled()) {
+						logger.info("secondary strike found in {} ms for maxDepth = {}", stopWatch.getTotalTimeMillis(), currentMaxDepth);
 					}
 					return secondaryStrike;
 				}
 
-				if (logger.isDebugEnabled()) {
+				if (logger.isInfoEnabled()) {
 					timeElapsed = System.currentTimeMillis() - timeElapsed;
-					logger.debug("secondary strike failed for maxDepth = " + currentMaxDepth + " (" + timeElapsed
-							+ " ms)");
+					logger.info("secondary strike failed for maxDepth = {} ({} ms)", currentMaxDepth, timeElapsed);
 				}
 			}
 
