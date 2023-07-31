@@ -57,7 +57,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 	@Override
 	public MinMaxResult computeMinMax(Long gameId, GameData gameData, int maxDepth, int extent) throws InterruptedException {
 		int playingColor = GameData.extractPlayingColor(gameData);
-		List<Cell> analyzedCells = threatContextService.buildAnalyzedCells(gameData, playingColor);
+		List<Cell> analyzedCells = threatContextService.buildAnalyzedCells(gameData, playingColor, false);
 		return computeMinMax(gameId, gameData, analyzedCells, maxDepth, extent);
 	}
 	
@@ -84,7 +84,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			context.setGameId(gameId);
 
 			if (analyzedCells == null) {
-				analyzedCells = threatContextService.buildAnalyzedCells(gameData, context.getPlayingColor());
+				analyzedCells = threatContextService.buildAnalyzedCells(gameData, context.getPlayingColor(), false);
 			}
 			
 			int emptyCellsCount = GameData.countEmptyCells(gameData);
@@ -251,7 +251,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			if (currentDepth == context.getMaxDepth() - 1) {
 				currentEvaluation = evaluationService.computeEvaluation(context.getGameId(), gameData).getEvaluation();
 			} else {
-				List<Cell> subAnalyzedMoves = threatContextService.buildAnalyzedCells(gameData, -playingColor);
+				List<Cell> subAnalyzedMoves = threatContextService.buildAnalyzedCells(gameData, -playingColor, false);
 				subResult = recursiveMinMax(gameData, -playingColor, subAnalyzedMoves, !findMax, currentDepth + 1, context);
 				currentEvaluation = subResult.getEvaluation();
 			}

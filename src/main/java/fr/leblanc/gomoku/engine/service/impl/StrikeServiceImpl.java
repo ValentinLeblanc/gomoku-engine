@@ -1,10 +1,13 @@
 package fr.leblanc.gomoku.engine.service.impl;
 
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -22,6 +25,7 @@ import org.springframework.util.StopWatch;
 
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.DoubleThreat;
+import fr.leblanc.gomoku.engine.model.EngineConstants;
 import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.StrikeContext;
 import fr.leblanc.gomoku.engine.model.StrikeResult;
@@ -111,7 +115,7 @@ public class StrikeServiceImpl implements StrikeService {
 					return new StrikeResult(defense, StrikeType.DEFEND_STRIKE);
 				}
 				
-				return new StrikeResult(null, StrikeType.EMPTY_STRIKE);
+				return new StrikeResult(randomCell(gameData), StrikeType.EMPTY_STRIKE);
 			}
 			
 			if (logger.isInfoEnabled()) {
@@ -127,6 +131,25 @@ public class StrikeServiceImpl implements StrikeService {
 			return new StrikeResult(null, StrikeType.EMPTY_STRIKE);
 		} finally {
 			webSocketService.sendMessage(EngineMessageType.STRIKE_PROGRESS, strikeContext.getGameId(), false);
+		}
+	}
+
+	private Cell randomCell(GameData gameData) {
+		try {
+			Random random = SecureRandom.getInstanceStrong();
+			int i = 0;
+			int maxCellCheck = gameData.getData().length * gameData.getData().length;
+			while (i < maxCellCheck) {
+				i++;
+				int randomX = random.nextInt(gameData.getData().length);
+				int randomY = random.nextInt(gameData.getData().length);
+				if (gameData.getValue(randomX, randomY) == EngineConstants.NONE_COLOR) {
+					return new Cell(randomX, randomY);
+				}
+			}
+			throw new IllegalStateException("No empty move could be found");
+		} catch (NoSuchAlgorithmException e) {
+			throw new IllegalStateException("error while generating random Cell", e);
 		}
 	}
 
@@ -178,8 +201,7 @@ public class StrikeServiceImpl implements StrikeService {
 
 				long timeElapsed = System.currentTimeMillis();
 
-				Cell secondaryStrike;
-				secondaryStrike = secondaryStrike(dataWrapper, playingColor, 0, currentMaxDepth, strikeContext);
+				Cell secondaryStrike = secondaryStrike(dataWrapper, playingColor, 0, currentMaxDepth, strikeContext);
 
 				if (secondaryStrike != null) {
 					stopWatch.stop();
@@ -340,7 +362,7 @@ public class StrikeServiceImpl implements StrikeService {
 			return defendingMoves;
 		}
 		
-		List<Cell> analysedMoves =  threatContextService.buildAnalyzedCells(dataWrapper, playingColor);
+		List<Cell> analysedMoves =  threatContextService.buildAnalyzedCells(dataWrapper, playingColor, true);
 		
 		for (Cell analysedMove : analysedMoves) {
 			

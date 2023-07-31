@@ -17,7 +17,7 @@ public interface ThreatContextService {
 	
 	Set<Cell> findCombinedThreats(ThreatContext threatContext, ThreatType threatType1, ThreatType threatType2);
 
-	List<Cell> buildAnalyzedCells(GameData dataWrapper, int color);
+	List<Cell> buildAnalyzedCells(GameData dataWrapper, int color, boolean threat4First);
 
 	List<Pair<Threat, Threat>> findCompositeThreats(ThreatContext context, CompoThreatType threatTryContext);
 
