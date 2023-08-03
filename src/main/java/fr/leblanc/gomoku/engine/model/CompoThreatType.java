@@ -125,6 +125,12 @@ public class CompoThreatType {
 			}
 
 		}
+		if (ThreatType.THREAT_3.equals(threatType1)) {
+			if (ThreatType.DOUBLE_THREAT_3.equals(threatType2)) {
+				return EngineConstants.DOUBLE_THREAT_3_THREAT_3_POTENTIAL;
+			}
+			
+		}
 
 		if (ThreatType.DOUBLE_THREAT_3.equals(threatType1)) {
 			if (ThreatType.DOUBLE_THREAT_3.equals(threatType2)) {
@@ -228,6 +234,7 @@ public class CompoThreatType {
 					CompoThreatType.of(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3, isThreatPlaying),
 					CompoThreatType.of(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_2, isThreatPlaying),
 					CompoThreatType.of(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3, isThreatPlaying),
+					CompoThreatType.of(ThreatType.THREAT_3, ThreatType.DOUBLE_THREAT_3, isThreatPlaying),
 					CompoThreatType.of(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2, isThreatPlaying));
 		}
 		
@@ -249,6 +256,23 @@ public class CompoThreatType {
 					CompoThreatType.of(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3, isThreatPlaying),
 					CompoThreatType.of(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2, isThreatPlaying),
 					CompoThreatType.of(ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2, isThreatPlaying));
+		}
+		
+		if (ThreatType.THREAT_3.equals(threatType1) && ThreatType.DOUBLE_THREAT_3.equals(threatType2)) {
+			if (!withSimilar) {
+				return List.of(CompoThreatType.of(ThreatType.THREAT_5, null, isThreatPlaying),
+						CompoThreatType.of(ThreatType.DOUBLE_THREAT_4, null, isThreatPlaying),
+						CompoThreatType.of(ThreatType.THREAT_4, ThreatType.THREAT_4, isThreatPlaying),
+						CompoThreatType.of(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3, isThreatPlaying));
+			}
+			return List.of(CompoThreatType.of(ThreatType.THREAT_5, null, isThreatPlaying),
+					CompoThreatType.of(ThreatType.DOUBLE_THREAT_4, null, isThreatPlaying),
+					CompoThreatType.of(ThreatType.THREAT_4, ThreatType.THREAT_4, isThreatPlaying),
+					CompoThreatType.of(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3, isThreatPlaying),
+					CompoThreatType.of(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_2, isThreatPlaying),
+					CompoThreatType.of(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3, isThreatPlaying),
+					CompoThreatType.of(ThreatType.THREAT_3, ThreatType.DOUBLE_THREAT_3, isThreatPlaying),
+					CompoThreatType.of(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2, isThreatPlaying));
 		}
 
 		throw new IllegalStateException("CompoThreatType not implemented : " + this);

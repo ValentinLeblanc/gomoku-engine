@@ -27,6 +27,7 @@ import fr.leblanc.gomoku.engine.model.ThreatType;
 import fr.leblanc.gomoku.engine.service.CacheService;
 import fr.leblanc.gomoku.engine.service.CheckWinService;
 import fr.leblanc.gomoku.engine.service.EvaluationService;
+import fr.leblanc.gomoku.engine.service.StrikeService;
 import fr.leblanc.gomoku.engine.service.ThreatContextService;
 import fr.leblanc.gomoku.engine.util.Pair;
 
@@ -44,29 +45,42 @@ public class EvaluationServiceImpl implements EvaluationService {
 	@Autowired
 	private CacheService cacheService;
 	
+	@Autowired
+	private StrikeService strikeService;
+	
 	@Override
-	public EvaluationResult computeEvaluation(Long gameId, GameData dataWrapper) {
-		return computeEvaluation(gameId, dataWrapper, false);
+	public EvaluationResult computeEvaluation(Long gameId, GameData dataWrapper) throws InterruptedException {
+		return computeEvaluation(gameId, new EvaluationContext(dataWrapper).internal().useStrikeService());
 	}
 	
 	@Override
-	public EvaluationResult computeEvaluation(Long gameId, GameData dataWrapper, boolean externalCall) {
+	public EvaluationResult computeEvaluation(Long gameId, EvaluationContext context) throws InterruptedException {
 		
-		int playingColor = GameData.extractPlayingColor(dataWrapper);
+		int playingColor = GameData.extractPlayingColor(context.getDataWrapper());
+		context.setPlayingColor(playingColor);
 		
-		if (gameId != null && cacheService.isCacheEnabled() && cacheService.getEvaluationCache(gameId).get(playingColor).containsKey(dataWrapper)) {
-			return cacheService.getEvaluationCache(gameId).get(playingColor).get(dataWrapper);
+		if (context.isUseStrikeService() && strikeService.hasStrike(context.getDataWrapper(), playingColor, gameId, true)) {
+			if (!context.isInternal() && logger.isDebugEnabled()) {
+				logger.debug("evaluation from strike: {}", EngineConstants.THREAT_5_POTENTIAL);
+			}
+			EvaluationResult evaluation = new EvaluationResult();
+			evaluation.setEvaluation(EngineConstants.THREAT_5_POTENTIAL);
+			return evaluation;
 		}
 		
-		EvaluationResult evaluation =  evaluateThreats(new EvaluationContext(dataWrapper, playingColor, -1, 0, externalCall));
+		if (context.isInternal() && gameId != null && cacheService.isCacheEnabled() && cacheService.getEvaluationCache(gameId).get(playingColor).containsKey(context.getDataWrapper())) {
+			return cacheService.getEvaluationCache(gameId).get(playingColor).get(context.getDataWrapper());
+		}
+		
+		EvaluationResult evaluation =  evaluateThreats(context);
 		
 		if (gameId != null && cacheService.isCacheEnabled()) {
-			cacheService.getEvaluationCache(gameId).get(playingColor).put(new GameData(dataWrapper), evaluation);
+			cacheService.getEvaluationCache(gameId).get(playingColor).put(new GameData(context.getDataWrapper()), evaluation);
 		}
 		
 		return evaluation;
 	}
-
+	
 	private EvaluationResult evaluateThreats(EvaluationContext context) {
 		
 		EvaluationResult evaluationResult = new EvaluationResult();
@@ -108,7 +122,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 				}
 				evaluation += threatEvaluation;
 				threatTypeEvaluation += threatEvaluation;
-				if (logger.isDebugEnabled() && threatEvaluation != 0 && context.isLogEnabled()) {
+				if (logger.isDebugEnabled() && threatEvaluation != 0 && !context.isInternal()) {
 					logger.debug(threatEvaluation + " AT " + retrieveThreatCell(threatPair) + " FROM "  + compoThreatType);
 				}
 			}

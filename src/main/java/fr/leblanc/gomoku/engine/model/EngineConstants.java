@@ -47,8 +47,10 @@ public class EngineConstants {
 			new CompoThreatType(ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_2, false),
 			new CompoThreatType(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3, true),
 			new CompoThreatType(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2, true),
+			new CompoThreatType(ThreatType.THREAT_3, ThreatType.DOUBLE_THREAT_3, true),
 			new CompoThreatType(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3, false),
 			new CompoThreatType(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2, false),
+			new CompoThreatType(ThreatType.THREAT_3, ThreatType.DOUBLE_THREAT_3, false),
 			new CompoThreatType(ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2, true),
 			new CompoThreatType(ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2, false),
 			};

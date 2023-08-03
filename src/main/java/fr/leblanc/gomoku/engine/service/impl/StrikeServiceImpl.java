@@ -314,6 +314,31 @@ public class StrikeServiceImpl implements StrikeService {
 			return null;
 		}
 	}
+	
+	@Override
+	public boolean hasStrike(GameData gameData, int playingColor, Long cacheId, boolean cacheOnly) throws InterruptedException {
+		if (cacheService.isCacheEnabled()) {
+			try {
+				if (!cacheOnly && directStrike(gameData, playingColor, new StrikeContext(cacheId, -1, -1, -1)) != null) {
+					return true;
+				}
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				throw new InterruptedException();
+			}
+			Map<Integer, Map<GameData, Optional<Cell>>> directStrikeCache = cacheService.getDirectStrikeCache(cacheId);
+			if (directStrikeCache.containsKey(playingColor) && directStrikeCache.get(playingColor).containsKey(gameData)
+					&& directStrikeCache.get(playingColor).get(gameData).isPresent()) {
+				return true;
+			}
+			Map<Integer, Map<GameData, Optional<Cell>>> secondaryStrikeCache = cacheService.getSecondaryStrikeCache(cacheId);
+			if (secondaryStrikeCache.containsKey(playingColor) && secondaryStrikeCache.get(playingColor).containsKey(gameData)
+					&& secondaryStrikeCache.get(playingColor).get(gameData).isPresent()) {
+				return true;
+			}
+		}
+		return false;
+	}
 
 	private Cell executeSecondaryStrike(GameData dataWrapper, int playingColor, int depth, int maxDepth, StrikeContext strikeContext) throws InterruptedException {
 

@@ -7,20 +7,22 @@ public class EvaluationContext {
 	private GameData dataWrapper;
 
 	private int playingColor;
+	private boolean internal = false;
+	private boolean useStrikeService = false;
 	
-	private int maxDepth;
-	
-	private int depth;
-	
-	private boolean logEnabled;
-	
-	public EvaluationContext(GameData dataWrapper, int playingColor, int maxDepth, int depth, boolean logEnabled) {
+	public EvaluationContext(GameData dataWrapper) {
 		super();
 		this.dataWrapper = dataWrapper;
-		this.playingColor = playingColor;
-		this.maxDepth = maxDepth;
-		this.depth = depth;
-		this.logEnabled = logEnabled;
+	}
+	
+	public EvaluationContext internal() {
+		this.internal = true;
+		return this;
+	}
+	
+	public EvaluationContext useStrikeService() {
+		this.useStrikeService = true;
+		return this;
 	}
 
 	public int getPlayingColor() {
@@ -30,46 +32,30 @@ public class EvaluationContext {
 	public void setPlayingColor(int playingColor) {
 		this.playingColor = playingColor;
 	}
-
-	public int getDepth() {
-		return depth;
+	
+	public boolean isUseStrikeService() {
+		return useStrikeService;
 	}
 
-	public void setDepth(int depth) {
-		this.depth = depth;
-	}
-
-	public boolean isLogEnabled() {
-		return logEnabled;
+	public boolean isInternal() {
+		return internal;
 	}
 
 	public void setLogEnabled(boolean logEnabled) {
-		this.logEnabled = logEnabled;
+		this.internal = logEnabled;
 	}
 
 	public GameData getDataWrapper() {
 		return dataWrapper;
 	}
 
-	public int getMaxDepth() {
-		return maxDepth;
-	}
-
 	public void reversePlayingColor() {
 		playingColor = -playingColor;
 	}
 	
-	public void increaseDepth() {
-		this.depth++;
-	}
-	
-	public void decreaseDepth() {
-		this.depth--;
-	}
-
 	@Override
 	public int hashCode() {
-		return Objects.hash(dataWrapper, depth, logEnabled, maxDepth, playingColor);
+		return Objects.hash(dataWrapper, internal, playingColor);
 	}
 
 	@Override
@@ -81,14 +67,13 @@ public class EvaluationContext {
 		if (getClass() != obj.getClass())
 			return false;
 		EvaluationContext other = (EvaluationContext) obj;
-		return Objects.equals(dataWrapper, other.dataWrapper) && depth == other.depth && logEnabled == other.logEnabled
-				&& maxDepth == other.maxDepth && playingColor == other.playingColor;
+		return Objects.equals(dataWrapper, other.dataWrapper) && internal == other.internal
+				&& playingColor == other.playingColor;
 	}
 
 	@Override
 	public String toString() {
-		return "EvaluationContext [dataWrapper=" + dataWrapper + ", playingColor=" + playingColor + ", maxDepth="
-				+ maxDepth + ", depth=" + depth + ", external=" + logEnabled + "]";
+		return "EvaluationContext [dataWrapper=" + dataWrapper + ", playingColor=" + playingColor + ", external=" + internal + "]";
 	}
 	
 }

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.CheckWinResult;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
+import fr.leblanc.gomoku.engine.model.EvaluationContext;
 import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.messaging.EngineMessageType;
 import fr.leblanc.gomoku.engine.model.messaging.GameDTO;
@@ -81,14 +82,14 @@ public class EngineController {
 	}
 	
 	@PostMapping("/computeEvaluation")
-	public Double computeEvaluation(@RequestBody GameDTO gameDTO) {
+	public Double computeEvaluation(@RequestBody GameDTO gameDTO) throws InterruptedException {
 		GameData gameData = GameData.of(gameDTO);
 		int playingColor = GameData.extractPlayingColor(gameData);
 		
 		if (playingColor == EngineConstants.BLACK_COLOR) {
-			return evaluationService.computeEvaluation(gameDTO.getId(), gameData, true).getEvaluation();
+			return evaluationService.computeEvaluation(gameDTO.getId(), new EvaluationContext(gameData).useStrikeService()).getEvaluation();
 		} else if (playingColor == EngineConstants.WHITE_COLOR) {
-			return -evaluationService.computeEvaluation(gameDTO.getId(), gameData, true).getEvaluation();
+			return -evaluationService.computeEvaluation(gameDTO.getId(), new EvaluationContext(gameData).useStrikeService()).getEvaluation();
 		}
 		
 		throw new IllegalArgumentException("Game has no valid playing color");

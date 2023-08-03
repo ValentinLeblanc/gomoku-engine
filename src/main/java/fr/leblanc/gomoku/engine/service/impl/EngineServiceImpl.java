@@ -62,7 +62,7 @@ public class EngineServiceImpl implements EngineService {
 		}
 		
 		if (gameSettings.isStrikeEnabled()) {
-			Cell strikeOrCounterStrike = processStrike(gameId, new GameData(gameData), playingColor, gameSettings.getMinMaxDepth(), gameSettings.getStrikeDepth(), gameSettings.getStrikeTimeout());
+			Cell strikeOrCounterStrike = processStrike(gameId, new GameData(gameData), playingColor, gameSettings.getStrikeDepth(), gameSettings.getMinMaxDepth(), gameSettings.getStrikeTimeout());
 			if (strikeOrCounterStrike != null) {
 				return strikeOrCounterStrike;
 			}

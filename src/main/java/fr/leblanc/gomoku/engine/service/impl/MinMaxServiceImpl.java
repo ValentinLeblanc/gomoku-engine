@@ -7,7 +7,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -28,10 +27,8 @@ import fr.leblanc.gomoku.engine.model.EngineConstants;
 import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.MinMaxContext;
 import fr.leblanc.gomoku.engine.model.MinMaxResult;
-import fr.leblanc.gomoku.engine.model.StrikeContext;
 import fr.leblanc.gomoku.engine.model.messaging.EngineMessageType;
 import fr.leblanc.gomoku.engine.model.messaging.MoveDTO;
-import fr.leblanc.gomoku.engine.service.CacheService;
 import fr.leblanc.gomoku.engine.service.EvaluationService;
 import fr.leblanc.gomoku.engine.service.GameComputationService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
@@ -60,9 +57,6 @@ public class MinMaxServiceImpl implements MinMaxService {
 	
 	@Autowired
 	private StrikeService strikeService;
-	
-	@Autowired
-	private CacheService cacheService;
 	
 	@Override
 	public MinMaxResult computeMinMax(GameData gameData, MinMaxContext context) throws InterruptedException {
@@ -252,7 +246,10 @@ public class MinMaxServiceImpl implements MinMaxService {
 			double currentEvaluation = 0;
 			MinMaxResult subResult = new MinMaxResult();
 			
-			if (context.isUseStrikeService() && hasStrike(gameData, playingColor, context.getGameId())) {
+			if (context.isUseStrikeService() && currentDepth < context.getMaxDepth() - 1 && strikeService.hasStrike(gameData, playingColor, context.getGameId(), false)) {
+				if (logger.isInfoEnabled()) {
+					logger.info("used strike service for minMax");			
+				}
 				currentEvaluation = EngineConstants.THREAT_5_POTENTIAL;
 			} else {
 				gameData.addMove(analysedMove, playingColor);
@@ -262,7 +259,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 				}
 				
 				if (currentDepth == context.getMaxDepth() - 1) {
-					currentEvaluation = computeEvaluation(gameData, playingColor, context);
+					currentEvaluation = evaluationService.computeEvaluation(context.getGameId(), gameData).getEvaluation();
 				} else {
 					List<Cell> subAnalyzedMoves = threatContextService.buildAnalyzedCells(gameData, -playingColor, false);
 					subResult = recursiveMinMax(gameData, -playingColor, subAnalyzedMoves, !findMax, currentDepth + 1, context);
@@ -321,32 +318,6 @@ public class MinMaxServiceImpl implements MinMaxService {
 		context.getMinList().remove(currentDepth);
 		
 		return result;
-	}
-
-	private double computeEvaluation(GameData gameData, int playingColor, MinMaxContext context) throws InterruptedException {
-		if (context.isUseStrikeService() && hasStrike(gameData, -playingColor, context.getGameId())) {
-			return EngineConstants.THREAT_5_POTENTIAL;
-		}
-		return evaluationService.computeEvaluation(context.getGameId(), gameData).getEvaluation();
-	}
-	
-	private boolean hasStrike(GameData gameData, int playingColor, Long cacheId) throws InterruptedException {
-		if (cacheService.isCacheEnabled()) {
-			try {
-				if (strikeService.directStrike(gameData, playingColor, new StrikeContext(cacheId, -1, -1, -1)) != null) {
-					return true;
-				}
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				throw new InterruptedException();
-			}
-			Map<Integer, Map<GameData, Optional<Cell>>> secondaryStrikeCache = cacheService.getSecondaryStrikeCache(cacheId);
-			if (secondaryStrikeCache.containsKey(playingColor) && secondaryStrikeCache.get(playingColor).containsKey(gameData)
-					&& secondaryStrikeCache.get(playingColor).get(gameData).isPresent()) {
-				return true;
-			}
-		}
-		return false;
 	}
 
 	private boolean isOptimumReached(int depth, int factor, Map<Integer, Double> otherList, double eval, Double globalOptimum) {

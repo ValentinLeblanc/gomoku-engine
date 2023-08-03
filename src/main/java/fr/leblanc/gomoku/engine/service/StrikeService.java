@@ -14,4 +14,6 @@ public interface StrikeService {
 
 	Cell secondaryStrike(GameData gameData, int playingColor, StrikeContext strikeContext) throws InterruptedException;
 
+	boolean hasStrike(GameData gameData, int playingColor, Long cacheId, boolean cacheOnly) throws InterruptedException;
+
 }
