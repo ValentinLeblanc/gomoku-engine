@@ -1,6 +1,8 @@
 package fr.leblanc.gomoku.engine.model;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -18,9 +20,25 @@ public class MinMaxContext {
 	private Map<Integer, Double> minList = new HashMap<>();
 	private Map<Integer, Double> maxList = new HashMap<>();
 	private AtomicReference<Double> optimumReference;
+	private List<Cell> currentMoves = new ArrayList<>();
+	private boolean useStrikeService = true;
+	private int extent;
 	
 	public MinMaxContext() {
 		
+	}
+	
+	public MinMaxContext(Long gameId, int maxDepth, int extent) {
+		this.gameId = gameId;
+		this.maxDepth = maxDepth;
+		this.extent = extent;
+	}
+	
+	public MinMaxContext(Long gameId, int maxDepth, int extent, boolean useStrikeService) {
+		this.gameId = gameId;
+		this.maxDepth = maxDepth;
+		this.extent = extent;
+		this.useStrikeService = useStrikeService;
 	}
 	
 	public MinMaxContext(MinMaxContext context) {
@@ -33,6 +51,20 @@ public class MinMaxContext {
 		this.optimumReference = context.optimumReference;
 		this.playingColor = context.playingColor;
 		this.gameId = context.gameId;
+		this.useStrikeService = context.useStrikeService;
+	}
+	
+	public int getExtent() {
+		return extent;
+	}
+	
+	public boolean isUseStrikeService() {
+		return useStrikeService;
+	}
+	
+	
+	public List<Cell> getCurrentMoves() {
+		return currentMoves;
 	}
 	
 	public void setGameId(Long gameId) {
@@ -138,5 +170,5 @@ public class MinMaxContext {
 		return "MinMaxContext [currentIndex=" + currentIndex + ", endIndex=" + endIndex + ", indexDepth=" + indexDepth
 				+ ", minList=" + minList + ", maxList=" + maxList + "]";
 	}
-	
+
 }

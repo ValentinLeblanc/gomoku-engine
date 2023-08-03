@@ -36,7 +36,7 @@ public class MinMaxResult {
 	public Map<Integer, Cell> getOptimalMoves() {
 		return optimalMoves;
 	}
-
+	
 	public void setOptimalMoves(Map<Integer, Cell> optimalMoves) {
 		this.optimalMoves = optimalMoves;
 	}

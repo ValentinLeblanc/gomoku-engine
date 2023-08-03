@@ -13,6 +13,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
 import fr.leblanc.gomoku.engine.model.GameData;
+import fr.leblanc.gomoku.engine.model.MinMaxContext;
 import fr.leblanc.gomoku.engine.model.MinMaxResult;
 import fr.leblanc.gomoku.engine.model.messaging.GameDTO;
 import fr.leblanc.gomoku.engine.model.messaging.MoveDTO;
@@ -33,7 +34,7 @@ class MinMaxServiceTest extends AbstractGomokuTest {
 		gameDto.setBoardSize(15);
 		gameDto.getMoves().add(new MoveDTO(7, 7, EngineConstants.BLACK_COLOR));
 		
-		MinMaxResult minMaxResult = minMaxService.computeMinMax(TEST_GAME_ID, GameData.of(gameDto), 2, 2);
+		MinMaxResult minMaxResult = minMaxService.computeMinMax(GameData.of(gameDto), new MinMaxContext(TEST_GAME_ID, 2, 2));
 		
 		assertNotNull(minMaxResult);
 		assertFalse(minMaxResult.getOptimalMoves().isEmpty());
@@ -61,7 +62,7 @@ class MinMaxServiceTest extends AbstractGomokuTest {
 	private void computeMinMaxAndTestEvaluation(GameDTO gameDto, int depth, int playingColor) throws InterruptedException {
 		int color = playingColor;
 
-		MinMaxResult minMaxResult = minMaxService.computeMinMax(TEST_GAME_ID, GameData.of(gameDto), depth, 0);
+		MinMaxResult minMaxResult = minMaxService.computeMinMax(GameData.of(gameDto), new MinMaxContext(TEST_GAME_ID, depth, 0, false));
 		assertNotNull(minMaxResult);
 
 		double evaluation = minMaxResult.getEvaluation();
@@ -90,7 +91,7 @@ class MinMaxServiceTest extends AbstractGomokuTest {
 
 		int playingColor = EngineConstants.WHITE_COLOR;
 		
-		MinMaxResult minMaxResult = minMaxService.computeMinMax(TEST_GAME_ID, GameData.of(gameDto), 4, 0);
+		MinMaxResult minMaxResult = minMaxService.computeMinMax(GameData.of(gameDto), new MinMaxContext(TEST_GAME_ID, 4, 0, false));
 
 		assertEquals(4, minMaxResult.getOptimalMoves().size());
 
@@ -104,7 +105,7 @@ class MinMaxServiceTest extends AbstractGomokuTest {
 
 		gameDto.getMoves().add(newMove);
 		
-		minMaxResult = minMaxService.computeMinMax(TEST_GAME_ID, GameData.of(gameDto), 3, 0);
+		minMaxResult = minMaxService.computeMinMax(GameData.of(gameDto), new MinMaxContext(TEST_GAME_ID, 3, 0, false));
 
 		assertEquals(3, minMaxResult.getOptimalMoves().size());
 
@@ -118,7 +119,7 @@ class MinMaxServiceTest extends AbstractGomokuTest {
 
 		gameDto.getMoves().add(newMove);
 
-		minMaxResult = minMaxService.computeMinMax(TEST_GAME_ID, GameData.of(gameDto), 2, 0);
+		minMaxResult = minMaxService.computeMinMax(GameData.of(gameDto), new MinMaxContext(TEST_GAME_ID, 2, 0, false));
 
 		assertEquals(2, minMaxResult.getOptimalMoves().size());
 

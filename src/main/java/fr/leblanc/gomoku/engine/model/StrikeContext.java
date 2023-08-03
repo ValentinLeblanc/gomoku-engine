@@ -7,6 +7,14 @@ public class StrikeContext {
 	private int minMaxDepth;
 	private int strikeTimeout;
 	
+	public StrikeContext(Long gameId, int strikeDepth, int minMaxDepth, int strikeTimeout) {
+		super();
+		this.gameId = gameId;
+		this.strikeDepth = strikeDepth;
+		this.minMaxDepth = minMaxDepth;
+		this.strikeTimeout = strikeTimeout;
+	}
+
 	public Long getGameId() {
 		return gameId;
 	}

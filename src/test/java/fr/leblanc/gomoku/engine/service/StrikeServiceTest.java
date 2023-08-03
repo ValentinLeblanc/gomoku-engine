@@ -1,6 +1,7 @@
 package fr.leblanc.gomoku.engine.service;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,8 +13,6 @@ import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.EngineConstants;
 import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.StrikeContext;
-import fr.leblanc.gomoku.engine.model.StrikeResult;
-import fr.leblanc.gomoku.engine.model.StrikeResult.StrikeType;
 import fr.leblanc.gomoku.engine.util.GomokuTestsHelper;
 
 @SpringBootTest
@@ -43,74 +42,55 @@ class StrikeServiceTest extends AbstractGomokuTest {
 		dataWrapper.addMove(new Cell(8, 3), EngineConstants.BLACK_COLOR);
 		dataWrapper.addMove(new Cell(8, 5), EngineConstants.WHITE_COLOR);
 
-		StrikeContext strikeContext = new StrikeContext();
-		strikeContext.setStrikeDepth(2);
-		strikeContext.setMinMaxDepth(2);
-		strikeContext.setStrikeTimeout(-1);
+		StrikeContext strikeContext = new StrikeContext(TEST_GAME_ID, 2, 2, -1);
 
-		StrikeResult strikeResult = strikeService.processStrike(dataWrapper, EngineConstants.BLACK_COLOR,
-				strikeContext);
-		assertEquals(StrikeType.DIRECT_STRIKE, strikeResult.getStrikeType());
-		assertEquals(new Cell(10, 4), strikeResult.getResultCell());
+		Cell strikeResult = strikeService.directStrike(dataWrapper, EngineConstants.BLACK_COLOR, strikeContext);
+		assertEquals(new Cell(10, 4), strikeResult);
 		dataWrapper.addMove(new Cell(10, 4), EngineConstants.BLACK_COLOR);
 
-		strikeResult = strikeService.processStrike(dataWrapper, EngineConstants.WHITE_COLOR, strikeContext);
-		assertEquals(StrikeType.DEFEND_STRIKE, strikeResult.getStrikeType());
-		assertEquals(new Cell(11, 3), strikeResult.getResultCell());
+		strikeResult = strikeService.defendFromDirectStrike(dataWrapper, EngineConstants.WHITE_COLOR, strikeContext, true).get(0);
+		assertEquals(new Cell(11, 3), strikeResult);
 		dataWrapper.addMove(new Cell(11, 3), EngineConstants.WHITE_COLOR);
 
-		strikeResult = strikeService.processStrike(dataWrapper, EngineConstants.BLACK_COLOR, strikeContext);
-		assertEquals(StrikeType.DIRECT_STRIKE, strikeResult.getStrikeType());
-		assertEquals(new Cell(10, 6), strikeResult.getResultCell());
+		strikeResult = strikeService.directStrike(dataWrapper, EngineConstants.BLACK_COLOR, strikeContext);
+		assertEquals(new Cell(10, 6), strikeResult);
 		dataWrapper.addMove(new Cell(10, 6), EngineConstants.BLACK_COLOR);
 
-		strikeResult = strikeService.processStrike(dataWrapper, EngineConstants.WHITE_COLOR, strikeContext);
-		assertEquals(StrikeType.DEFEND_STRIKE, strikeResult.getStrikeType());
-		assertEquals(new Cell(10, 3), strikeResult.getResultCell());
+		strikeResult = strikeService.defendFromDirectStrike(dataWrapper, EngineConstants.WHITE_COLOR, strikeContext, true).get(0);
+		assertEquals(new Cell(10, 3), strikeResult);
 		dataWrapper.addMove(new Cell(10, 3), EngineConstants.WHITE_COLOR);
 
-		strikeResult = strikeService.processStrike(dataWrapper, EngineConstants.BLACK_COLOR, strikeContext);
-		assertEquals(StrikeType.DIRECT_STRIKE, strikeResult.getStrikeType());
-		assertEquals(new Cell(11, 6), strikeResult.getResultCell());
+		strikeResult = strikeService.directStrike(dataWrapper, EngineConstants.BLACK_COLOR, strikeContext);
+		assertEquals(new Cell(11, 6), strikeResult);
 		dataWrapper.addMove(new Cell(11, 6), EngineConstants.BLACK_COLOR);
 
-		strikeResult = strikeService.processStrike(dataWrapper, EngineConstants.WHITE_COLOR, strikeContext);
-		assertEquals(StrikeType.DEFEND_STRIKE, strikeResult.getStrikeType());
+		strikeResult = strikeService.directStrike(dataWrapper, EngineConstants.WHITE_COLOR, strikeContext);
 		dataWrapper.addMove(new Cell(12, 6), EngineConstants.WHITE_COLOR);
 	}
 
 	@Test
 	void secondaryStrikeTest() throws JsonProcessingException, InterruptedException {
 
-		StrikeContext strikeContext = new StrikeContext();
-		strikeContext.setStrikeDepth(2);
-		strikeContext.setMinMaxDepth(2);
-		strikeContext.setStrikeTimeout(-1);
+		StrikeContext strikeContext = new StrikeContext(TEST_GAME_ID, 2, 2, -1);
 
-		StrikeResult strikeResult = strikeService.processStrike(
-				GameData.of(GomokuTestsHelper.readGameDto("secondaryStrike1.json")), EngineConstants.BLACK_COLOR,
+		Cell strikeResult = strikeService.secondaryStrike(GameData.of(GomokuTestsHelper.readGameDto("secondaryStrike1.json")), EngineConstants.BLACK_COLOR,
 				strikeContext);
 
-		assertEquals(StrikeType.SECONDARY_STRIKE, strikeResult.getStrikeType());
-		assertEquals(new Cell(9, 6), strikeResult.getResultCell());
+		assertEquals(new Cell(9, 6), strikeResult);
 
 		strikeContext.setStrikeDepth(1);
-		strikeResult = strikeService.processStrike(GameData.of(GomokuTestsHelper.readGameDto("secondaryStrike2.json")),
+		strikeResult = strikeService.secondaryStrike(GameData.of(GomokuTestsHelper.readGameDto("secondaryStrike2.json")),
 				EngineConstants.BLACK_COLOR, strikeContext);
-
-		assertEquals(StrikeType.DEFEND_STRIKE, strikeResult.getStrikeType());
 
 		strikeContext.setStrikeDepth(4);
-		strikeResult = strikeService.processStrike(GameData.of(GomokuTestsHelper.readGameDto("secondaryStrike3.json")),
+		strikeResult = strikeService.secondaryStrike(GameData.of(GomokuTestsHelper.readGameDto("secondaryStrike3.json")),
 				EngineConstants.WHITE_COLOR, strikeContext);
 
-		assertEquals(StrikeType.SECONDARY_STRIKE, strikeResult.getStrikeType());
-
 		strikeContext.setStrikeDepth(1);
-		strikeResult = strikeService.processStrike(GameData.of(GomokuTestsHelper.readGameDto("secondaryStrike4.json")),
+		strikeResult = strikeService.secondaryStrike(GameData.of(GomokuTestsHelper.readGameDto("secondaryStrike4.json")),
 				EngineConstants.BLACK_COLOR, strikeContext);
 
-		assertEquals(StrikeType.EMPTY_STRIKE, strikeResult.getStrikeType());
+		assertNull(strikeResult);
 
 	}
 }
