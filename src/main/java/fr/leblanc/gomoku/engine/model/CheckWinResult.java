@@ -30,7 +30,7 @@ public class CheckWinResult {
 	}
 	
 	public boolean isWin() {
-		return color != EngineConstants.NONE_COLOR;
+		return color != GomokuColor.NONE_COLOR;
 	}
 
 	private Set<MoveDTO> winMoves = new HashSet<>();

@@ -25,7 +25,7 @@ public class GameData {
 
 		for (int rowIndex = 0; rowIndex < boardSize; rowIndex++) {
 			for (int columnIndex = 0; columnIndex < boardSize; columnIndex++) {
-				data[columnIndex][rowIndex] = EngineConstants.NONE_COLOR;
+				data[columnIndex][rowIndex] = GomokuColor.NONE_COLOR;
 			}
 		}
 	}
@@ -50,7 +50,7 @@ public class GameData {
 
 		for (int rowIndex = 0; rowIndex < boardSize; rowIndex++) {
 			for (int columnIndex = 0; columnIndex < boardSize; columnIndex++) {
-				data[columnIndex][rowIndex] = EngineConstants.NONE_COLOR;
+				data[columnIndex][rowIndex] = GomokuColor.NONE_COLOR;
 			}
 		}
 
@@ -71,13 +71,13 @@ public class GameData {
 		
 		for (int i = 0; i < data[0].length; i++) {
 			for (int j = 0; j < data.length; j++) {
-				if (data[j][i] != EngineConstants.NONE_COLOR) {
+				if (data[j][i] != GomokuColor.NONE_COLOR) {
 					moveCount++;
 				}
 			}
 		}
 		
-		return moveCount % 2 == 0 ? EngineConstants.BLACK_COLOR : EngineConstants.WHITE_COLOR;
+		return moveCount % 2 == 0 ? GomokuColor.BLACK_COLOR : GomokuColor.WHITE_COLOR;
 	}
 	
 	public static int countEmptyCells(GameData dataWrapper) {
@@ -85,7 +85,7 @@ public class GameData {
 		
 		for (int i = 0; i < dataWrapper.getData().length; i++) {
 			for (int j = 0; j < dataWrapper.getData().length; j++) {
-				if (dataWrapper.getData()[i][j] == EngineConstants.NONE_COLOR) {
+				if (dataWrapper.getData()[i][j] == GomokuColor.NONE_COLOR) {
 					emptyCellsCount++;
 				}
 			}
@@ -98,7 +98,7 @@ public class GameData {
 		
 		for (int i = 0; i < dataWrapper.getData().length; i++) {
 			for (int j = 0; j < dataWrapper.getData().length; j++) {
-				if (dataWrapper.getData()[i][j] != EngineConstants.NONE_COLOR) {
+				if (dataWrapper.getData()[i][j] != GomokuColor.NONE_COLOR) {
 					plainCellsCount++;
 				}
 			}

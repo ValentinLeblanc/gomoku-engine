@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import fr.leblanc.gomoku.engine.model.Cell;
-import fr.leblanc.gomoku.engine.model.EngineConstants;
+import fr.leblanc.gomoku.engine.model.GomokuColor;
 import fr.leblanc.gomoku.engine.model.EvaluationResult;
 import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.MinMaxResult;
@@ -22,16 +22,16 @@ public class GomokuCache {
 	private Map<Integer, Map<GameData, MinMaxResult>> minMaxCache = new HashMap<>();
 
 	public GomokuCache() {
-		directStrikeCache.put(EngineConstants.BLACK_COLOR, new HashMap<>());
-		directStrikeCache.put(EngineConstants.WHITE_COLOR, new HashMap<>());
-		secondaryStrikeCache.put(EngineConstants.BLACK_COLOR, new HashMap<>());
-		secondaryStrikeCache.put(EngineConstants.WHITE_COLOR, new HashMap<>());
-		counterStrikeCache.put(EngineConstants.BLACK_COLOR, new HashMap<>());
-		counterStrikeCache.put(EngineConstants.WHITE_COLOR, new HashMap<>());
-		evaluationCache.put(EngineConstants.BLACK_COLOR, new HashMap<>());
-		evaluationCache.put(EngineConstants.WHITE_COLOR, new HashMap<>());
-		minMaxCache.put(EngineConstants.BLACK_COLOR, new HashMap<>());
-		minMaxCache.put(EngineConstants.WHITE_COLOR, new HashMap<>());
+		directStrikeCache.put(GomokuColor.BLACK_COLOR, new HashMap<>());
+		directStrikeCache.put(GomokuColor.WHITE_COLOR, new HashMap<>());
+		secondaryStrikeCache.put(GomokuColor.BLACK_COLOR, new HashMap<>());
+		secondaryStrikeCache.put(GomokuColor.WHITE_COLOR, new HashMap<>());
+		counterStrikeCache.put(GomokuColor.BLACK_COLOR, new HashMap<>());
+		counterStrikeCache.put(GomokuColor.WHITE_COLOR, new HashMap<>());
+		evaluationCache.put(GomokuColor.BLACK_COLOR, new HashMap<>());
+		evaluationCache.put(GomokuColor.WHITE_COLOR, new HashMap<>());
+		minMaxCache.put(GomokuColor.BLACK_COLOR, new HashMap<>());
+		minMaxCache.put(GomokuColor.WHITE_COLOR, new HashMap<>());
 	}
 	
 	public Map<Integer, Map<GameData, Optional<Cell>>> getDirectStrikeCache() {

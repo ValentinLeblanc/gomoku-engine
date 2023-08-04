@@ -23,7 +23,8 @@ import org.springframework.util.StopWatch;
 
 import fr.leblanc.gomoku.engine.exception.ComputationStoppedException;
 import fr.leblanc.gomoku.engine.model.Cell;
-import fr.leblanc.gomoku.engine.model.EngineConstants;
+import fr.leblanc.gomoku.engine.model.GomokuColor;
+import fr.leblanc.gomoku.engine.model.EvaluationContext;
 import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.MinMaxContext;
 import fr.leblanc.gomoku.engine.model.MinMaxResult;
@@ -87,7 +88,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			context.setOptimumCellReference(new AtomicReference<>());
 
 			if (analyzedCells == null) {
-				analyzedCells = threatContextService.buildAnalyzedCells(gameData, context.getPlayingColor(), false);
+				analyzedCells = threatContextService.buildAnalyzedCells(gameData, context.getPlayingColor());
 			}
 			
 			int emptyCellsCount = GameData.countEmptyCells(gameData);
@@ -135,7 +136,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			}
 			if (computationService.isDisplayAnalysis(context.getGameId())) {
 				if (context.getOptimumCellReference().get() != null) {
-					webSocketService.sendMessage(EngineMessageType.ANALYSIS_MOVE, context.getGameId(), new MoveDTO(context.getOptimumCellReference().get(), EngineConstants.NONE_COLOR));
+					webSocketService.sendMessage(EngineMessageType.ANALYSIS_MOVE, context.getGameId(), new MoveDTO(context.getOptimumCellReference().get(), GomokuColor.NONE_COLOR));
 				}
 			}
 		}
@@ -256,15 +257,15 @@ public class MinMaxServiceImpl implements MinMaxService {
 				if (logger.isInfoEnabled()) {
 					logger.info("used strike service for minMax");			
 				}
-				currentEvaluation = EngineConstants.THREAT_5_POTENTIAL;
+				currentEvaluation = EvaluationService.THREAT_5_POTENTIAL;
 			} else {
 				gameData.addMove(analysedMove, playingColor);
 				context.getCurrentMoves().add(analysedMove);
 				
 				if (currentDepth == context.getMaxDepth() - 1) {
-					currentEvaluation = evaluationService.computeEvaluation(context.getGameId(), gameData).getEvaluation();
+					currentEvaluation = evaluationService.computeEvaluation(context.getGameId(), new EvaluationContext(gameData).internal().useStrikeService()).getEvaluation();
 				} else {
-					List<Cell> subAnalyzedMoves = threatContextService.buildAnalyzedCells(gameData, -playingColor, false);
+					List<Cell> subAnalyzedMoves = threatContextService.buildAnalyzedCells(gameData, -playingColor);
 					subResult = recursiveMinMax(gameData, -playingColor, subAnalyzedMoves, !findMax, currentDepth + 1, context);
 					currentEvaluation = subResult.getEvaluation();
 				}
@@ -298,7 +299,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 					result.getOptimalMoves().put(currentDepth, analysedMove);
 					if (computationService.isDisplayAnalysis(context.getGameId())) {
 						if (context.getOptimumCellReference().get() != null) {
-							webSocketService.sendMessage(EngineMessageType.ANALYSIS_MOVE, context.getGameId(), new MoveDTO(context.getOptimumCellReference().get(), EngineConstants.NONE_COLOR));
+							webSocketService.sendMessage(EngineMessageType.ANALYSIS_MOVE, context.getGameId(), new MoveDTO(context.getOptimumCellReference().get(), GomokuColor.NONE_COLOR));
 						}
 						context.getOptimumCellReference().set(analysedMove);
 						webSocketService.sendMessage(EngineMessageType.ANALYSIS_MOVE, context.getGameId(), new MoveDTO(analysedMove, playingColor));

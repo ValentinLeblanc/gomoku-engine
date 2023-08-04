@@ -11,7 +11,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import fr.leblanc.gomoku.engine.model.Cell;
-import fr.leblanc.gomoku.engine.model.EngineConstants;
+import fr.leblanc.gomoku.engine.model.GomokuColor;
+import fr.leblanc.gomoku.engine.model.EvaluationContext;
 import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.MinMaxContext;
 import fr.leblanc.gomoku.engine.model.MinMaxResult;
@@ -32,7 +33,7 @@ class MinMaxServiceTest extends AbstractGomokuTest {
 	void testMinMaxExtent() throws InterruptedException {
 		GameDTO gameDto = new GameDTO();
 		gameDto.setBoardSize(15);
-		gameDto.getMoves().add(new MoveDTO(7, 7, EngineConstants.BLACK_COLOR));
+		gameDto.getMoves().add(new MoveDTO(7, 7, GomokuColor.BLACK_COLOR));
 		
 		MinMaxResult minMaxResult = minMaxService.computeMinMax(GameData.of(gameDto), new MinMaxContext(TEST_GAME_ID, 2, 2));
 		
@@ -45,7 +46,7 @@ class MinMaxServiceTest extends AbstractGomokuTest {
 
 		GameDTO gameDto = GomokuTestsHelper.readGameDto("minMax1.json");
 
-		int playingColor = EngineConstants.WHITE_COLOR;
+		int playingColor = GomokuColor.WHITE_COLOR;
 
 		int i = 0;
 
@@ -80,7 +81,7 @@ class MinMaxServiceTest extends AbstractGomokuTest {
 			color = -color;
 		}
 
-		assertEquals(evaluation, evaluationService.computeEvaluation(TEST_GAME_ID, GameData.of(gameDto)).getEvaluation(), 0.0001);
+		assertEquals(evaluation, evaluationService.computeEvaluation(TEST_GAME_ID, new EvaluationContext(GameData.of(gameDto)).internal()).getEvaluation(), 0.0001);
 	
 	}
 
@@ -89,7 +90,7 @@ class MinMaxServiceTest extends AbstractGomokuTest {
 
 		GameDTO gameDto = GomokuTestsHelper.readGameDto("minMax2.json");
 
-		int playingColor = EngineConstants.WHITE_COLOR;
+		int playingColor = GomokuColor.WHITE_COLOR;
 		
 		MinMaxResult minMaxResult = minMaxService.computeMinMax(GameData.of(gameDto), new MinMaxContext(TEST_GAME_ID, 4, 0, false));
 

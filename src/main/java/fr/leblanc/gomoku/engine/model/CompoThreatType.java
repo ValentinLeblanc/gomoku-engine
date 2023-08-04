@@ -3,6 +3,8 @@ package fr.leblanc.gomoku.engine.model;
 import java.util.List;
 import java.util.Objects;
 
+import fr.leblanc.gomoku.engine.service.EvaluationService;
+
 public class CompoThreatType {
 
 	public static final List<CompoThreatType> COMPO_THREAT_TYPES = List.of(
@@ -23,7 +25,11 @@ public class CompoThreatType {
 			CompoThreatType.of(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2, false),
 			CompoThreatType.of(ThreatType.DOUBLE_THREAT_3, ThreatType.THREAT_3, false),
 			CompoThreatType.of(ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2, true),
-			CompoThreatType.of(ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2, false));
+			CompoThreatType.of(ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2, false),
+			CompoThreatType.of(ThreatType.DOUBLE_THREAT_3, null, true),
+			CompoThreatType.of(ThreatType.DOUBLE_THREAT_3, null, false),
+			CompoThreatType.of(ThreatType.THREAT_4, null, true),
+			CompoThreatType.of(ThreatType.THREAT_4, null, false));
 	
 	private ThreatType threatType1;
 	private ThreatType threatType2;
@@ -52,7 +58,9 @@ public class CompoThreatType {
 				|| ThreatType.DOUBLE_THREAT_3.equals(threatType1) && ThreatType.DOUBLE_THREAT_2.equals(threatType2)
 				|| ThreatType.DOUBLE_THREAT_3.equals(threatType1) && ThreatType.THREAT_3.equals(threatType2)) {
 			level = 2;
-		} else if (ThreatType.DOUBLE_THREAT_2.equals(threatType1) && ThreatType.DOUBLE_THREAT_2.equals(threatType2)) {
+		} else if (ThreatType.DOUBLE_THREAT_2.equals(threatType1) && ThreatType.DOUBLE_THREAT_2.equals(threatType2)
+				|| ThreatType.THREAT_4.equals(threatType1) && threatType2 == null
+				|| ThreatType.DOUBLE_THREAT_3.equals(threatType1) && threatType2 == null) {
 			level = 3;
 		}
 	}
@@ -92,44 +100,48 @@ public class CompoThreatType {
 
 	private int getRawPotential() {
 		if (ThreatType.THREAT_5.equals(threatType1)) {
-			return EngineConstants.THREAT_5_POTENTIAL;
+			return EvaluationService.THREAT_5_POTENTIAL;
 		}
 
 		if (ThreatType.DOUBLE_THREAT_4.equals(threatType1)) {
-			return EngineConstants.DOUBLE_THREAT_4_POTENTIAL;
+			return EvaluationService.DOUBLE_THREAT_4_POTENTIAL;
 		}
 
 		if (ThreatType.THREAT_4.equals(threatType1)) {
 			if (ThreatType.THREAT_4.equals(threatType2)) {
-				return EngineConstants.DOUBLE_THREAT_4_POTENTIAL;
+				return EvaluationService.DOUBLE_THREAT_4_POTENTIAL;
 			}
 			if (ThreatType.DOUBLE_THREAT_3.equals(threatType2)) {
-				return EngineConstants.THREAT_4_DOUBLE_THREAT_3_POTENTIAL;
+				return EvaluationService.THREAT_4_DOUBLE_THREAT_3_POTENTIAL;
 			}
 			if (ThreatType.DOUBLE_THREAT_2.equals(threatType2)) {
-				return EngineConstants.THREAT_4_DOUBLE_THREAT_2_POTENTIAL;
+				return EvaluationService.THREAT_4_DOUBLE_THREAT_2_POTENTIAL;
 			}
-
+			if (threatType2 == null) {
+				return EvaluationService.THREAT_4_POTENTIAL;
+			}
 		}
 
 		if (ThreatType.DOUBLE_THREAT_3.equals(threatType1)) {
 			if (ThreatType.DOUBLE_THREAT_3.equals(threatType2)) {
-				return EngineConstants.DOUBLE_THREAT_3_DOUBLE_THREAT_3_POTENTIAL;
+				return EvaluationService.DOUBLE_THREAT_3_DOUBLE_THREAT_3_POTENTIAL;
 			}
 			if (ThreatType.DOUBLE_THREAT_2.equals(threatType2)) {
-				return EngineConstants.DOUBLE_THREAT_3_DOUBLE_THREAT_2_POTENTIAL;
+				return EvaluationService.DOUBLE_THREAT_3_DOUBLE_THREAT_2_POTENTIAL;
 			}
 			if (ThreatType.THREAT_3.equals(threatType2)) {
-				return EngineConstants.DOUBLE_THREAT_3_THREAT_3_POTENTIAL;
+				return EvaluationService.DOUBLE_THREAT_3_THREAT_3_POTENTIAL;
 			}
-
+			if (threatType2 == null) {
+				return EvaluationService.DOUBLE_THREAT_3_POTENTIAL;
+			}
 		}
 		if (ThreatType.DOUBLE_THREAT_2.equals(threatType1)) {
 			if (ThreatType.DOUBLE_THREAT_2.equals(threatType2)) {
-				return EngineConstants.DOUBLE_THREAT_2_DOUBLE_THREAT_2_POTENTIAL;
+				return EvaluationService.DOUBLE_THREAT_2_DOUBLE_THREAT_2_POTENTIAL;
 			}
 		}
-
+		
 		return 0;
 	}
 

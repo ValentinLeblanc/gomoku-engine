@@ -3,17 +3,22 @@ package fr.leblanc.gomoku.engine.service.impl;
 import org.springframework.stereotype.Service;
 
 import fr.leblanc.gomoku.engine.model.CheckWinResult;
-import fr.leblanc.gomoku.engine.model.EngineConstants;
+import fr.leblanc.gomoku.engine.model.GomokuColor;
 import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.service.CheckWinService;
 
 @Service
 public class CheckWinServiceImpl implements CheckWinService {
+	
+	private static final int[][] VECTORS = { {0, 1}, {1, 0}, {1, 1}, {-1, 1} };
+	
+	private static final int[] COLORS = { GomokuColor.BLACK_COLOR, GomokuColor.WHITE_COLOR };
+
 
 	@Override
 	public CheckWinResult checkWin(GameData dataWrapper) {
-		CheckWinResult checkWinResult = new CheckWinResult(EngineConstants.NONE_COLOR);
-		for (int color : EngineConstants.COLORS) {
+		CheckWinResult checkWinResult = new CheckWinResult(GomokuColor.NONE_COLOR);
+		for (int color : COLORS) {
 			int[][] result = new int[5][2];
 			if (checkWin(dataWrapper, color, result)) {
 				return checkWinResult.build(result, color);
@@ -30,7 +35,7 @@ public class CheckWinServiceImpl implements CheckWinService {
 			for (int j = 0; j < data.length; j++) {
 				if (data[j][i] == color) {
 
-					for (int[] vector : EngineConstants.VECTORS) {
+					for (int[] vector : VECTORS) {
 						if (checkWin(data, i, j, color, vector, result)) {
 							return true;
 						}

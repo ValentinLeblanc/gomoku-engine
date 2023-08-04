@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
 
 import fr.leblanc.gomoku.engine.model.Cell;
-import fr.leblanc.gomoku.engine.model.EngineConstants;
+import fr.leblanc.gomoku.engine.model.GomokuColor;
 import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.MinMaxContext;
 import fr.leblanc.gomoku.engine.model.MinMaxResult;
@@ -165,7 +165,7 @@ public class EngineServiceImpl implements EngineService {
 				i++;
 				int randomX = random.nextInt(gameData.getData().length);
 				int randomY = random.nextInt(gameData.getData().length);
-				if (gameData.getValue(randomX, randomY) == EngineConstants.NONE_COLOR) {
+				if (gameData.getValue(randomX, randomY) == GomokuColor.NONE_COLOR) {
 					return new Cell(randomX, randomY);
 				}
 			}

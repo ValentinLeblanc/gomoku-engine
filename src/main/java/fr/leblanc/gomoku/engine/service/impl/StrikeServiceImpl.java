@@ -198,7 +198,7 @@ public class StrikeServiceImpl implements StrikeService {
 			return defendingMoves;
 		}
 		
-		List<Cell> analysedMoves =  threatContextService.buildAnalyzedCells(dataWrapper, playingColor, true);
+		List<Cell> analysedMoves =  threatContextService.buildAnalyzedCells(dataWrapper, playingColor);
 		
 		for (Cell analysedMove : analysedMoves) {
 			

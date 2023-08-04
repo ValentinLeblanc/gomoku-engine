@@ -4,15 +4,15 @@ import java.util.Objects;
 
 public class EvaluationContext {
 	
-	private GameData dataWrapper;
+	private GameData gameData;
 
 	private int playingColor;
 	private boolean internal = false;
 	private boolean useStrikeService = false;
 	
-	public EvaluationContext(GameData dataWrapper) {
+	public EvaluationContext(GameData gameData) {
 		super();
-		this.dataWrapper = dataWrapper;
+		this.gameData = gameData;
 	}
 	
 	public EvaluationContext internal() {
@@ -45,8 +45,8 @@ public class EvaluationContext {
 		this.internal = logEnabled;
 	}
 
-	public GameData getDataWrapper() {
-		return dataWrapper;
+	public GameData getGameData() {
+		return gameData;
 	}
 
 	public void reversePlayingColor() {
@@ -55,7 +55,7 @@ public class EvaluationContext {
 	
 	@Override
 	public int hashCode() {
-		return Objects.hash(dataWrapper, internal, playingColor);
+		return Objects.hash(gameData, internal, playingColor);
 	}
 
 	@Override
@@ -67,13 +67,13 @@ public class EvaluationContext {
 		if (getClass() != obj.getClass())
 			return false;
 		EvaluationContext other = (EvaluationContext) obj;
-		return Objects.equals(dataWrapper, other.dataWrapper) && internal == other.internal
+		return Objects.equals(gameData, other.gameData) && internal == other.internal
 				&& playingColor == other.playingColor;
 	}
 
 	@Override
 	public String toString() {
-		return "EvaluationContext [dataWrapper=" + dataWrapper + ", playingColor=" + playingColor + ", external=" + internal + "]";
+		return "EvaluationContext [dataWrapper=" + gameData + ", playingColor=" + playingColor + ", external=" + internal + "]";
 	}
 	
 }

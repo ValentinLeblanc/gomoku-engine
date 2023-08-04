@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.CheckWinResult;
-import fr.leblanc.gomoku.engine.model.EngineConstants;
+import fr.leblanc.gomoku.engine.model.GomokuColor;
 import fr.leblanc.gomoku.engine.model.EvaluationContext;
 import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.messaging.EngineMessageType;
@@ -86,9 +86,9 @@ public class EngineController {
 		GameData gameData = GameData.of(gameDTO);
 		int playingColor = GameData.extractPlayingColor(gameData);
 		
-		if (playingColor == EngineConstants.BLACK_COLOR) {
+		if (playingColor == GomokuColor.BLACK_COLOR) {
 			return evaluationService.computeEvaluation(gameDTO.getId(), new EvaluationContext(gameData).useStrikeService()).getEvaluation();
-		} else if (playingColor == EngineConstants.WHITE_COLOR) {
+		} else if (playingColor == GomokuColor.WHITE_COLOR) {
 			return -evaluationService.computeEvaluation(gameDTO.getId(), new EvaluationContext(gameData).useStrikeService()).getEvaluation();
 		}
 		
