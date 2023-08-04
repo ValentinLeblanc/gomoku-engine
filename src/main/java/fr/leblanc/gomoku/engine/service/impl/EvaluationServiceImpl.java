@@ -109,7 +109,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 		
 		initializeMaps(playingThreatContext, opponentThreatContext, compositeThreatMap, validatedThreatMap, pendingThreatMap);
 		
-		for (CompoThreatType compoThreatType : EngineConstants.COMPO_THREAT_TYPES) {
+		for (CompoThreatType compoThreatType : CompoThreatType.COMPO_THREAT_TYPES) {
 			
 			double threatTypeEvaluation = 0;
 			
@@ -139,7 +139,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 			Map<CompoThreatType, List<Pair<Threat, Threat>>> compositeThreatMap,
 			Map<CompoThreatType, List<Pair<Threat, Threat>>> validatedThreatMap,
 			Map<CompoThreatType, List<Pair<Threat, Threat>>> pendingThreatMap) {
-		for (CompoThreatType tryContext : EngineConstants.COMPO_THREAT_TYPES) {
+		for (CompoThreatType tryContext : CompoThreatType.COMPO_THREAT_TYPES) {
 			
 			if (tryContext.isPlaying()) {
 				compositeThreatMap.put(tryContext, threatContextService.findCompositeThreats(playingThreatContext, tryContext));

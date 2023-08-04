@@ -11,8 +11,8 @@ import fr.leblanc.gomoku.engine.service.WebSocketService;
 @Service
 public class WebSocketServiceImpl implements WebSocketService {
 
-	 @Autowired
-    private SimpMessagingTemplate template;
+	@Autowired
+	private SimpMessagingTemplate template;
 
 	@Override
 	public void sendMessage(EngineMessageType type, Long gameId, Object content) {
@@ -22,5 +22,5 @@ public class WebSocketServiceImpl implements WebSocketService {
 		webSocketMessage.setContent(content);
 		template.convertAndSend("/engine/public", webSocketMessage);
 	}
-	
+
 }

@@ -84,6 +84,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			int maxDepth = context.getMaxDepth();
 			context.setPlayingColor(GameData.extractPlayingColor(gameData));
 			context.setFindMax(maxDepth % 2 == 0);
+			context.setOptimumCellReference(new AtomicReference<>());
 
 			if (analyzedCells == null) {
 				analyzedCells = threatContextService.buildAnalyzedCells(gameData, context.getPlayingColor(), false);
@@ -131,6 +132,11 @@ public class MinMaxServiceImpl implements MinMaxService {
 			if (logger.isInfoEnabled()) {
 				logger.info(String.format("minMax elpased time : %d ms", stopWatch.getTotalTimeMillis()));
 				logger.info(String.format("result = %s", result));
+			}
+			if (computationService.isDisplayAnalysis(context.getGameId())) {
+				if (context.getOptimumCellReference().get() != null) {
+					webSocketService.sendMessage(EngineMessageType.ANALYSIS_MOVE, context.getGameId(), new MoveDTO(context.getOptimumCellReference().get(), EngineConstants.NONE_COLOR));
+				}
 			}
 		}
 		return result;
@@ -254,9 +260,6 @@ public class MinMaxServiceImpl implements MinMaxService {
 			} else {
 				gameData.addMove(analysedMove, playingColor);
 				context.getCurrentMoves().add(analysedMove);
-				if (currentDepth <= 1) {
-					webSocketService.sendMessage(EngineMessageType.ANALYSIS_MOVE, context.getGameId(), new MoveDTO(analysedMove, playingColor));
-				}
 				
 				if (currentDepth == context.getMaxDepth() - 1) {
 					currentEvaluation = evaluationService.computeEvaluation(context.getGameId(), gameData).getEvaluation();
@@ -269,9 +272,6 @@ public class MinMaxServiceImpl implements MinMaxService {
 				gameData.removeMove(analysedMove);
 				context.getCurrentMoves().remove(analysedMove);
 				
-				if (currentDepth <= 1) {
-					webSocketService.sendMessage(EngineMessageType.ANALYSIS_MOVE, context.getGameId(), new MoveDTO(analysedMove, EngineConstants.NONE_COLOR));
-				}
 			}
 			
 			int factor = findMax ? 1 : -1;
@@ -296,6 +296,13 @@ public class MinMaxServiceImpl implements MinMaxService {
 					}
 					optimumReference.set(optimalEvaluation);
 					result.getOptimalMoves().put(currentDepth, analysedMove);
+					if (computationService.isDisplayAnalysis(context.getGameId())) {
+						if (context.getOptimumCellReference().get() != null) {
+							webSocketService.sendMessage(EngineMessageType.ANALYSIS_MOVE, context.getGameId(), new MoveDTO(context.getOptimumCellReference().get(), EngineConstants.NONE_COLOR));
+						}
+						context.getOptimumCellReference().set(analysedMove);
+						webSocketService.sendMessage(EngineMessageType.ANALYSIS_MOVE, context.getGameId(), new MoveDTO(analysedMove, playingColor));
+					}
 					result.setFinalEvaluation(optimalEvaluation);
 				}
 				

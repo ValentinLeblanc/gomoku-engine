@@ -67,7 +67,7 @@ public class EngineController {
 			
 			GameData gameData = GameData.of(gameDTO);
 			GameSettings gameSettings = gameDTO.getSettings();
-			Cell computedMove = computationService.startGameComputation(gameDTO.getId(), () -> engineService.computeMove(gameDTO.getId(), gameData, gameSettings));
+			Cell computedMove = computationService.startGameComputation(gameDTO.getId(), gameSettings.isDisplayAnalysis(), () -> engineService.computeMove(gameDTO.getId(), gameData, gameSettings));
 			MoveDTO returnedMove = new MoveDTO(computedMove.getColumn(), computedMove.getRow(), GameData.extractPlayingColor(gameData));
 			
 			webSocketService.sendMessage(EngineMessageType.REFRESH_MOVE, gameDTO.getId(), returnedMove);

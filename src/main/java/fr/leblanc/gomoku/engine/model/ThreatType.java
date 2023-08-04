@@ -132,13 +132,16 @@ public enum ThreatType {
 		if (this == THREAT_4) {
 			return List.of(THREAT_5, DOUBLE_THREAT_4, THREAT_4);
 		}
+		if (this == THREAT_3) {
+			return List.of(THREAT_5, DOUBLE_THREAT_4, THREAT_4, DOUBLE_THREAT_3, DOUBLE_THREAT_2, THREAT_3);
+		}
 		
 		if (this == DOUBLE_THREAT_3) {
 			return List.of(THREAT_5, DOUBLE_THREAT_4, THREAT_4, DOUBLE_THREAT_3);
 		}
 		
 		if (this == DOUBLE_THREAT_2) {
-			return List.of(THREAT_5, DOUBLE_THREAT_4, THREAT_4, DOUBLE_THREAT_3, DOUBLE_THREAT_2);
+			return List.of(THREAT_5, DOUBLE_THREAT_4, THREAT_4, DOUBLE_THREAT_3, DOUBLE_THREAT_2, THREAT_3);
 		}
 		
 		throw new IllegalStateException("ThreatType not recognized : " + this);

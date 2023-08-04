@@ -160,6 +160,12 @@ public class ThreatContextServiceImpl implements ThreatContextService {
 								candidateMap.add(new Pair<>(threat1, threat2));
 							}
 						}
+					} else {
+						for (Threat threat2 : context.getThreatTypeToThreatMap().get(threatTryContext.getThreatType2())) {
+							if (!visitedThreats.contains(threat2) && !areAligned(threat1, threat2)) {
+								candidateMap.add(new Pair<>(threat1, threat2));
+							}
+						}
 					}
 				}
 			} else {

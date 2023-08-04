@@ -20,6 +20,7 @@ public class MinMaxContext {
 	private Map<Integer, Double> minList = new HashMap<>();
 	private Map<Integer, Double> maxList = new HashMap<>();
 	private AtomicReference<Double> optimumReference;
+	private AtomicReference<Cell> optimumCellReference;
 	private List<Cell> currentMoves = new ArrayList<>();
 	private boolean useStrikeService = true;
 	private int extent;
@@ -52,6 +53,15 @@ public class MinMaxContext {
 		this.playingColor = context.playingColor;
 		this.gameId = context.gameId;
 		this.useStrikeService = context.useStrikeService;
+		this.optimumCellReference = context.optimumCellReference;
+	}
+	
+	public AtomicReference<Cell> getOptimumCellReference() {
+		return optimumCellReference;
+	}
+	
+	public void setOptimumCellReference(AtomicReference<Cell> optimumCellReference) {
+		this.optimumCellReference = optimumCellReference;
 	}
 	
 	public int getExtent() {

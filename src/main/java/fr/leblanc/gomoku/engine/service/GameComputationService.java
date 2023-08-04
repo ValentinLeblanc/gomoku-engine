@@ -6,10 +6,12 @@ public interface GameComputationService {
 
 	boolean isGameComputing(Long gameId);
 
-	<T> T startGameComputation(Long gameId, TypedAction<T> action) throws InterruptedException;
-
 	void stopGameComputation(Long gameId);
 
 	boolean isGameComputationStopped(Long gameId);
+
+	<T> T startGameComputation(Long gameId, boolean displayAnalysis, TypedAction<T> action) throws InterruptedException;
+	
+	boolean isDisplayAnalysis(Long gameId);
 
 }

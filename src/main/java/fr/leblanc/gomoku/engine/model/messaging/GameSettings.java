@@ -1,12 +1,12 @@
 package fr.leblanc.gomoku.engine.model.messaging;
 
-import java.util.Objects;
-
 public class GameSettings {
 
 	private boolean strikeEnabled = true;
 	
 	private boolean minMaxEnabled = true;
+	
+	private boolean displayAnalysis = false;
 	
 	private int minMaxExtent = -1;
 	
@@ -15,6 +15,14 @@ public class GameSettings {
 	private int strikeDepth;
 	
 	private int strikeTimeout;
+	
+	public boolean isDisplayAnalysis() {
+		return displayAnalysis;
+	}
+	
+	public void setDisplayAnalysis(boolean displayAnalysis) {
+		this.displayAnalysis = displayAnalysis;
+	}
 
 	public boolean isStrikeEnabled() {
 		return strikeEnabled;
@@ -64,30 +72,4 @@ public class GameSettings {
 		this.strikeTimeout = strikeTimeout;
 	}
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(minMaxDepth, minMaxEnabled, minMaxExtent, strikeDepth, strikeEnabled, strikeTimeout);
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		GameSettings other = (GameSettings) obj;
-		return minMaxDepth == other.minMaxDepth && minMaxEnabled == other.minMaxEnabled
-				&& minMaxExtent == other.minMaxExtent && strikeDepth == other.strikeDepth
-				&& strikeEnabled == other.strikeEnabled && strikeTimeout == other.strikeTimeout;
-	}
-
-	@Override
-	public String toString() {
-		return "EngineSettingsDto [strikeEnabled=" + strikeEnabled + ", minMaxEnabled=" + minMaxEnabled
-				+ ", minMaxExtent=" + minMaxExtent + ", minMaxDepth=" + minMaxDepth + ", strikeDepth=" + strikeDepth
-				+ ", strikeTimeout=" + strikeTimeout + "]";
-	}
-	
 }
