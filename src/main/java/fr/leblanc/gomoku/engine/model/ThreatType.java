@@ -102,16 +102,16 @@ public enum ThreatType {
 			return List.of();
 		}
 		if (this == DOUBLE_THREAT_4) {
-			return List.of();
+			return List.of(THREAT_5);
 		}
 		if (this == THREAT_4) {
-			return List.of(THREAT_4);
+			return List.of(THREAT_5, THREAT_4);
 		}
-		if (this == DOUBLE_THREAT_3) {
+		if (this == DOUBLE_THREAT_3 || this == THREAT_3) {
 			return List.of(THREAT_5, THREAT_4, DOUBLE_THREAT_3);
 		}
-		if (this == DOUBLE_THREAT_2) {
-			return List.of(THREAT_5, THREAT_4, DOUBLE_THREAT_3);
+		if (this == DOUBLE_THREAT_2 || this == THREAT_2) {
+			return List.of(THREAT_5, THREAT_4, DOUBLE_THREAT_3, DOUBLE_THREAT_2);
 		}
 		return List.of();
 	}
@@ -120,17 +120,14 @@ public enum ThreatType {
 		if (this == THREAT_5) {
 			return List.of();
 		}
-		if (this == DOUBLE_THREAT_4) {
+		if (this == DOUBLE_THREAT_4 || this == THREAT_4) {
 			return List.of(THREAT_5);
 		}
-		if (this == THREAT_4) {
-			return List.of(THREAT_5);
+		if (this == DOUBLE_THREAT_3 || this == THREAT_3) {
+			return List.of(THREAT_5, DOUBLE_THREAT_4, THREAT_4);
 		}
-		if (this == DOUBLE_THREAT_3) {
-			return List.of(THREAT_5, DOUBLE_THREAT_4);
-		}
-		if (this == DOUBLE_THREAT_2) {
-			return List.of(THREAT_5, DOUBLE_THREAT_4, DOUBLE_THREAT_3);
+		if (this == DOUBLE_THREAT_2 || this == THREAT_2) {
+			return List.of(THREAT_5, DOUBLE_THREAT_4, THREAT_4, DOUBLE_THREAT_3);
 		}
 		return List.of();
 	}

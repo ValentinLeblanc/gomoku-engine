@@ -316,16 +316,17 @@ public class StrikeServiceImpl implements StrikeService {
 	}
 	
 	@Override
-	public boolean hasStrike(GameData gameData, int playingColor, Long cacheId, boolean cacheOnly) throws InterruptedException {
-		if (cacheService.isCacheEnabled()) {
-			try {
-				if (!cacheOnly && directStrike(gameData, playingColor, new StrikeContext(cacheId, -1, -1, -1)) != null) {
-					return true;
-				}
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				throw new InterruptedException();
+	public boolean hasPlayingStrike(GameData gameData, int playingColor, Long cacheId, boolean deepSearch) throws InterruptedException {
+		try {
+			if (deepSearch && directStrike(gameData, playingColor, new StrikeContext(cacheId, -1, -1, -1)) != null) {
+				return true;
 			}
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new InterruptedException();
+		}
+		
+		if (cacheService.isCacheEnabled()) {
 			Map<Integer, Map<GameData, Optional<Cell>>> directStrikeCache = cacheService.getDirectStrikeCache(cacheId);
 			if (directStrikeCache.containsKey(playingColor) && directStrikeCache.get(playingColor).containsKey(gameData)
 					&& directStrikeCache.get(playingColor).get(gameData).isPresent()) {
@@ -340,6 +341,29 @@ public class StrikeServiceImpl implements StrikeService {
 		return false;
 	}
 
+	@Override
+	public boolean hasPendingStrike(GameData gameData, int pendingColor, Long cacheId, boolean deepSearch) throws InterruptedException {
+		
+		int playingColor = -pendingColor;
+		
+		if (hasPlayingStrike(gameData, pendingColor, cacheId, deepSearch)) {
+			boolean hasDefense = false;
+			List<Cell> defendingMoves = defendFromDirectStrike(gameData, playingColor, new StrikeContext(cacheId, -1, -1, -1), false);
+			for (Cell defendingMove : defendingMoves) {
+				gameData.addMove(defendingMove, playingColor);
+				boolean hasPlayingStrike = hasPlayingStrike(gameData, pendingColor, cacheId, deepSearch);
+				gameData.removeMove(defendingMove);
+				if (!hasPlayingStrike) {
+					hasDefense = true;
+					break;
+				}
+			}
+			return !hasDefense;
+		}
+		
+		return false;
+	}
+	
 	private Cell executeSecondaryStrike(GameData dataWrapper, int playingColor, int depth, int maxDepth, StrikeContext strikeContext) throws InterruptedException {
 
 		if (computationService.isGameComputationStopped(strikeContext.getGameId())) {

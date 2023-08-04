@@ -24,12 +24,14 @@ public class CompoThreatType {
 			CompoThreatType.of(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3, false),
 			CompoThreatType.of(ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2, false),
 			CompoThreatType.of(ThreatType.DOUBLE_THREAT_3, ThreatType.THREAT_3, false),
-			CompoThreatType.of(ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2, true),
-			CompoThreatType.of(ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2, false),
 			CompoThreatType.of(ThreatType.DOUBLE_THREAT_3, null, true),
 			CompoThreatType.of(ThreatType.DOUBLE_THREAT_3, null, false),
 			CompoThreatType.of(ThreatType.THREAT_4, null, true),
-			CompoThreatType.of(ThreatType.THREAT_4, null, false));
+			CompoThreatType.of(ThreatType.THREAT_4, null, false),
+			CompoThreatType.of(ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2, true),
+			CompoThreatType.of(ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2, false),
+			CompoThreatType.of(ThreatType.THREAT_3, null, true),
+			CompoThreatType.of(ThreatType.THREAT_3, null, false));
 	
 	private ThreatType threatType1;
 	private ThreatType threatType2;
@@ -43,26 +45,31 @@ public class CompoThreatType {
 		this.threatType2 = threatType2;
 		this.isPlaying = isPlaying;
 		computePotential();
-		computeLevel();
+		level = computeLevel();
 	}
 
-	private void computeLevel() {
+	private int computeLevel() {
 		if (ThreatType.THREAT_5.equals(threatType1)) {
-			level = 0;
-		} else if (ThreatType.DOUBLE_THREAT_4.equals(threatType1)
+			return 0;
+		}
+		if (ThreatType.DOUBLE_THREAT_4.equals(threatType1)
 				|| ThreatType.THREAT_4.equals(threatType1) && ThreatType.THREAT_4.equals(threatType2)
 				|| ThreatType.THREAT_4.equals(threatType1) && ThreatType.DOUBLE_THREAT_3.equals(threatType2)) {
-			level = 1;
-		} else if (ThreatType.THREAT_4.equals(threatType1) && ThreatType.DOUBLE_THREAT_2.equals(threatType2)
+			return 1;
+		}
+		if (ThreatType.THREAT_4.equals(threatType1) && ThreatType.DOUBLE_THREAT_2.equals(threatType2)
 				|| ThreatType.DOUBLE_THREAT_3.equals(threatType1) && ThreatType.DOUBLE_THREAT_3.equals(threatType2)
 				|| ThreatType.DOUBLE_THREAT_3.equals(threatType1) && ThreatType.DOUBLE_THREAT_2.equals(threatType2)
 				|| ThreatType.DOUBLE_THREAT_3.equals(threatType1) && ThreatType.THREAT_3.equals(threatType2)) {
-			level = 2;
-		} else if (ThreatType.DOUBLE_THREAT_2.equals(threatType1) && ThreatType.DOUBLE_THREAT_2.equals(threatType2)
-				|| ThreatType.THREAT_4.equals(threatType1) && threatType2 == null
-				|| ThreatType.DOUBLE_THREAT_3.equals(threatType1) && threatType2 == null) {
-			level = 3;
+			return 2;
 		}
+		if (ThreatType.DOUBLE_THREAT_2.equals(threatType1) && ThreatType.DOUBLE_THREAT_2.equals(threatType2)
+				|| ThreatType.THREAT_4.equals(threatType1) && threatType2 == null
+				|| ThreatType.THREAT_3.equals(threatType1) && threatType2 == null
+				|| ThreatType.DOUBLE_THREAT_3.equals(threatType1) && threatType2 == null) {
+			return 3;
+		}
+		throw new IllegalStateException("CompoThreatType level not defined: " + this);
 	}
 
 	private void computePotential() {
@@ -136,13 +143,14 @@ public class CompoThreatType {
 				return EvaluationService.DOUBLE_THREAT_3_POTENTIAL;
 			}
 		}
-		if (ThreatType.DOUBLE_THREAT_2.equals(threatType1)) {
-			if (ThreatType.DOUBLE_THREAT_2.equals(threatType2)) {
-				return EvaluationService.DOUBLE_THREAT_2_DOUBLE_THREAT_2_POTENTIAL;
-			}
+		if (ThreatType.DOUBLE_THREAT_2.equals(threatType1) && ThreatType.DOUBLE_THREAT_2.equals(threatType2)) {
+			return EvaluationService.DOUBLE_THREAT_2_DOUBLE_THREAT_2_POTENTIAL;
+		}
+		if (ThreatType.THREAT_3.equals(threatType1) && threatType2 == null) {
+			return EvaluationService.THREAT_3_POTENTIAL;
 		}
 		
-		return 0;
+		throw new IllegalStateException("CompoThreatType potential not defined: " + this);
 	}
 
 	@Override

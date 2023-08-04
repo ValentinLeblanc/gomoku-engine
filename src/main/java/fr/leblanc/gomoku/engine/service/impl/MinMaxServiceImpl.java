@@ -253,11 +253,18 @@ public class MinMaxServiceImpl implements MinMaxService {
 			double currentEvaluation = 0;
 			MinMaxResult subResult = new MinMaxResult();
 			
-			if (context.isUseStrikeService() && currentDepth < context.getMaxDepth() - 1 && strikeService.hasStrike(gameData, playingColor, context.getGameId(), false)) {
+			boolean tryStrikeService = context.isUseStrikeService() && currentDepth < context.getMaxDepth() - 1;
+			
+			if (tryStrikeService && strikeService.hasPlayingStrike(gameData, playingColor, context.getGameId(), true)) {
 				if (logger.isInfoEnabled()) {
 					logger.info("used strike service for minMax");			
 				}
 				currentEvaluation = EvaluationService.THREAT_5_POTENTIAL;
+			} else if (tryStrikeService && strikeService.hasPendingStrike(gameData, -playingColor, context.getGameId(), true)) {
+				if (logger.isInfoEnabled()) {
+					logger.info("used strike service for minMax");			
+				}
+				currentEvaluation = -EvaluationService.THREAT_5_POTENTIAL;
 			} else {
 				gameData.addMove(analysedMove, playingColor);
 				context.getCurrentMoves().add(analysedMove);
@@ -269,10 +276,8 @@ public class MinMaxServiceImpl implements MinMaxService {
 					subResult = recursiveMinMax(gameData, -playingColor, subAnalyzedMoves, !findMax, currentDepth + 1, context);
 					currentEvaluation = subResult.getEvaluation();
 				}
-				
 				gameData.removeMove(analysedMove);
 				context.getCurrentMoves().remove(analysedMove);
-				
 			}
 			
 			int factor = findMax ? 1 : -1;
