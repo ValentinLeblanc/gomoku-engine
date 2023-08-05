@@ -58,7 +58,7 @@ public class EngineServiceImpl implements EngineService {
 		}
 		
 		if (gameSettings.isStrikeEnabled()) {
-			Cell strikeOrCounterStrike = processStrike(gameId, new GameData(gameData), playingColor, gameSettings.getStrikeDepth(), gameSettings.getMinMaxDepth(), gameSettings.getStrikeTimeout());
+			Cell strikeOrCounterStrike = processStrike(gameId, gameData, playingColor, gameSettings.getStrikeDepth(), gameSettings.getMinMaxDepth(), gameSettings.getStrikeTimeout());
 			if (strikeOrCounterStrike != null) {
 				return strikeOrCounterStrike;
 			}
@@ -71,7 +71,7 @@ public class EngineServiceImpl implements EngineService {
 	
 	private Cell processStrike(Long gameId, GameData gameData, int playingColor, int strikeDepth, int minMaxDepth, int strikeTimeout) throws InterruptedException {
 		
-		StrikeContext strikeContext = new StrikeContext(gameId, strikeDepth, minMaxDepth, strikeTimeout);
+		StrikeContext strikeContext = new StrikeContext(gameId, strikeDepth, strikeTimeout);
 		
 		webSocketService.sendMessage(EngineMessageType.STRIKE_PROGRESS, strikeContext.getGameId(), true);
 		
@@ -102,7 +102,7 @@ public class EngineServiceImpl implements EngineService {
 				List<Cell> defendingCells = strikeService.defendFromDirectStrike(gameData, playingColor, strikeContext, false);
 				
 				if (!defendingCells.isEmpty()) {
-					Cell defense = pickBestDefense(gameData, playingColor, strikeContext, defendingCells);
+					Cell defense = pickBestDefense(gameData, playingColor, strikeContext, minMaxDepth, defendingCells);
 					stopWatch.stop();
 					if (logger.isInfoEnabled()) {
 						logger.info("best defense found in {} ms", stopWatch.getTotalTimeMillis());
@@ -127,7 +127,7 @@ public class EngineServiceImpl implements EngineService {
 		}
 	}
 	
-	private Cell pickBestDefense(GameData gameData, int playingColor, StrikeContext strikeContext, List<Cell> counterOpponentThreats) throws InterruptedException {
+	private Cell pickBestDefense(GameData gameData, int playingColor, StrikeContext strikeContext, int minMaxDepth, List<Cell> counterOpponentThreats) throws InterruptedException {
 		
 		if (counterOpponentThreats.size() == 1) {
 			return counterOpponentThreats.get(0);
@@ -141,7 +141,7 @@ public class EngineServiceImpl implements EngineService {
 			}
 		}
 		
-		MinMaxContext minMaxContext = new MinMaxContext(strikeContext.getGameId(), strikeContext.getMinMaxDepth(), 0, false);
+		MinMaxContext minMaxContext = new MinMaxContext(strikeContext.getGameId(), minMaxDepth, 0, false);
 		
 		return minMaxService.computeMinMax(gameData, counterOpponentThreats, minMaxContext).getOptimalMoves().get(0);
 	}

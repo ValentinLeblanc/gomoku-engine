@@ -245,10 +245,11 @@ public class StrikeServiceImpl implements StrikeService {
 		Cell secondaryStrike = null;
 		
 		try {
-
 			if (strikeContext.getStrikeTimeout() == -1) {
 				secondaryStrike = command.call();
 			} else {
+				// work on copy as timeout may occur and corrupt the data
+				command.gameData = new GameData(gameData);
 				secondaryStrike = executor.invokeAny(List.of(command), strikeContext.getStrikeTimeout(), TimeUnit.SECONDS);
 			}
 			
@@ -260,19 +261,21 @@ public class StrikeServiceImpl implements StrikeService {
 			
 			logger.error("Error while SecondaryStrikeCommand : " + e.getMessage(), e);
 		} catch (TimeoutException e) {
-			logger.info("SecondaryStrikeCommand timeout ({}s)", strikeContext.getStrikeTimeout());
+			if (logger.isDebugEnabled()) {
+				logger.debug("SecondaryStrikeCommand timeout ({}s)", strikeContext.getStrikeTimeout());
+			}
 		}
 		return secondaryStrike;
 	}
 	
 	private class SecondaryStrikeCommand implements Callable<Cell> {
 
-		private GameData dataWrapper;
+		private GameData gameData;
 		private int playingColor;
 		private StrikeContext strikeContext;
 		
 		private SecondaryStrikeCommand(GameData dataWrapper, int playingColor, StrikeContext strikeContext) {
-			this.dataWrapper = dataWrapper;
+			this.gameData = dataWrapper;
 			this.playingColor = playingColor;
 			this.strikeContext = strikeContext;
 		}
@@ -287,7 +290,7 @@ public class StrikeServiceImpl implements StrikeService {
 
 				long timeElapsed = System.currentTimeMillis();
 
-				Cell secondaryStrike = executeSecondaryStrike(dataWrapper, playingColor, 0, currentMaxDepth, strikeContext);
+				Cell secondaryStrike = executeSecondaryStrike(gameData, playingColor, 0, currentMaxDepth, strikeContext);
 
 				if (secondaryStrike != null) {
 					stopWatch.stop();
@@ -297,56 +300,14 @@ public class StrikeServiceImpl implements StrikeService {
 					return secondaryStrike;
 				}
 
-				if (logger.isInfoEnabled()) {
+				if (logger.isDebugEnabled()) {
 					timeElapsed = System.currentTimeMillis() - timeElapsed;
-					logger.info("secondary strike failed for maxDepth = {} ({} ms)", currentMaxDepth, timeElapsed);
+					logger.debug("secondary strike failed for maxDepth = {} ({} ms)", currentMaxDepth, timeElapsed);
 				}
 			}
 
 			return null;
 		}
-	}
-	
-	@Override
-	public boolean hasPlayingStrike(GameData gameData, int playingColor, Long cacheId) throws InterruptedException {
-		try {
-			if (directStrike(gameData, playingColor, new StrikeContext(cacheId, -1, -1, -1)) != null) {
-				return true;
-			}
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			throw new InterruptedException();
-		}
-		
-		if (cacheService.isCacheEnabled()) {
-			Map<Integer, Map<GameData, Optional<Cell>>> secondaryStrikeCache = cacheService.getSecondaryStrikeCache(cacheId);
-			if (secondaryStrikeCache.containsKey(playingColor) && secondaryStrikeCache.get(playingColor).containsKey(gameData)
-					&& secondaryStrikeCache.get(playingColor).get(gameData).isPresent()) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	@Override
-	public boolean hasPendingStrike(GameData gameData, int pendingColor, Long cacheId) throws InterruptedException {
-		int playingColor = -pendingColor;
-		if (hasPlayingStrike(gameData, pendingColor, cacheId)) {
-			boolean hasDefense = false;
-			List<Cell> defendingMoves = defendFromDirectStrike(gameData, playingColor, new StrikeContext(cacheId, -1, -1, -1), false);
-			for (Cell defendingMove : defendingMoves) {
-				gameData.addMove(defendingMove, playingColor);
-				boolean hasPlayingStrike = hasPlayingStrike(gameData, pendingColor, cacheId);
-				gameData.removeMove(defendingMove);
-				if (!hasPlayingStrike) {
-					hasDefense = true;
-					break;
-				}
-			}
-			return !hasDefense;
-		}
-		
-		return false;
 	}
 	
 	private void storeInDirectStrikeCache(GameData gameData, StrikeContext strikeContext, int playingColor, Cell move) {

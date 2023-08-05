@@ -4,14 +4,12 @@ public class StrikeContext {
 
 	private Long gameId;
 	private int strikeDepth;
-	private int minMaxDepth;
 	private int strikeTimeout;
 	
-	public StrikeContext(Long gameId, int strikeDepth, int minMaxDepth, int strikeTimeout) {
+	public StrikeContext(Long gameId, int strikeDepth, int strikeTimeout) {
 		super();
 		this.gameId = gameId;
 		this.strikeDepth = strikeDepth;
-		this.minMaxDepth = minMaxDepth;
 		this.strikeTimeout = strikeTimeout;
 	}
 
@@ -29,14 +27,6 @@ public class StrikeContext {
 
 	public void setStrikeDepth(int depth) {
 		this.strikeDepth = depth;
-	}
-
-	public int getMinMaxDepth() {
-		return minMaxDepth;
-	}
-
-	public void setMinMaxDepth(int minMaxDepth) {
-		this.minMaxDepth = minMaxDepth;
 	}
 
 	public int getStrikeTimeout() {

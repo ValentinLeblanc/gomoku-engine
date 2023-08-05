@@ -47,7 +47,7 @@ class StrikeServiceTest extends AbstractGomokuTest {
 		gameData.addMove(new Cell(8, 3), GomokuColor.BLACK_COLOR);
 		gameData.addMove(new Cell(8, 5), GomokuColor.WHITE_COLOR);
 
-		StrikeContext strikeContext = new StrikeContext(TEST_GAME_ID, 2, 2, -1);
+		StrikeContext strikeContext = new StrikeContext(TEST_GAME_ID, 2, -1);
 
 		Cell strikeResult = strikeService.directStrike(gameData, GomokuColor.BLACK_COLOR, strikeContext);
 		testDirectStrikeResult(gameData, new Cell(10, 4), strikeResult, GomokuColor.BLACK_COLOR);
@@ -70,7 +70,7 @@ class StrikeServiceTest extends AbstractGomokuTest {
 
 	@Test
 	void secondaryStrike1() throws JsonProcessingException, InterruptedException {
-		StrikeContext strikeContext = new StrikeContext(TEST_GAME_ID, 2, 2, -1);
+		StrikeContext strikeContext = new StrikeContext(TEST_GAME_ID, 2, -1);
 		GameData gameData = GameData.of(GomokuTestsHelper.readGameDto("secondaryStrike1.json"));
 		Cell strikeResult = strikeService.secondaryStrike(gameData, GomokuColor.BLACK_COLOR, strikeContext);
 		testSecondaryStrikeResult(gameData, new Cell(9, 6), strikeResult, GomokuColor.BLACK_COLOR);
@@ -78,7 +78,7 @@ class StrikeServiceTest extends AbstractGomokuTest {
 	
 	@Test
 	void secondaryStrike2() throws JsonProcessingException, InterruptedException {
-		StrikeContext strikeContext = new StrikeContext(TEST_GAME_ID, 1, 2, -1);
+		StrikeContext strikeContext = new StrikeContext(TEST_GAME_ID, 1, -1);
 		GameData gameData = GameData.of(GomokuTestsHelper.readGameDto("secondaryStrike2.json"));
 		Cell strikeResult = strikeService.secondaryStrike(gameData, GomokuColor.BLACK_COLOR, strikeContext);
 		assertNull(strikeResult);
@@ -86,7 +86,7 @@ class StrikeServiceTest extends AbstractGomokuTest {
 	
 	@Test
 	void secondaryStrike3() throws JsonProcessingException, InterruptedException {
-		StrikeContext strikeContext = new StrikeContext(TEST_GAME_ID, 4, 2, -1);
+		StrikeContext strikeContext = new StrikeContext(TEST_GAME_ID, 4, -1);
 		GameData gameData = GameData.of(GomokuTestsHelper.readGameDto("secondaryStrike3.json"));
 		Cell strikeResult = strikeService.secondaryStrike(gameData, GomokuColor.BLACK_COLOR, strikeContext);
 		testSecondaryStrikeResult(gameData, strikeResult, strikeResult, GomokuColor.BLACK_COLOR);
@@ -94,7 +94,7 @@ class StrikeServiceTest extends AbstractGomokuTest {
 	
 	@Test
 	void secondaryStrike4() throws JsonProcessingException, InterruptedException {
-		StrikeContext strikeContext = new StrikeContext(TEST_GAME_ID, 1, 2, -1);
+		StrikeContext strikeContext = new StrikeContext(TEST_GAME_ID, 1, -1);
 		GameData gameData = GameData.of(GomokuTestsHelper.readGameDto("secondaryStrike4.json"));
 		Cell strikeResult = strikeService.secondaryStrike(gameData, GomokuColor.BLACK_COLOR, strikeContext);
 		testSecondaryStrikeResult(gameData, strikeResult, strikeResult, GomokuColor.BLACK_COLOR);

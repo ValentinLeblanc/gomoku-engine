@@ -23,15 +23,14 @@ import org.springframework.util.StopWatch;
 
 import fr.leblanc.gomoku.engine.exception.ComputationStoppedException;
 import fr.leblanc.gomoku.engine.model.Cell;
-import fr.leblanc.gomoku.engine.model.GomokuColor;
 import fr.leblanc.gomoku.engine.model.EvaluationContext;
-import fr.leblanc.gomoku.engine.model.EvaluationResult;
 import fr.leblanc.gomoku.engine.model.GameData;
+import fr.leblanc.gomoku.engine.model.GomokuColor;
 import fr.leblanc.gomoku.engine.model.MinMaxContext;
 import fr.leblanc.gomoku.engine.model.MinMaxResult;
+import fr.leblanc.gomoku.engine.model.StrikeContext;
 import fr.leblanc.gomoku.engine.model.messaging.EngineMessageType;
 import fr.leblanc.gomoku.engine.model.messaging.MoveDTO;
-import fr.leblanc.gomoku.engine.service.CacheService;
 import fr.leblanc.gomoku.engine.service.EvaluationService;
 import fr.leblanc.gomoku.engine.service.GameComputationService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
@@ -60,9 +59,6 @@ public class MinMaxServiceImpl implements MinMaxService {
 	
 	@Autowired
 	private StrikeService strikeService;
-	
-	@Autowired
-	private CacheService cacheService;
 	
 	@Override
 	public MinMaxResult computeMinMax(GameData gameData, MinMaxContext context) throws InterruptedException {
@@ -242,7 +238,9 @@ public class MinMaxServiceImpl implements MinMaxService {
 		
 		MinMaxResult result = new MinMaxResult();
 		
-		updateEvaluationCacheWithStrikes(gameData, playingColor, currentDepth, context);
+		if (context.isUseStrikeService() && currentDepth < context.getMaxDepth() - 1) {
+			strikeService.secondaryStrike(gameData, playingColor, new StrikeContext(context.getGameId(), 1, 2));
+		}
 		
 		double optimalEvaluation = findMax ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;
 		
@@ -317,20 +315,6 @@ public class MinMaxServiceImpl implements MinMaxService {
 		context.getMinList().remove(currentDepth);
 		
 		return result;
-	}
-
-	private void updateEvaluationCacheWithStrikes(GameData gameData, int playingColor, int currentDepth, MinMaxContext context) throws InterruptedException {
-		boolean useStrikeService = context.isUseStrikeService() && currentDepth < context.getMaxDepth() - 1;
-		if (useStrikeService && strikeService.hasPlayingStrike(gameData, playingColor, context.getGameId())) {
-			EvaluationResult evaluation = new EvaluationResult();
-			evaluation.setEvaluation(EvaluationService.STRIKE_EVALUATION);
-			cacheService.getEvaluationCache(context.getGameId()).get(playingColor).put(new GameData(gameData), evaluation);
-			
-		} else if (useStrikeService && strikeService.hasPendingStrike(gameData, -playingColor, context.getGameId())) {
-			EvaluationResult evaluation = new EvaluationResult();
-			evaluation.setEvaluation(-EvaluationService.STRIKE_EVALUATION);
-			cacheService.getEvaluationCache(context.getGameId()).get(-playingColor).put(new GameData(gameData), evaluation);
-		}
 	}
 
 	private boolean isOptimumReached(int depth, int factor, Map<Integer, Double> otherList, double eval, Double globalOptimum) {
