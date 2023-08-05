@@ -25,11 +25,13 @@ import fr.leblanc.gomoku.engine.exception.ComputationStoppedException;
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.GomokuColor;
 import fr.leblanc.gomoku.engine.model.EvaluationContext;
+import fr.leblanc.gomoku.engine.model.EvaluationResult;
 import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.MinMaxContext;
 import fr.leblanc.gomoku.engine.model.MinMaxResult;
 import fr.leblanc.gomoku.engine.model.messaging.EngineMessageType;
 import fr.leblanc.gomoku.engine.model.messaging.MoveDTO;
+import fr.leblanc.gomoku.engine.service.CacheService;
 import fr.leblanc.gomoku.engine.service.EvaluationService;
 import fr.leblanc.gomoku.engine.service.GameComputationService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
@@ -58,6 +60,9 @@ public class MinMaxServiceImpl implements MinMaxService {
 	
 	@Autowired
 	private StrikeService strikeService;
+	
+	@Autowired
+	private CacheService cacheService;
 	
 	@Override
 	public MinMaxResult computeMinMax(GameData gameData, MinMaxContext context) throws InterruptedException {
@@ -110,7 +115,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 				}
 				
 				if (logger.isInfoEnabled()) {
-					logger.info("extentAnalyzedResults=" + extentAnalyzedResults);
+					logger.info("extentAnalyzedResults: {}", extentAnalyzedResults);
 				}
 				
 				context.setIndexDepth(1);
@@ -134,10 +139,8 @@ public class MinMaxServiceImpl implements MinMaxService {
 				logger.info(String.format("minMax elpased time : %d ms", stopWatch.getTotalTimeMillis()));
 				logger.info(String.format("result = %s", result));
 			}
-			if (computationService.isDisplayAnalysis(context.getGameId())) {
-				if (context.getOptimumCellReference().get() != null) {
-					webSocketService.sendMessage(EngineMessageType.ANALYSIS_MOVE, context.getGameId(), new MoveDTO(context.getOptimumCellReference().get(), GomokuColor.NONE_COLOR));
-				}
+			if (computationService.isDisplayAnalysis(context.getGameId()) && context.getOptimumCellReference().get() != null) {
+				webSocketService.sendMessage(EngineMessageType.ANALYSIS_MOVE, context.getGameId(), new MoveDTO(context.getOptimumCellReference().get(), GomokuColor.NONE_COLOR));
 			}
 		}
 		return result;
@@ -237,10 +240,9 @@ public class MinMaxServiceImpl implements MinMaxService {
 
 	private MinMaxResult recursiveMinMax(GameData gameData, int playingColor, List<Cell> analysedMoves, boolean findMax, int currentDepth, MinMaxContext context) throws InterruptedException {
 		
-		StopWatch stopWatch = new StopWatch();
-		stopWatch.start();
-		
 		MinMaxResult result = new MinMaxResult();
+		
+		updateEvaluationCacheWithStrikes(gameData, playingColor, currentDepth, context);
 		
 		double optimalEvaluation = findMax ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;
 		
@@ -250,41 +252,27 @@ public class MinMaxServiceImpl implements MinMaxService {
 				throw new InterruptedException();
 			}
 			
-			double currentEvaluation = 0;
 			MinMaxResult subResult = new MinMaxResult();
+			double currentEvaluation = 0;
 			
-			boolean tryStrikeService = context.isUseStrikeService() && currentDepth < context.getMaxDepth() - 1;
+			gameData.addMove(analysedMove, playingColor);
+			context.getCurrentMoves().add(analysedMove);
 			
-			if (tryStrikeService && strikeService.hasPlayingStrike(gameData, playingColor, context.getGameId(), true)) {
-				if (logger.isInfoEnabled()) {
-					logger.info("used strike service for minMax");			
-				}
-				currentEvaluation = EvaluationService.THREAT_5_POTENTIAL;
-			} else if (tryStrikeService && strikeService.hasPendingStrike(gameData, -playingColor, context.getGameId(), true)) {
-				if (logger.isInfoEnabled()) {
-					logger.info("used strike service for minMax");			
-				}
-				currentEvaluation = -EvaluationService.THREAT_5_POTENTIAL;
+			if (currentDepth == context.getMaxDepth() - 1) {
+				currentEvaluation = evaluationService.computeEvaluation(context.getGameId(), new EvaluationContext(gameData).internal().useStrikeService()).getEvaluation();
 			} else {
-				gameData.addMove(analysedMove, playingColor);
-				context.getCurrentMoves().add(analysedMove);
-				
-				if (currentDepth == context.getMaxDepth() - 1) {
-					currentEvaluation = evaluationService.computeEvaluation(context.getGameId(), new EvaluationContext(gameData).internal().useStrikeService()).getEvaluation();
-				} else {
-					List<Cell> subAnalyzedMoves = threatContextService.buildAnalyzedCells(gameData, -playingColor);
-					subResult = recursiveMinMax(gameData, -playingColor, subAnalyzedMoves, !findMax, currentDepth + 1, context);
-					currentEvaluation = subResult.getEvaluation();
-				}
-				gameData.removeMove(analysedMove);
-				context.getCurrentMoves().remove(analysedMove);
+				List<Cell> subAnalyzedMoves = threatContextService.buildAnalyzedCells(gameData, -playingColor);
+				subResult = recursiveMinMax(gameData, -playingColor, subAnalyzedMoves, !findMax, currentDepth + 1, context);
+				currentEvaluation = subResult.getEvaluation();
 			}
 			
-			int factor = findMax ? 1 : -1;
+			gameData.removeMove(analysedMove);
+			context.getCurrentMoves().remove(analysedMove);
 			
 			Map<Integer, Double> optimumList = findMax ? context.getMaxList() : context.getMinList();
 			Map<Integer, Double> otherList = findMax ? context.getMinList() : context.getMaxList();
 			AtomicReference<Double> optimumReference = context.getOptimumReference();
+			int factor = findMax ? 1 : -1;
 			
 			if (factor * currentEvaluation > factor * optimalEvaluation) {
 				optimalEvaluation = currentEvaluation;
@@ -325,12 +313,24 @@ public class MinMaxServiceImpl implements MinMaxService {
 			}
 		}
 	
-		stopWatch.stop();
-		
 		context.getMaxList().remove(currentDepth);
 		context.getMinList().remove(currentDepth);
 		
 		return result;
+	}
+
+	private void updateEvaluationCacheWithStrikes(GameData gameData, int playingColor, int currentDepth, MinMaxContext context) throws InterruptedException {
+		boolean useStrikeService = context.isUseStrikeService() && currentDepth < context.getMaxDepth() - 1;
+		if (useStrikeService && strikeService.hasPlayingStrike(gameData, playingColor, context.getGameId())) {
+			EvaluationResult evaluation = new EvaluationResult();
+			evaluation.setEvaluation(EvaluationService.STRIKE_EVALUATION);
+			cacheService.getEvaluationCache(context.getGameId()).get(playingColor).put(new GameData(gameData), evaluation);
+			
+		} else if (useStrikeService && strikeService.hasPendingStrike(gameData, -playingColor, context.getGameId())) {
+			EvaluationResult evaluation = new EvaluationResult();
+			evaluation.setEvaluation(-EvaluationService.STRIKE_EVALUATION);
+			cacheService.getEvaluationCache(context.getGameId()).get(-playingColor).put(new GameData(gameData), evaluation);
+		}
 	}
 
 	private boolean isOptimumReached(int depth, int factor, Map<Integer, Double> otherList, double eval, Double globalOptimum) {

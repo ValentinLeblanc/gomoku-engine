@@ -26,7 +26,6 @@ import fr.leblanc.gomoku.engine.model.ThreatType;
 import fr.leblanc.gomoku.engine.service.CacheService;
 import fr.leblanc.gomoku.engine.service.CheckWinService;
 import fr.leblanc.gomoku.engine.service.EvaluationService;
-import fr.leblanc.gomoku.engine.service.StrikeService;
 import fr.leblanc.gomoku.engine.service.ThreatContextService;
 import fr.leblanc.gomoku.engine.util.Pair;
 
@@ -43,9 +42,6 @@ public class EvaluationServiceImpl implements EvaluationService {
 	
 	@Autowired
 	private CacheService cacheService;
-	
-	@Autowired
-	private StrikeService strikeService;
 	
 	@Override
 	public EvaluationResult computeEvaluation(Long gameId, EvaluationContext context) throws InterruptedException {
@@ -65,25 +61,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 			return evaluationResult;
 		}
 		
-		if (context.isUseStrikeService()) {
-			if (strikeService.hasPlayingStrike(context.getGameData(), playingColor, gameId, false)) {
-				if (!context.isInternal() && logger.isDebugEnabled()) {
-					logger.debug("evaluation from strike: {}", THREAT_5_POTENTIAL);
-				}
-				EvaluationResult evaluation = new EvaluationResult();
-				evaluation.setEvaluation(THREAT_5_POTENTIAL);
-				return evaluation;
-			} else if (strikeService.hasPendingStrike(context.getGameData(), -playingColor, gameId, false)) {
-				if (!context.isInternal() && logger.isDebugEnabled()) {
-					logger.debug("evaluation from strike: {}", -THREAT_5_POTENTIAL);
-				}
-				EvaluationResult evaluation = new EvaluationResult();
-				evaluation.setEvaluation(-THREAT_5_POTENTIAL);
-				return evaluation;
-			}
-		}
-		
-		if (context.isInternal() && gameId != null && cacheService.isCacheEnabled() && cacheService.getEvaluationCache(gameId).get(playingColor).containsKey(context.getGameData())) {
+		if (gameId != null && cacheService.isCacheEnabled() && cacheService.getEvaluationCache(gameId).get(playingColor).containsKey(context.getGameData())) {
 			return cacheService.getEvaluationCache(gameId).get(playingColor).get(context.getGameData());
 		}
 		

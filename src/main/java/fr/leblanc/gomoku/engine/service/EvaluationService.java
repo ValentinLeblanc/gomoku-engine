@@ -6,6 +6,7 @@ import fr.leblanc.gomoku.engine.model.EvaluationResult;
 public interface EvaluationService {
 	
 	public static final int WIN_EVALUATION = 10000;
+	public static final int STRIKE_EVALUATION = 22222;
 	public static final int THREAT_5_POTENTIAL = 2000;
 	public static final int DOUBLE_THREAT_4_POTENTIAL = 500;
 	public static final int THREAT_4_DOUBLE_THREAT_3_POTENTIAL = 250;
