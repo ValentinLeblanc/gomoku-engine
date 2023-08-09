@@ -24,6 +24,7 @@ import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.DoubleThreat;
 import fr.leblanc.gomoku.engine.model.EvaluationResult;
 import fr.leblanc.gomoku.engine.model.GameData;
+import fr.leblanc.gomoku.engine.model.GomokuColor;
 import fr.leblanc.gomoku.engine.model.StrikeContext;
 import fr.leblanc.gomoku.engine.model.Threat;
 import fr.leblanc.gomoku.engine.model.ThreatContext;
@@ -184,9 +185,7 @@ public class StrikeServiceImpl implements StrikeService {
 		
 		if (!opponentThreatMap.get(ThreatType.THREAT_5).isEmpty()) {
 			defendingMoves.add(opponentThreatMap.get(ThreatType.THREAT_5).iterator().next().getEmptyCells().iterator().next());
-			if (cacheService.isCacheEnabled()) {
-				cacheService.getCounterStrikeCache(strikeContext.getGameId()).get(playingColor).put(new GameData(gameData), defendingMoves);
-			}
+			storeInCounterStrikeCache(gameData, strikeContext, playingColor, defendingMoves);
 			return defendingMoves;
 		}
 		
@@ -231,9 +230,7 @@ public class StrikeServiceImpl implements StrikeService {
 			}
 		}
 		
-		if (cacheService.isCacheEnabled()) {
-			cacheService.getCounterStrikeCache(strikeContext.getGameId()).get(playingColor).put(new GameData(gameData), defendingMoves);
-		}
+		storeInCounterStrikeCache(gameData, strikeContext, playingColor, defendingMoves);
 		
 		return defendingMoves;
 	}
@@ -339,6 +336,26 @@ public class StrikeServiceImpl implements StrikeService {
 			EvaluationResult opponentEvaluation = new EvaluationResult();
 			opponentEvaluation.setEvaluation(-EvaluationService.STRIKE_EVALUATION);
 			cacheService.getEvaluationCache(strikeContext.getGameId()).get(-playingColor).put(newGameData, opponentEvaluation);
+		}
+	}
+	
+	private void storeInCounterStrikeCache(GameData gameData, StrikeContext strikeContext, int playingColor, List<Cell> defendingMoves) {
+		if (cacheService.isCacheEnabled()) {
+			cacheService.getCounterStrikeCache(strikeContext.getGameId()).get(playingColor).put(new GameData(gameData), defendingMoves);
+			for (int column = 0; column < gameData.getData().length; column++) {
+				for (int row = 0; row < gameData.getData().length; row++) {
+					if (gameData.getValue(column, row) == GomokuColor.NONE_COLOR) {
+						Cell move = new Cell(column, row);
+						if (!defendingMoves.contains(move)) {
+							GameData newGameData = new GameData(gameData);
+							newGameData.addMove(move, playingColor);
+							EvaluationResult badEvaluation = new EvaluationResult();
+							badEvaluation.setEvaluation(-EvaluationService.STRIKE_EVALUATION);
+							cacheService.getEvaluationCache(strikeContext.getGameId()).get(playingColor).put(newGameData, badEvaluation);
+						}
+					}
+				}
+			}
 		}
 	}
 	
