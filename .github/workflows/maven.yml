@@ -36,7 +36,7 @@ jobs:
       with:
         name: JEST Tests            # Name of the check run which will be created
         path: target/surefire-reports/TEST-*.xml    # Path to test results
-        reporter: jest-junit        # Format of test results
+        reporter: java-junit        # Format of test results
         
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
     - name: Update dependency graph
