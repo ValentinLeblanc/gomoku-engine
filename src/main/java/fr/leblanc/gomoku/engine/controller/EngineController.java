@@ -12,10 +12,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.CheckWinResult;
-import fr.leblanc.gomoku.engine.model.GomokuColor;
 import fr.leblanc.gomoku.engine.model.EvaluationContext;
 import fr.leblanc.gomoku.engine.model.GameData;
-import fr.leblanc.gomoku.engine.model.messaging.EngineMessageType;
+import fr.leblanc.gomoku.engine.model.GomokuColor;
 import fr.leblanc.gomoku.engine.model.messaging.GameDTO;
 import fr.leblanc.gomoku.engine.model.messaging.GameSettings;
 import fr.leblanc.gomoku.engine.model.messaging.MoveDTO;
@@ -24,7 +23,6 @@ import fr.leblanc.gomoku.engine.service.CheckWinService;
 import fr.leblanc.gomoku.engine.service.EngineService;
 import fr.leblanc.gomoku.engine.service.EvaluationService;
 import fr.leblanc.gomoku.engine.service.GameComputationService;
-import fr.leblanc.gomoku.engine.service.WebSocketService;
 
 @RestController
 public class EngineController {
@@ -40,9 +38,6 @@ public class EngineController {
 	@Autowired
 	private EvaluationService evaluationService;
 
-	@Autowired
-	private WebSocketService webSocketService;
-	
 	@Autowired
 	private GameComputationService computationService;
 	
@@ -63,20 +58,13 @@ public class EngineController {
 	@PostMapping("/computeMove")
 	public MoveDTO computeMove(@RequestBody GameDTO gameDTO) {
 		try {
-			webSocketService.sendMessage(EngineMessageType.IS_COMPUTING, gameDTO.getId(), true);
-			
 			GameData gameData = GameData.of(gameDTO);
 			GameSettings gameSettings = gameDTO.getSettings();
 			Cell computedMove = computationService.startGameComputation(gameDTO.getId(), gameSettings.isDisplayAnalysis(), () -> engineService.computeMove(gameDTO.getId(), gameData, gameSettings));
-			MoveDTO returnedMove = new MoveDTO(computedMove.getColumn(), computedMove.getRow(), GameData.extractPlayingColor(gameData));
-			
-			webSocketService.sendMessage(EngineMessageType.REFRESH_MOVE, gameDTO.getId(), returnedMove);
-			return returnedMove;
+			return new MoveDTO(computedMove.getColumn(), computedMove.getRow(), GameData.extractPlayingColor(gameData));
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			logger.warn("Computation was interrupted");
-		} finally {
-			webSocketService.sendMessage(EngineMessageType.IS_COMPUTING, gameDTO.getId(), false);
 		}
 		return null;
 	}
