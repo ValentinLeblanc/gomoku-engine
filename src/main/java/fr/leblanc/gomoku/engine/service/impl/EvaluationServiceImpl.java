@@ -61,27 +61,27 @@ public class EvaluationServiceImpl implements EvaluationService {
 			return evaluationResult;
 		}
 		
-		if (gameId != null && cacheService.isCacheEnabled() && cacheService.getEvaluationCache(gameId).get(playingColor).containsKey(context.getGameData())) {
-			return cacheService.getEvaluationCache(gameId).get(playingColor).get(context.getGameData());
-		}
-		
-		EvaluationResult evaluation =  evaluateThreats(context);
-		
-		if (gameId != null && cacheService.isCacheEnabled()) {
-			cacheService.getEvaluationCache(gameId).get(playingColor).put(new GameData(context.getGameData()), evaluation);
-		}
+		EvaluationResult evaluation =  evaluateThreats(gameId, context, 0);
 		
 		return evaluation;
 	}
 	
-	private EvaluationResult evaluateThreats(EvaluationContext context) {
+	private EvaluationResult evaluateThreats(Long gameId, EvaluationContext context, int depth) {
+		
+		if (gameId != null && cacheService.isCacheEnabled() && cacheService.getEvaluationCache(gameId).get(context.getPlayingColor()).containsKey(context.getGameData())) {
+			return cacheService.getEvaluationCache(gameId).get(context.getPlayingColor()).get(context.getGameData());
+		}
 		
 		EvaluationResult evaluationResult = new EvaluationResult();
 		
 		ThreatContext playingThreatContext = threatContextService.computeThreatContext(context.getGameData(), context.getPlayingColor());
 		ThreatContext opponentThreatContext = threatContextService.computeThreatContext(context.getGameData(), -context.getPlayingColor());
 
-		int evaluation = 0;
+		if (!playingThreatContext.getThreatTypeToThreatMap().get(ThreatType.THREAT_5).isEmpty()) {
+			evaluationResult.setEvaluation(THREAT_5_POTENTIAL);
+		}
+		
+		double evaluation = 0;
 		
 		Map<CompoThreatType, List<Pair<Threat, Threat>>> validatedThreatMap = new HashMap<>();
 		Map<CompoThreatType, List<Pair<Threat, Threat>>> opponentThreatMap = new HashMap<>();
@@ -108,11 +108,44 @@ public class EvaluationServiceImpl implements EvaluationService {
 			evaluationResult.getEvaluationMap().put(compoThreatType, threatTypeEvaluation);
 		}
 		
+		double deepEvaluation = Double.NEGATIVE_INFINITY;
+		
+		if (depth < 1) {
+			List<Threat> threat4List = playingThreatContext.getThreatTypeToThreatMap().get(ThreatType.THREAT_4);
+			for (Threat threat4 : threat4List) {
+				for (Cell threatCell : threat4.getEmptyCells()) {
+					if (!opponentHasThreat5Counter(opponentThreatContext, threatCell)) {
+						context.getGameData().addMove(threatCell, context.getPlayingColor());
+						Cell blockingCell = threat4.getEmptyCells().stream().filter(c -> !c.equals(threatCell)).findFirst().get();
+						context.getGameData().addMove(blockingCell, -context.getPlayingColor());
+						double temp = evaluateThreats(gameId, context, depth + 1).getEvaluation();
+						context.getGameData().removeMove(blockingCell);
+						context.getGameData().removeMove(threatCell);
+						if (temp > deepEvaluation) {
+							deepEvaluation = temp;
+						}
+					}
+				}
+			}
+		}
+		
+		if (deepEvaluation > evaluation) {
+			evaluation = deepEvaluation;
+		}
+		
 		evaluationResult.setEvaluation(evaluation);
+		
+		if (gameId != null && cacheService.isCacheEnabled()) {
+			cacheService.getEvaluationCache(gameId).get(context.getPlayingColor()).put(new GameData(context.getGameData()), evaluationResult);
+		}
 		
 		return evaluationResult;
 	}
 
+	private boolean opponentHasThreat5Counter(ThreatContext opponentThreatContext, Cell threatCell) {
+		return opponentThreatContext.getThreatTypeToThreatMap().get(ThreatType.THREAT_5).stream().anyMatch(t -> !t.getEmptyCells().iterator().next().equals(threatCell));
+	}
+	
 	private Map<CompoThreatType, List<Pair<Threat, Threat>>> getCompositeThreats(ThreatContext playingThreatContext, ThreatContext opponentThreatContext) {
 		Map<CompoThreatType, List<Pair<Threat, Threat>>> compositeThreatMap = new HashMap<>();
 		for (CompoThreatType tryContext : CompoThreatType.COMPO_THREAT_TYPES) {

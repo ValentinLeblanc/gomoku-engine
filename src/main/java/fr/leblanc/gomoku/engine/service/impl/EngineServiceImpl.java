@@ -58,14 +58,27 @@ public class EngineServiceImpl implements EngineService {
 		}
 		
 		if (gameSettings.isStrikeEnabled()) {
+			StopWatch stopWatch = new StopWatch();
+			stopWatch.start();
 			Cell strikeOrCounterStrike = processStrike(gameId, gameData, gameSettings);
 			if (strikeOrCounterStrike != null) {
+				stopWatch.stop();
+				if (logger.isInfoEnabled()) {
+					logger.info("strikeService processed in {} ms", stopWatch.getLastTaskTimeMillis());
+				}
 				return strikeOrCounterStrike;
 			}
 		}
 		
+		StopWatch stopWatch = new StopWatch();
+		stopWatch.start();
 		MinMaxContext minMaxContext = new MinMaxContext(gameId, gameSettings.getMinMaxDepth(), gameSettings.getMinMaxExtent());
 		MinMaxResult minMaxResult = minMaxService.computeMinMax(gameData, minMaxContext);
+		
+		stopWatch.stop();
+		if (logger.isInfoEnabled()) {
+			logger.info("minMaxService processed in {} ms", stopWatch.getLastTaskTimeMillis());
+		}
 		
 		if (gameSettings.isDisplayAnalysis()) {
 			int playingColor = GameData.extractPlayingColor(gameData);

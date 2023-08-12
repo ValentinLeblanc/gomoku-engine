@@ -16,9 +16,10 @@ public interface EvaluationService {
 	public static final int DOUBLE_THREAT_3_DOUBLE_THREAT_2_POTENTIAL = 10;
 	public static final int DOUBLE_THREAT_3_THREAT_3_POTENTIAL = 10;
 	public static final int DOUBLE_THREAT_3_POTENTIAL = 4;
-	public static final int THREAT_3_POTENTIAL = 4;
 	public static final int DOUBLE_THREAT_2_DOUBLE_THREAT_2_POTENTIAL = 4;
+	public static final int THREAT_3_POTENTIAL = 2;
 	public static final int DOUBLE_THREAT_2_POTENTIAL = 2;
+	public static final int THREAT_2_POTENTIAL = 1;
 
 	EvaluationResult computeEvaluation(Long gameId, EvaluationContext context) throws InterruptedException;
 }

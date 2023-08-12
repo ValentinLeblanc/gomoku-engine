@@ -291,8 +291,8 @@ public class StrikeServiceImpl implements StrikeService {
 
 				if (secondaryStrike != null) {
 					stopWatch.stop();
-					if (logger.isInfoEnabled()) {
-						logger.info("secondary strike found in {} ms for maxDepth = {}", stopWatch.getTotalTimeMillis(), currentMaxDepth);
+					if (logger.isDebugEnabled()) {
+						logger.debug("secondary strike found in {} ms for maxDepth = {}", stopWatch.getTotalTimeMillis(), currentMaxDepth);
 					}
 					return secondaryStrike;
 				}

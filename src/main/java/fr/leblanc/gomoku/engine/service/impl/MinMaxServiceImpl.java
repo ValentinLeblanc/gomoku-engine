@@ -72,10 +72,6 @@ public class MinMaxServiceImpl implements MinMaxService {
 		
 		MinMaxResult result = null;
 		
-		if (logger.isInfoEnabled()) {
-			logger.info("starting minMax...");
-		}
-		
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
 		
@@ -110,10 +106,6 @@ public class MinMaxServiceImpl implements MinMaxService {
 					}
 				}
 				
-				if (logger.isInfoEnabled()) {
-					logger.info("extentAnalyzedResults: {}", extentAnalyzedResults);
-				}
-				
 				context.setIndexDepth(1);
 				context.setMaxDepth(context.getMaxDepth() + 1);
 				context.setFindMax(!context.isFindMax());
@@ -131,9 +123,9 @@ public class MinMaxServiceImpl implements MinMaxService {
 			throw new InterruptedException();
 		} finally {
 			stopWatch.stop();
-			if (logger.isInfoEnabled()) {
-				logger.info(String.format("minMax elpased time : %d ms", stopWatch.getTotalTimeMillis()));
-				logger.info(String.format("result = %s", result));
+			if (logger.isDebugEnabled()) {
+				logger.debug(String.format("minMax elpased time : %d ms", stopWatch.getTotalTimeMillis()));
+				logger.debug(String.format("result = %s", result));
 			}
 			if (computationService.isDisplayAnalysis(context.getGameId()) && context.getOptimumCellReference().get() != null) {
 				webSocketService.sendMessage(EngineMessageType.ANALYSIS_MOVE, context.getGameId(), new MoveDTO(context.getOptimumCellReference().get(), GomokuColor.NONE_COLOR));

@@ -31,7 +31,9 @@ public class CompoThreatType {
 			CompoThreatType.of(ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2, true),
 			CompoThreatType.of(ThreatType.DOUBLE_THREAT_2, ThreatType.DOUBLE_THREAT_2, false),
 			CompoThreatType.of(ThreatType.THREAT_3, null, true),
-			CompoThreatType.of(ThreatType.THREAT_3, null, false));
+			CompoThreatType.of(ThreatType.THREAT_3, null, false),
+			CompoThreatType.of(ThreatType.THREAT_2, null, true),
+			CompoThreatType.of(ThreatType.THREAT_2, null, false));
 	
 	private ThreatType threatType1;
 	private ThreatType threatType2;
@@ -68,6 +70,9 @@ public class CompoThreatType {
 				|| ThreatType.THREAT_3.equals(threatType1) && threatType2 == null
 				|| ThreatType.DOUBLE_THREAT_3.equals(threatType1) && threatType2 == null) {
 			return 3;
+		}
+		if (ThreatType.THREAT_2.equals(threatType1) && threatType2 == null) {
+			return 4;
 		}
 		throw new IllegalStateException("CompoThreatType level not defined: " + this);
 	}
@@ -148,6 +153,10 @@ public class CompoThreatType {
 		}
 		if (ThreatType.THREAT_3.equals(threatType1) && threatType2 == null) {
 			return EvaluationService.THREAT_3_POTENTIAL;
+		}
+		
+		if (ThreatType.THREAT_2.equals(threatType1) && threatType2 == null) {
+			return EvaluationService.THREAT_2_POTENTIAL;
 		}
 		
 		throw new IllegalStateException("CompoThreatType potential not defined: " + this);
