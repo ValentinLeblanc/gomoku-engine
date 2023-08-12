@@ -239,7 +239,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 		MinMaxResult result = new MinMaxResult();
 		
 		if (context.isUseStrikeService() && currentDepth < context.getMaxDepth() - 1) {
-			strikeService.secondaryStrike(gameData, playingColor, new StrikeContext(context.getGameId(), 1, 2));
+			strikeService.secondaryStrike(gameData, playingColor, new StrikeContext(context.getGameId(), 1, 1));
 		}
 		
 		double optimalEvaluation = findMax ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;
