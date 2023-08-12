@@ -7,5 +7,6 @@ public enum EngineMessageType
     MINMAX_PROGRESS,
     STRIKE_PROGRESS,
     ANALYSIS_MOVE,
-    IS_COMPUTING;
+    IS_COMPUTING,
+    MINMAX_RESULT;
 }

@@ -2,6 +2,7 @@ package fr.leblanc.gomoku.engine.service.impl;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -17,6 +18,7 @@ import fr.leblanc.gomoku.engine.model.MinMaxResult;
 import fr.leblanc.gomoku.engine.model.StrikeContext;
 import fr.leblanc.gomoku.engine.model.messaging.EngineMessageType;
 import fr.leblanc.gomoku.engine.model.messaging.GameSettings;
+import fr.leblanc.gomoku.engine.model.messaging.MoveDTO;
 import fr.leblanc.gomoku.engine.service.CacheService;
 import fr.leblanc.gomoku.engine.service.CheckWinService;
 import fr.leblanc.gomoku.engine.service.EngineService;
@@ -51,27 +53,45 @@ public class EngineServiceImpl implements EngineService {
 			throw new IllegalStateException("Game is already over");
 		}
 		
-		int playingColor = GameData.extractPlayingColor(gameData);
-		
 		if (GameData.countPlainCells(gameData) == 0) {
 			return middleCell(gameData);
 		}
 		
 		if (gameSettings.isStrikeEnabled()) {
-			Cell strikeOrCounterStrike = processStrike(gameId, gameData, playingColor, gameSettings.getStrikeDepth(), gameSettings.getMinMaxDepth(), gameSettings.getStrikeTimeout());
+			Cell strikeOrCounterStrike = processStrike(gameId, gameData, gameSettings);
 			if (strikeOrCounterStrike != null) {
 				return strikeOrCounterStrike;
 			}
 		}
 		
-		MinMaxResult minMaxResult = minMaxService.computeMinMax(gameData, new MinMaxContext(gameId, gameSettings.getMinMaxDepth(), gameSettings.getMinMaxExtent()));
+		MinMaxContext minMaxContext = new MinMaxContext(gameId, gameSettings.getMinMaxDepth(), gameSettings.getMinMaxExtent());
+		MinMaxResult minMaxResult = minMaxService.computeMinMax(gameData, minMaxContext);
+		
+		if (gameSettings.isDisplayAnalysis()) {
+			int playingColor = GameData.extractPlayingColor(gameData);
+			displayMinMaxResult(gameId, playingColor, minMaxResult);
+		}
+		
 		return minMaxResult.getResultCell();
 			
 	}
+
+	private void displayMinMaxResult(Long gameId, int playingColor, MinMaxResult minMaxResult) {
+		for (Entry<Integer, Cell> entry : minMaxResult.getOptimalMoves().entrySet()) {
+			Integer depth = entry.getKey();
+			if (depth > 0) {
+				playingColor = -playingColor;
+				Cell optimalMove = entry.getValue();
+				webSocketService.sendMessage(EngineMessageType.MINMAX_RESULT, gameId, new MoveDTO(optimalMove, playingColor));
+			}
+		}
+	}
 	
-	private Cell processStrike(Long gameId, GameData gameData, int playingColor, int strikeDepth, int minMaxDepth, int strikeTimeout) throws InterruptedException {
+	private Cell processStrike(Long gameId, GameData gameData, GameSettings gameSettings) throws InterruptedException {
 		
-		StrikeContext strikeContext = new StrikeContext(gameId, strikeDepth, strikeTimeout);
+		int playingColor = GameData.extractPlayingColor(gameData);
+		
+		StrikeContext strikeContext = new StrikeContext(gameId, gameSettings.getStrikeDepth(), gameSettings.getStrikeTimeout());
 		
 		webSocketService.sendMessage(EngineMessageType.STRIKE_PROGRESS, strikeContext.getGameId(), true);
 		
@@ -102,7 +122,7 @@ public class EngineServiceImpl implements EngineService {
 				List<Cell> defendingCells = strikeService.defendFromDirectStrike(gameData, playingColor, strikeContext, false);
 				
 				if (!defendingCells.isEmpty()) {
-					Cell defense = pickBestDefense(gameData, playingColor, strikeContext, minMaxDepth, defendingCells);
+					Cell defense = pickBestDefense(gameData, playingColor, strikeContext, gameSettings.getMinMaxDepth(), defendingCells);
 					stopWatch.stop();
 					if (logger.isInfoEnabled()) {
 						logger.info("best defense found in {} ms", stopWatch.getTotalTimeMillis());
