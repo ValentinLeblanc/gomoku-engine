@@ -11,7 +11,7 @@ import fr.leblanc.gomoku.engine.model.ThreatContext;
 import fr.leblanc.gomoku.engine.model.ThreatType;
 import fr.leblanc.gomoku.engine.util.Pair;
 
-public interface ThreatContextService {
+public interface ThreatService {
 
 	ThreatContext computeThreatContext(GameData dataWrapper, int playingColor);
 	

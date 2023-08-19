@@ -26,7 +26,7 @@ import fr.leblanc.gomoku.engine.model.ThreatType;
 import fr.leblanc.gomoku.engine.service.CacheService;
 import fr.leblanc.gomoku.engine.service.CheckWinService;
 import fr.leblanc.gomoku.engine.service.EvaluationService;
-import fr.leblanc.gomoku.engine.service.ThreatContextService;
+import fr.leblanc.gomoku.engine.service.ThreatService;
 import fr.leblanc.gomoku.engine.util.Pair;
 
 @Service
@@ -35,7 +35,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 	private static final Logger logger = LoggerFactory.getLogger(EvaluationServiceImpl.class);
 	
 	@Autowired
-	private ThreatContextService threatContextService;
+	private ThreatService threatService;
 	
 	@Autowired
 	private CheckWinService checkWinService;
@@ -74,8 +74,8 @@ public class EvaluationServiceImpl implements EvaluationService {
 		
 		EvaluationResult evaluationResult = new EvaluationResult();
 		
-		ThreatContext playingThreatContext = threatContextService.computeThreatContext(context.getGameData(), context.getPlayingColor());
-		ThreatContext opponentThreatContext = threatContextService.computeThreatContext(context.getGameData(), -context.getPlayingColor());
+		ThreatContext playingThreatContext = threatService.computeThreatContext(context.getGameData(), context.getPlayingColor());
+		ThreatContext opponentThreatContext = threatService.computeThreatContext(context.getGameData(), -context.getPlayingColor());
 
 		if (!playingThreatContext.getThreatTypeToThreatMap().get(ThreatType.THREAT_5).isEmpty()) {
 			evaluationResult.setEvaluation(THREAT_5_POTENTIAL);
@@ -150,9 +150,9 @@ public class EvaluationServiceImpl implements EvaluationService {
 		Map<CompoThreatType, List<Pair<Threat, Threat>>> compositeThreatMap = new HashMap<>();
 		for (CompoThreatType tryContext : CompoThreatType.COMPO_THREAT_TYPES) {
 			if (tryContext.isPlaying()) {
-				compositeThreatMap.put(tryContext, threatContextService.findCompositeThreats(playingThreatContext, tryContext));
+				compositeThreatMap.put(tryContext, threatService.findCompositeThreats(playingThreatContext, tryContext));
 			} else {
-				compositeThreatMap.put(tryContext, threatContextService.findCompositeThreats(opponentThreatContext, tryContext));
+				compositeThreatMap.put(tryContext, threatService.findCompositeThreats(opponentThreatContext, tryContext));
 			}
 		}
 		return compositeThreatMap;

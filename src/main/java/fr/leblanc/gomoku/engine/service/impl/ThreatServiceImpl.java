@@ -19,11 +19,11 @@ import fr.leblanc.gomoku.engine.model.GomokuColor;
 import fr.leblanc.gomoku.engine.model.Threat;
 import fr.leblanc.gomoku.engine.model.ThreatContext;
 import fr.leblanc.gomoku.engine.model.ThreatType;
-import fr.leblanc.gomoku.engine.service.ThreatContextService;
+import fr.leblanc.gomoku.engine.service.ThreatService;
 import fr.leblanc.gomoku.engine.util.Pair;
 
 @Service
-public class ThreatContextServiceImpl implements ThreatContextService {
+public class ThreatServiceImpl implements ThreatService {
 	
 	@Override
 	public ThreatContext computeThreatContext(GameData dataWrapper, int playingColor) {

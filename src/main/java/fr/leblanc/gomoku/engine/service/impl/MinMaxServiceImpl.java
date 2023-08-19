@@ -35,7 +35,7 @@ import fr.leblanc.gomoku.engine.service.EvaluationService;
 import fr.leblanc.gomoku.engine.service.GameComputationService;
 import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.StrikeService;
-import fr.leblanc.gomoku.engine.service.ThreatContextService;
+import fr.leblanc.gomoku.engine.service.ThreatService;
 import fr.leblanc.gomoku.engine.service.WebSocketService;
 
 @Service
@@ -46,7 +46,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 	private static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
 
 	@Autowired
-	private ThreatContextService threatContextService;
+	private ThreatService threatService;
 	
 	@Autowired
 	private EvaluationService evaluationService;
@@ -85,7 +85,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			context.setOptimumCellReference(new AtomicReference<>());
 
 			if (analyzedCells == null) {
-				analyzedCells = threatContextService.buildAnalyzedCells(gameData, context.getPlayingColor());
+				analyzedCells = threatService.buildAnalyzedCells(gameData, context.getPlayingColor());
 			}
 			
 			int emptyCellsCount = GameData.countEmptyCells(gameData);
@@ -251,7 +251,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			if (currentDepth == context.getMaxDepth() - 1) {
 				currentEvaluation = evaluationService.computeEvaluation(context.getGameId(), new EvaluationContext(gameData).internal().useStrikeService()).getEvaluation();
 			} else {
-				List<Cell> subAnalyzedMoves = threatContextService.buildAnalyzedCells(gameData, -playingColor);
+				List<Cell> subAnalyzedMoves = threatService.buildAnalyzedCells(gameData, -playingColor);
 				subResult = recursiveMinMax(gameData, -playingColor, subAnalyzedMoves, !findMax, currentDepth + 1, context);
 				currentEvaluation = subResult.getEvaluation();
 			}
