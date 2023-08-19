@@ -77,7 +77,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 		ThreatContext playingThreatContext = threatService.computeThreatContext(context.getGameData(), context.getPlayingColor());
 		ThreatContext opponentThreatContext = threatService.computeThreatContext(context.getGameData(), -context.getPlayingColor());
 
-		if (!playingThreatContext.getThreatTypeToThreatMap().get(ThreatType.THREAT_5).isEmpty()) {
+		if (!playingThreatContext.getThreatsOfType(ThreatType.THREAT_5).isEmpty()) {
 			evaluationResult.setEvaluation(THREAT_5_POTENTIAL);
 		}
 		
@@ -111,7 +111,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 		double deepEvaluation = Double.NEGATIVE_INFINITY;
 		
 		if (depth < 1) {
-			List<Threat> threat4List = playingThreatContext.getThreatTypeToThreatMap().get(ThreatType.THREAT_4);
+			List<Threat> threat4List = playingThreatContext.getThreatsOfType(ThreatType.THREAT_4);
 			for (Threat threat4 : threat4List) {
 				for (Cell threatCell : threat4.getEmptyCells()) {
 					if (!opponentHasThreat5Counter(opponentThreatContext, threatCell)) {
@@ -143,7 +143,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 	}
 
 	private boolean opponentHasThreat5Counter(ThreatContext opponentThreatContext, Cell threatCell) {
-		return opponentThreatContext.getThreatTypeToThreatMap().get(ThreatType.THREAT_5).stream().anyMatch(t -> !t.getEmptyCells().iterator().next().equals(threatCell));
+		return opponentThreatContext.getThreatsOfType(ThreatType.THREAT_5).stream().anyMatch(t -> !t.getEmptyCells().iterator().next().equals(threatCell));
 	}
 	
 	private Map<CompoThreatType, List<Pair<Threat, Threat>>> getCompositeThreats(ThreatContext playingThreatContext, ThreatContext opponentThreatContext) {
@@ -230,40 +230,34 @@ public class EvaluationServiceImpl implements EvaluationService {
 		Set<Cell> blockingCells = extractBlockingCells(threatPair, threatCell);
 		
 		for (Cell blockingCell : blockingCells) {
-			if (opponentThreatContext.getCellToThreatMap().containsKey(blockingCell)) {
-				for (Entry<ThreatType, List<Threat>> entry : opponentThreatContext.getCellToThreatMap().get(blockingCell).entrySet()) {
-					ThreatType opponentThreatType = entry.getKey();
-					List<Threat> oppponentThreats = entry.getValue();
-					
-					boolean isOpponentThreatTypeBetterThanFirst = threatPair.getFirst().getThreatType().getBlockingThreatTypes().contains(opponentThreatType);
-					
-					if (isOpponentThreatTypeBetterThanFirst) {
-						boolean isOpponentThreatTypeBetterThanSecond = threatPair.getSecond() == null || !opponentThreatType.getBetterOrEqualThreatTypes().contains(threatPair.getSecond().getThreatType());
-						if (isOpponentThreatTypeBetterThanSecond) {
-							boolean isBlocked = true;
-							for (Threat opponentKillingThreat : oppponentThreats) {
-								Set<Cell> reBlockingCells = opponentKillingThreat.getBlockingCells(blockingCell);
-								
-								for (Cell reblockingCell : reBlockingCells) {
+			for (Entry<ThreatType, List<Threat>> entry : opponentThreatContext.getThreatsOfCell(blockingCell).entrySet()) {
+				ThreatType opponentThreatType = entry.getKey();
+				List<Threat> oppponentThreats = entry.getValue();
+				
+				boolean isOpponentThreatTypeBetterThanFirst = threatPair.getFirst().getThreatType().getBlockingThreatTypes().contains(opponentThreatType);
+				
+				if (isOpponentThreatTypeBetterThanFirst) {
+					boolean isOpponentThreatTypeBetterThanSecond = threatPair.getSecond() == null || !opponentThreatType.getBetterOrEqualThreatTypes().contains(threatPair.getSecond().getThreatType());
+					if (isOpponentThreatTypeBetterThanSecond) {
+						boolean isBlocked = true;
+						for (Threat opponentKillingThreat : oppponentThreats) {
+							Set<Cell> reBlockingCells = opponentKillingThreat.getBlockingCells(blockingCell);
+							
+							for (Cell reblockingCell : reBlockingCells) {
+								for (Entry<ThreatType, List<Threat>> entry2 : playingThreatContext.getThreatsOfCell(reblockingCell).entrySet()) {
 									
-									if (playingThreatContext.getCellToThreatMap().containsKey(reblockingCell)) {
-										
-										for (Entry<ThreatType, List<Threat>> entry2 : playingThreatContext.getCellToThreatMap().get(reblockingCell).entrySet()) {
-											
-											if (threatPair.getSecond() == null || threatPair.getSecond().getThreatType().getBetterOrEqualThreatTypes().contains(entry2.getKey())) {
-												isBlocked = false;
-												break;
-											}
-										}
-									}
-									if (!isBlocked) {
+									if (threatPair.getSecond() == null || threatPair.getSecond().getThreatType().getBetterOrEqualThreatTypes().contains(entry2.getKey())) {
+										isBlocked = false;
 										break;
 									}
 								}
+								if (!isBlocked) {
+									break;
+								}
 							}
-							if (isBlocked) {
-								return true;
-							}
+						}
+						if (isBlocked) {
+							return true;
 						}
 					}
 				}
@@ -319,7 +313,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 		for (Cell killingCell : threatPair.getFirst().getKillingCells()) {
 			
 			for (ThreatType killingType : threatPair.getFirst().getThreatType().getKillingThreatTypes()) {
-				if (playingThreatContext.getCellToThreatMap().containsKey(killingCell) && playingThreatContext.getCellToThreatMap().get(killingCell).containsKey(killingType) && !playingThreatContext.getCellToThreatMap().get(killingCell).get(killingType).isEmpty()) {
+				if (!playingThreatContext.getThreatsOfCell(killingCell).get(killingType).isEmpty()) {
 					return true;
 				}
 			}
@@ -329,7 +323,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 			for (Cell killingCell : threatPair.getSecond().getKillingCells()) {
 				
 				for (ThreatType killingType : threatPair.getSecond().getThreatType().getKillingThreatTypes()) {
-					if (playingThreatContext.getCellToThreatMap().containsKey(killingCell) && playingThreatContext.getCellToThreatMap().get(killingCell).containsKey(killingType) && !playingThreatContext.getCellToThreatMap().get(killingCell).get(killingType).isEmpty()) {
+					if (!playingThreatContext.getThreatsOfCell(killingCell).get(killingType).isEmpty()) {
 						return true;
 					}
 				}

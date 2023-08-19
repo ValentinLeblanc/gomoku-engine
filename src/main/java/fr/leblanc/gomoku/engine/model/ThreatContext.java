@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -12,13 +13,9 @@ import java.util.Set;
 public class ThreatContext {
 
 	private Map<Cell, Map<ThreatType, List<Threat>>> cellToThreatMap = new HashMap<>();
-
 	private Map<ThreatType, List<Threat>> threatTypeToThreatMap = new EnumMap<>(ThreatType.class);
-	
 	private Map<ThreatType, Set<DoubleThreat>> doubleThreatTypeToThreatMap = new EnumMap<>(ThreatType.class);
-
 	private int[][] data;
-
 	private int playingColor;
 
 	public ThreatContext(int[][] data, int playingColor) {
@@ -28,30 +25,33 @@ public class ThreatContext {
 		for (ThreatType threatType : ThreatType.values()) {
 			threatTypeToThreatMap.put(threatType, new ArrayList<>());
 		}
+		
+		threatTypeToThreatMap.put(ThreatType.THREAT_5, new ArrayList<>());
+		threatTypeToThreatMap.put(ThreatType.THREAT_4, new ArrayList<>());
+		threatTypeToThreatMap.put(ThreatType.THREAT_3, new ArrayList<>());
+		threatTypeToThreatMap.put(ThreatType.THREAT_2, new ArrayList<>());
+		
+		doubleThreatTypeToThreatMap.put(ThreatType.DOUBLE_THREAT_4, new HashSet<>());
+		doubleThreatTypeToThreatMap.put(ThreatType.DOUBLE_THREAT_3, new HashSet<>());
+		doubleThreatTypeToThreatMap.put(ThreatType.DOUBLE_THREAT_2, new HashSet<>());
+
 	}
 
+	@Deprecated(forRemoval = true)
 	public Map<Cell, Map<ThreatType, List<Threat>>> getCellToThreatMap() {
 		return cellToThreatMap;
 	}
-
-	public void setCellToThreatMap(Map<Cell, Map<ThreatType, List<Threat>>> cellToThreatMap) {
-		this.cellToThreatMap = cellToThreatMap;
+	
+	public Map<ThreatType, List<Threat>> getThreatsOfCell(Cell cell) {
+		return cellToThreatMap.computeIfAbsent(cell, k -> new EnumMap<>(ThreatType.class));
 	}
-
-	public Map<ThreatType, List<Threat>> getThreatTypeToThreatMap() {
-		return threatTypeToThreatMap;
+	
+	public List<Threat> getThreatsOfType(ThreatType threatType) {
+		return threatTypeToThreatMap.get(threatType);
 	}
-
-	public void setThreatTypeToThreatMap(Map<ThreatType, List<Threat>> threatTypeToThreatMap) {
-		this.threatTypeToThreatMap = threatTypeToThreatMap;
-	}
-
-	public Map<ThreatType, Set<DoubleThreat>> getDoubleThreatTypeToThreatMap() {
-		return doubleThreatTypeToThreatMap;
-	}
-
-	public void setDoubleThreatTypeToThreatMap(Map<ThreatType, Set<DoubleThreat>> doubleThreatTypeToThreatMap) {
-		this.doubleThreatTypeToThreatMap = doubleThreatTypeToThreatMap;
+	
+	public Set<DoubleThreat> getDoubleThreatsOfType(ThreatType threatType) {
+		return doubleThreatTypeToThreatMap.get(threatType);
 	}
 
 	public int[][] getData() {
