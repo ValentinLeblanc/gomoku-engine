@@ -58,9 +58,7 @@ public class GameData {
 			data[move.getColumnIndex()][move.getRowIndex()] = move.getColor();
 		}
 
-		GameData gameData = new GameData(data);
-		
-		return gameData;
+		return new GameData(data);
 	}
 	
 	public static int extractPlayingColor(GameData dataWrapper) {

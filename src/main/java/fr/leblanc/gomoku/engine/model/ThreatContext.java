@@ -43,7 +43,13 @@ public class ThreatContext {
 	}
 	
 	public Map<ThreatType, List<Threat>> getThreatsOfCell(Cell cell) {
-		return cellToThreatMap.computeIfAbsent(cell, k -> new EnumMap<>(ThreatType.class));
+		return cellToThreatMap.computeIfAbsent(cell, k -> {
+			EnumMap<ThreatType, List<Threat>> enumMap = new EnumMap<>(ThreatType.class);
+			for (ThreatType threatType : ThreatType.values()) {
+				enumMap.put(threatType, new ArrayList<>());
+			}
+			return enumMap;
+		});
 	}
 	
 	public List<Threat> getThreatsOfType(ThreatType threatType) {

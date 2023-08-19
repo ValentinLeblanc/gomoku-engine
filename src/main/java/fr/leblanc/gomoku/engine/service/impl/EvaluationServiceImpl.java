@@ -234,30 +234,32 @@ public class EvaluationServiceImpl implements EvaluationService {
 				ThreatType opponentThreatType = entry.getKey();
 				List<Threat> oppponentThreats = entry.getValue();
 				
-				boolean isOpponentThreatTypeBetterThanFirst = threatPair.getFirst().getThreatType().getBlockingThreatTypes().contains(opponentThreatType);
-				
-				if (isOpponentThreatTypeBetterThanFirst) {
-					boolean isOpponentThreatTypeBetterThanSecond = threatPair.getSecond() == null || !opponentThreatType.getBetterOrEqualThreatTypes().contains(threatPair.getSecond().getThreatType());
-					if (isOpponentThreatTypeBetterThanSecond) {
-						boolean isBlocked = true;
-						for (Threat opponentKillingThreat : oppponentThreats) {
-							Set<Cell> reBlockingCells = opponentKillingThreat.getBlockingCells(blockingCell);
-							
-							for (Cell reblockingCell : reBlockingCells) {
-								for (Entry<ThreatType, List<Threat>> entry2 : playingThreatContext.getThreatsOfCell(reblockingCell).entrySet()) {
-									
-									if (threatPair.getSecond() == null || threatPair.getSecond().getThreatType().getBetterOrEqualThreatTypes().contains(entry2.getKey())) {
-										isBlocked = false;
+				if (!oppponentThreats.isEmpty()) {
+					boolean isOpponentThreatTypeBetterThanFirst = threatPair.getFirst().getThreatType().getBlockingThreatTypes().contains(opponentThreatType);
+					if (isOpponentThreatTypeBetterThanFirst) {
+						boolean isOpponentThreatTypeBetterThanSecond = threatPair.getSecond() == null || !opponentThreatType.getBetterOrEqualThreatTypes().contains(threatPair.getSecond().getThreatType());
+						if (isOpponentThreatTypeBetterThanSecond) {
+							boolean isBlocked = true;
+							for (Threat opponentKillingThreat : oppponentThreats) {
+								Set<Cell> reBlockingCells = opponentKillingThreat.getBlockingCells(blockingCell);
+								
+								for (Cell reblockingCell : reBlockingCells) {
+									for (Entry<ThreatType, List<Threat>> entry2 : playingThreatContext.getThreatsOfCell(reblockingCell).entrySet()) {
+										ThreatType newThreatType = entry2.getKey();
+										List<Threat> newThreats = entry2.getValue();
+										if (threatPair.getSecond() == null || !newThreats.isEmpty() && threatPair.getSecond().getThreatType().getBetterOrEqualThreatTypes().contains(newThreatType)) {
+											isBlocked = false;
+											break;
+										}
+									}
+									if (!isBlocked) {
 										break;
 									}
 								}
-								if (!isBlocked) {
-									break;
-								}
 							}
-						}
-						if (isBlocked) {
-							return true;
+							if (isBlocked) {
+								return true;
+							}
 						}
 					}
 				}
