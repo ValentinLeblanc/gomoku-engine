@@ -169,9 +169,7 @@ public class ThreatServiceImpl implements ThreatService {
 		Set<Threat> visitedThreats = new HashSet<>();
 		for (Threat threat : threatContext.getThreatsOfType(threatType)) {
 			if (!visitedThreats.contains(threat)) {
-				List<Threat> sameTargetCellThreats = threatContext.getThreatsOfType(threatType).stream()
-						.filter(t -> t.getPlainCells().containsAll(threat.getPlainCells()) && t.getTargetCell().equals(threat.getTargetCell()))
-						.toList();
+				List<Threat> sameTargetCellThreats = threatContext.getThreatsOfCell(threat.getTargetCell()).get(threatType).stream().filter(t -> t.getPlainCells().containsAll(threat.getPlainCells())).toList();
 				visitedThreats.addAll(sameTargetCellThreats);
 				
 				if (sameTargetCellThreats.size() > 1) {
