@@ -15,7 +15,6 @@ public interface ThreatService {
 
 	ThreatContext computeThreatContext(GameData dataWrapper, int playingColor);
 	
-	@Deprecated(forRemoval = true)
 	Set<Cell> findCombinedThreats(ThreatContext threatContext, ThreatType threatType1, ThreatType threatType2);
 
 	List<Cell> buildAnalyzedCells(GameData dataWrapper, int color);

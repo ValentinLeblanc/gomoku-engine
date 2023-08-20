@@ -32,11 +32,6 @@ public class ThreatContext {
 		threatTypeToThreatMap.put(ThreatType.DOUBLE_THREAT_2, new ArrayList<>());
 
 	}
-
-	@Deprecated(forRemoval = true)
-	public Map<Cell, Map<ThreatType, List<Threat>>> getCellToThreatMap() {
-		return cellToThreatMap;
-	}
 	
 	public Map<ThreatType, List<Threat>> getThreatsOfCell(Cell cell) {
 		return cellToThreatMap.computeIfAbsent(cell, k -> {

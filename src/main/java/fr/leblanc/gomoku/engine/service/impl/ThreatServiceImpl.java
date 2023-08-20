@@ -3,8 +3,6 @@ package fr.leblanc.gomoku.engine.service.impl;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -52,21 +50,13 @@ public class ThreatServiceImpl implements ThreatService {
 	@Override
 	public Set<Cell> findCombinedThreats(ThreatContext threatContext, ThreatType threatType1, ThreatType threatType2) {
 		Set<Cell> combinedThreats = new HashSet<>();
-		
-		for (Entry<Cell, Map<ThreatType, List<Threat>>> entry : threatContext.getCellToThreatMap().entrySet()) {
-			
-			if (entry.getValue().get(threatType1) != null && entry.getValue().get(threatType2) != null) {
-				
-				for (int i = 0; i < entry.getValue().get(threatType1).size(); i++) {
-					for (int j = 0; j < entry.getValue().get(threatType2).size(); j++) {
-						if (!entry.getValue().get(threatType1).get(i).getPlainCells().containsAll(entry.getValue().get(threatType2).get(j).getPlainCells())) {
-							combinedThreats.add(entry.getKey());
-						}
-					}
+		for (Threat threat1 : threatContext.getThreatsOfType(threatType1)) {
+			for (Threat threat2 : threatContext.getThreatsOfCell(threat1.getTargetCell()).get(threatType2)) {
+				if (!areAligned(threat1, threat2)) {
+					combinedThreats.add(threat1.getTargetCell());
 				}
 			}
 		}
-		
 		return combinedThreats;
 	}
 	
@@ -128,7 +118,6 @@ public class ThreatServiceImpl implements ThreatService {
 	public List<Pair<Threat, Threat>> findCompositeThreats(ThreatContext threatContext, CompoThreatType threatTryContext) {
 		
 		List<Pair<Threat, Threat>> candidateMap = new ArrayList<>();
-		
 		Set<Threat> visitedThreats = new HashSet<>();
 		
 		for (Threat threat1 : threatContext.getThreatsOfType(threatTryContext.getThreatType1())) {
