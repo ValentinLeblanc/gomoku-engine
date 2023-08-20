@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StopWatch;
 
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.CheckWinResult;
@@ -46,6 +47,13 @@ public class EvaluationServiceImpl implements EvaluationService {
 	@Override
 	public EvaluationResult computeEvaluation(Long gameId, EvaluationContext context) throws InterruptedException {
 		
+		StopWatch stopWatch = null;
+		
+		if (logger.isDebugEnabled()) {
+			stopWatch = new StopWatch("computeEvaluation");
+			stopWatch.start();
+		}
+		
 		int playingColor = GameData.extractPlayingColor(context.getGameData());
 		context.setPlayingColor(playingColor);
 		
@@ -62,6 +70,11 @@ public class EvaluationServiceImpl implements EvaluationService {
 		}
 		
 		EvaluationResult evaluation =  evaluateThreats(gameId, context, 0);
+		
+		if (logger.isDebugEnabled() && stopWatch != null) {
+			stopWatch.stop();
+			logger.debug("computeEvaluation elapsed time: {} ms", stopWatch.getLastTaskTimeMillis());
+		}
 		
 		return evaluation;
 	}
@@ -110,24 +123,24 @@ public class EvaluationServiceImpl implements EvaluationService {
 		
 		double deepEvaluation = Double.NEGATIVE_INFINITY;
 		
-		if (depth < 1) {
-			List<Threat> threat4List = playingThreatContext.getThreatsOfType(ThreatType.THREAT_4);
-			for (Threat threat4 : threat4List) {
-				for (Cell threatCell : threat4.getEmptyCells()) {
-					if (!opponentHasThreat5Counter(opponentThreatContext, threatCell)) {
-						context.getGameData().addMove(threatCell, context.getPlayingColor());
-						Cell blockingCell = threat4.getEmptyCells().stream().filter(c -> !c.equals(threatCell)).findFirst().get();
-						context.getGameData().addMove(blockingCell, -context.getPlayingColor());
-						double temp = evaluateThreats(gameId, context, depth + 1).getEvaluation();
-						context.getGameData().removeMove(blockingCell);
-						context.getGameData().removeMove(threatCell);
-						if (temp > deepEvaluation) {
-							deepEvaluation = temp;
-						}
-					}
-				}
-			}
-		}
+//		if (depth < 1) {
+//			List<Threat> threat4List = playingThreatContext.getThreatsOfType(ThreatType.THREAT_4);
+//			for (Threat threat4 : threat4List) {
+//				for (Cell threatCell : threat4.getEmptyCells()) {
+//					if (!opponentHasThreat5Counter(opponentThreatContext, threatCell)) {
+//						context.getGameData().addMove(threatCell, context.getPlayingColor());
+//						Cell blockingCell = threat4.getEmptyCells().stream().filter(c -> !c.equals(threatCell)).findFirst().get();
+//						context.getGameData().addMove(blockingCell, -context.getPlayingColor());
+//						double temp = evaluateThreats(gameId, context, depth + 1).getEvaluation();
+//						context.getGameData().removeMove(blockingCell);
+//						context.getGameData().removeMove(threatCell);
+//						if (temp > deepEvaluation) {
+//							deepEvaluation = temp;
+//						}
+//					}
+//				}
+//			}
+//		}
 		
 		if (deepEvaluation > evaluation) {
 			evaluation = deepEvaluation;
