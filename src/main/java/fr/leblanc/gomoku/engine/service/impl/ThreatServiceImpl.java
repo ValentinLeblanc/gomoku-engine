@@ -7,7 +7,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StopWatch;
 
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.CompoThreatType;
@@ -23,10 +26,26 @@ import fr.leblanc.gomoku.engine.util.Pair;
 @Service
 public class ThreatServiceImpl implements ThreatService {
 	
+	private static final Logger logger = LoggerFactory.getLogger(ThreatServiceImpl.class);
+	
 	@Override
 	public ThreatContext computeThreatContext(GameData dataWrapper, int playingColor) {
+		
+		StopWatch stopWatch = null;
+		
+		if (logger.isDebugEnabled()) {
+			stopWatch = new StopWatch("computeThreatContext");
+			stopWatch.start();
+		}
+		
 		ThreatContext threatContext = new ThreatContext(dataWrapper.getData(), playingColor);
 		internalComputeThreatContext(threatContext);
+		
+		if (logger.isDebugEnabled() && stopWatch != null) {
+			stopWatch.stop();
+			logger.debug("computeThreatContext elapsed time: {} ns", stopWatch.getLastTaskTimeNanos());
+		}
+		
 		return threatContext;
 	}
 	
