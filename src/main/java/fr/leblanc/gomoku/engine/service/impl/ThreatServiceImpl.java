@@ -38,8 +38,8 @@ public class ThreatServiceImpl implements ThreatService {
 
 		List<Cell> analysedMoves = new ArrayList<>();
 
-		ThreatContext playingThreatContext = gameData.computeThreatContext(color);
-		ThreatContext opponentThreatContext = gameData.computeThreatContext(-color);
+		ThreatContext playingThreatContext = gameData.getThreatContext(color);
+		ThreatContext opponentThreatContext = gameData.getThreatContext(-color);
 		
 		playingThreatContext.getThreatsOfType(ThreatType.THREAT_5).stream().map(Threat::getTargetCell).filter(c -> !analysedMoves.contains(c)).forEach(analysedMoves::add);
 		opponentThreatContext.getThreatsOfType(ThreatType.THREAT_5).stream().map(Threat::getTargetCell).filter(c -> !analysedMoves.contains(c)).forEach(analysedMoves::add);

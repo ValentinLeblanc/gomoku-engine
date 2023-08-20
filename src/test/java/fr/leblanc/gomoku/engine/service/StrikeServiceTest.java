@@ -27,25 +27,8 @@ class StrikeServiceTest extends AbstractGomokuTest {
 	private CacheService cacheService;
 
 	@Test
-	void testDirectStrikeAndDefendFromStrike() throws InterruptedException {
-		GameData gameData = new GameData(15);
-
-		gameData.addMove(new Cell(9, 6), GomokuColor.BLACK_COLOR);
-		gameData.addMove(new Cell(9, 7), GomokuColor.WHITE_COLOR);
-		gameData.addMove(new Cell(10, 5), GomokuColor.BLACK_COLOR);
-		gameData.addMove(new Cell(8, 7), GomokuColor.WHITE_COLOR);
-		gameData.addMove(new Cell(8, 6), GomokuColor.BLACK_COLOR);
-		gameData.addMove(new Cell(7, 8), GomokuColor.WHITE_COLOR);
-		gameData.addMove(new Cell(9, 5), GomokuColor.BLACK_COLOR);
-		gameData.addMove(new Cell(7, 6), GomokuColor.WHITE_COLOR);
-		gameData.addMove(new Cell(7, 7), GomokuColor.BLACK_COLOR);
-		gameData.addMove(new Cell(6, 8), GomokuColor.WHITE_COLOR);
-		gameData.addMove(new Cell(10, 7), GomokuColor.BLACK_COLOR);
-		gameData.addMove(new Cell(10, 8), GomokuColor.WHITE_COLOR);
-		gameData.addMove(new Cell(9, 8), GomokuColor.BLACK_COLOR);
-		gameData.addMove(new Cell(5, 8), GomokuColor.WHITE_COLOR);
-		gameData.addMove(new Cell(8, 3), GomokuColor.BLACK_COLOR);
-		gameData.addMove(new Cell(8, 5), GomokuColor.WHITE_COLOR);
+	void testDirectStrikeAndDefendFromStrike() throws InterruptedException, JsonProcessingException {
+		GameData gameData = GameData.of(GomokuTestsHelper.readGameDto("directStrike1.json"));
 
 		StrikeContext strikeContext = new StrikeContext(TEST_GAME_ID, 2, -1);
 

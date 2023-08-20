@@ -41,25 +41,29 @@ public class GameData {
 	public void addMove(Cell cell, int color) {
 		data[cell.getColumn()][cell.getRow()] = color;
 		if (threatContextMap.get(color) != null) {
-			threatContextMap.get(color).update(cell, color);
+			threatContextMap.get(color).addMoveUpdate(cell, color);
 		}
 		if (threatContextMap.get(-color) != null) {
-			threatContextMap.get(-color).update(cell, color);
+			threatContextMap.get(-color).addMoveUpdate(cell, color);
 		}
 	}
 	
 	public void removeMove(Cell cell) {
 		data[cell.getColumn()][cell.getRow()] = 0;
+		if (threatContextMap.get(GomokuColor.BLACK_COLOR) != null) {
+			threatContextMap.get(GomokuColor.BLACK_COLOR).removeMoveUpdate(cell);
+		}
+		if (threatContextMap.get(GomokuColor.WHITE_COLOR) != null) {
+			threatContextMap.get(GomokuColor.WHITE_COLOR).removeMoveUpdate(cell);
+		}
 	}
 	
 	public int getValue(int columnIndex, int rowIndex) {
 		return data[columnIndex][rowIndex];
 	}
 	
-	public ThreatContext computeThreatContext(int color) {
-		ThreatContext value = new ThreatContext(data, color);
-		threatContextMap.put(color, value);
-		return value;
+	public ThreatContext getThreatContext(int color) {
+		return threatContextMap.computeIfAbsent(color, c -> new ThreatContext(data, color));
 	}
 	
 	public static GameData of(GameDTO game) {
