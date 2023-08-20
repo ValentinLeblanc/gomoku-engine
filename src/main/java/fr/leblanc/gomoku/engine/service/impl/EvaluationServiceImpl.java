@@ -17,7 +17,6 @@ import org.springframework.util.StopWatch;
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.CheckWinResult;
 import fr.leblanc.gomoku.engine.model.CompoThreatType;
-import fr.leblanc.gomoku.engine.model.DoubleThreat;
 import fr.leblanc.gomoku.engine.model.EvaluationContext;
 import fr.leblanc.gomoku.engine.model.EvaluationResult;
 import fr.leblanc.gomoku.engine.model.GameData;
@@ -114,7 +113,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 				evaluation += threatEvaluation;
 				threatTypeEvaluation += threatEvaluation;
 				if (logger.isDebugEnabled() && threatEvaluation != 0 && !context.isInternal()) {
-					logger.debug("{} AT {} FROM {}", threatEvaluation, retrieveThreatCell(threatPair), compoThreatType);
+					logger.debug("{} AT {} FROM {}", threatEvaluation, threatPair.getFirst().getTargetCell(), compoThreatType);
 				}
 			}
 			
@@ -156,7 +155,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 	}
 
 	private boolean opponentHasThreat5Counter(ThreatContext opponentThreatContext, Cell threatCell) {
-		return opponentThreatContext.getThreatsOfType(ThreatType.THREAT_5).stream().anyMatch(t -> !t.getEmptyCells().iterator().next().equals(threatCell));
+		return opponentThreatContext.getThreatsOfType(ThreatType.THREAT_5).stream().anyMatch(t -> !t.getTargetCell().equals(threatCell));
 	}
 	
 	private Map<CompoThreatType, List<Pair<Threat, Threat>>> getCompositeThreats(ThreatContext playingThreatContext, ThreatContext opponentThreatContext) {
@@ -178,7 +177,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 			Pair<Threat, Threat> threatPair,
 			CompoThreatType compoThreatType) {
 		
-		Cell threatCell = retrieveThreatCell(threatPair);
+		Cell threatCell = threatPair.getFirst().getTargetCell();
 		
 		// check for a pending attack for the given compoThreatType, find the blocking moves, compare them with threat cell, count how many => opponentAttackCount
 		int opponentAttackCount = opponentAttackCount(compositeThreatMap, compoThreatType, threatCell);
@@ -188,7 +187,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 		}
 			
 		// check for the blocking moves of first threat, check for opponent threatTypes corresponding, compare with second threat type/moves => isBlocked
-		boolean isPairBlocked = isThreatPairBlocked(playingThreatContext, opponentThreatContext, threatPair, threatCell);
+		boolean isPairBlocked = isThreatPairBlocked(playingThreatContext, opponentThreatContext, threatPair);
 		
 		if (opponentAttackCount == 1 && isPairBlocked) {
 			return 0;
@@ -213,7 +212,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 		
 		for (CompoThreatType pendingType : compoThreatType.getSimilarOrBetterCompoThreatTypes(false, false)) {
 			for (Pair<Threat, Threat> pendingPair : compositeThreatMap.get(pendingType)) {
-				Cell killingCell = retrieveThreatCell(pendingPair);
+				Cell killingCell = pendingPair.getFirst().getTargetCell();
 				if (!killingCell.equals(threatPosition)) {
 					notBlockedPendingPairs.add(pendingPair);
 				}
@@ -238,9 +237,9 @@ public class EvaluationServiceImpl implements EvaluationService {
 		return setsOfBlocking.size();
 	}
 
-	private boolean isThreatPairBlocked(ThreatContext playingThreatContext, ThreatContext opponentThreatContext, Pair<Threat, Threat> threatPair, Cell threatCell) {
+	private boolean isThreatPairBlocked(ThreatContext playingThreatContext, ThreatContext opponentThreatContext, Pair<Threat, Threat> threatPair) {
 		
-		Set<Cell> blockingCells = extractBlockingCells(threatPair, threatCell);
+		Set<Cell> blockingCells = extractBlockingCells(threatPair);
 		
 		for (Cell blockingCell : blockingCells) {
 			for (Entry<ThreatType, List<Threat>> entry : opponentThreatContext.getThreatsOfCell(blockingCell).entrySet()) {
@@ -254,7 +253,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 						if (isOpponentThreatTypeBetterThanSecond) {
 							boolean isBlocked = true;
 							for (Threat opponentKillingThreat : oppponentThreats) {
-								Set<Cell> reBlockingCells = opponentKillingThreat.getBlockingCells(blockingCell);
+								Set<Cell> reBlockingCells = opponentKillingThreat.getBlockingCells();
 								
 								for (Cell reblockingCell : reBlockingCells) {
 									for (Entry<ThreatType, List<Threat>> entry2 : playingThreatContext.getThreatsOfCell(reblockingCell).entrySet()) {
@@ -348,22 +347,22 @@ public class EvaluationServiceImpl implements EvaluationService {
 		return false;
 	}
 
-	private Set<Cell> extractBlockingCells(Pair<Threat, Threat> threatPair, Cell threatCell) {
-		Set<Cell> blockingCells = new HashSet<>(threatPair.getFirst().getBlockingCells(threatCell));
+	private Set<Cell> extractBlockingCells(Pair<Threat, Threat> threatPair) {
+		Set<Cell> blockingCells = new HashSet<>(threatPair.getFirst().getBlockingCells());
 		if (threatPair.getSecond() != null && threatPair.getFirst().getThreatType().equals(threatPair.getSecond().getThreatType())) {
-			blockingCells.addAll(threatPair.getSecond().getBlockingCells(threatCell));
+			blockingCells.addAll(threatPair.getSecond().getBlockingCells());
 		}
 		return blockingCells;
 	}
 
 	private boolean hasSimilarThreat(Map<CompoThreatType, List<Pair<Threat, Threat>>> pendingThreatMap, CompoThreatType compoThreatType, Pair<Threat, Threat> threatPair, boolean isPlaying) {
 		
-		Set<Cell> firstBlockingCells = getBlockingCells(threatPair, isPlaying);
+		Set<Cell> firstPairCounterCells = getPairCounterCells(threatPair, isPlaying);
 		
 		for (CompoThreatType betterThreatType : compoThreatType.getSimilarOrBetterCompoThreatTypes(true, true)) {
 			for (Pair<Threat, Threat> previousPair : pendingThreatMap.computeIfAbsent(betterThreatType, k -> new ArrayList<>())) {
-				Set<Cell> previousBlockingCells = getBlockingCells(previousPair, isPlaying);
-				if (previousBlockingCells.stream().filter(firstBlockingCells::contains).count() == 0) {
+				Set<Cell> previousCounterCells = getPairCounterCells(previousPair, isPlaying);
+				if (previousCounterCells.stream().filter(firstPairCounterCells::contains).count() == 0) {
 					return true;
 				}
 			}
@@ -381,14 +380,13 @@ public class EvaluationServiceImpl implements EvaluationService {
 		return killingCells;
 	}
 	
-	private Set<Cell> getBlockingCells(Pair<Threat, Threat> threatPair, boolean isPlaying) {
+	private Set<Cell> getPairCounterCells(Pair<Threat, Threat> threatPair, boolean isPlaying) {
 		Set<Cell> blockingCells = new HashSet<>();
 		
 		if (isPlaying) {
-			Cell secondThreatCell = retrieveThreatCell(threatPair);
-			blockingCells.addAll(threatPair.getFirst().getBlockingCells(secondThreatCell));
+			blockingCells.addAll(threatPair.getFirst().getBlockingCells());
 			if (threatPair.getSecond() != null) {
-				blockingCells.addAll(threatPair.getSecond().getBlockingCells(secondThreatCell));
+				blockingCells.addAll(threatPair.getSecond().getBlockingCells());
 			}
 		} else {
 			blockingCells.addAll(threatPair.getFirst().getKillingCells());
@@ -398,24 +396,6 @@ public class EvaluationServiceImpl implements EvaluationService {
 		}
 		
 		return blockingCells;
-	}
-
-	private Cell retrieveThreatCell(Pair<Threat, Threat> threatPair) {
-		
-		if (threatPair.getFirst().getThreatType().isDoubleType()) {
-			return ((DoubleThreat) threatPair.getFirst()).getTargetCell();
-		}
-		
-		if (threatPair.getSecond() == null) {
-			return threatPair.getFirst().getEmptyCells().iterator().next();
-		}
-		
-		if (threatPair.getSecond().getThreatType().isDoubleType()) {
-			return ((DoubleThreat) threatPair.getSecond()).getTargetCell();
-		}
-		
-		return threatPair.getFirst().getEmptyCells().stream().filter(c -> threatPair.getSecond().getEmptyCells().contains(c)).findFirst().orElseThrow();
-		
 	}
 
 }

@@ -1,26 +1,35 @@
 package fr.leblanc.gomoku.engine.model;
 
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class Threat {
 
+	private ThreatType threatType;
+	private Cell targetCell;
+	private Set<Cell> plainCells;
+	private Set<Cell> blockingCells;
+	private List<Cell> killingCells;
+	
+	public Threat(Cell targetCell, Set<Cell> plainCells, Set<Cell> blockingCells, ThreatType threatType) {
+		this.targetCell = targetCell;
+		this.plainCells = plainCells;
+		this.blockingCells = blockingCells;
+		this.threatType = threatType;
+	}
+	
+	public Cell getTargetCell() {
+		return targetCell;
+	}
+	
 	public Set<Cell> getPlainCells() {
 		return plainCells;
 	}
 
 	public void setPlainCells(Set<Cell> plainCells) {
 		this.plainCells = plainCells;
-	}
-
-	public Set<Cell> getEmptyCells() {
-		return emptyCells;
-	}
-	
-	public void setEmptyCells(Set<Cell> emptyCells) {
-		this.emptyCells = emptyCells;
 	}
 
 	public ThreatType getThreatType() {
@@ -31,31 +40,17 @@ public class Threat {
 		this.threatType = threatType;
 	}
 
-	private Set<Cell> plainCells = new HashSet<>();
-	private Set<Cell> emptyCells = new HashSet<>();
-	private ThreatType threatType;
-	
-	public Threat(Set<Cell> plainCells, Set<Cell> emptyCells, ThreatType threatType) {
-		this.plainCells = plainCells;
-		this.emptyCells = emptyCells;
-		this.threatType = threatType;
+	public List<Cell> getKillingCells() {
+		if (killingCells == null) {
+			this.killingCells = new ArrayList<>();
+			killingCells.add(targetCell);
+			killingCells.addAll(blockingCells);
+		}
+		return killingCells;
 	}
 	
-	public Threat() {
-	}
-
-	public Set<Cell> getKillingCells() {
-		return getBlockingCells(null);
-	}
-	
-	
-	public Set<Cell> getBlockingCells(Cell playingCell) {
-		return emptyCells.stream().filter(c -> !c.equals(playingCell)).collect(Collectors.toSet());
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(emptyCells, plainCells, threatType);
+	public Set<Cell> getBlockingCells() {
+		return blockingCells;
 	}
 
 	@Override
@@ -71,6 +66,10 @@ public class Threat {
 			return false;
 		}
 		
+		if (!targetCell.equals(other.targetCell)) {
+			return false;
+		}
+		
 		if (plainCells.size() != other.plainCells.size()) {
 			return false;
 		}
@@ -79,20 +78,26 @@ public class Threat {
 			return false;
 		}
 		
-		if (emptyCells.size() != other.emptyCells.size()) {
+		if (blockingCells.size() != other.blockingCells.size()) {
 			return false;
 		}
 		
-		if (!emptyCells.containsAll(other.emptyCells)) {
+		if (!blockingCells.containsAll(other.blockingCells)) {
 			return false;
 		}
 		
 		return true;
 	}
+	
+	@Override
+	public int hashCode() {
+		return Objects.hash(threatType, targetCell, plainCells, blockingCells);
+	}
 
 	@Override
 	public String toString() {
-		return "Threat [plainCells=" + plainCells + ", emptyCells=" + emptyCells + ", threatType=" + threatType + "]";
+		return "Threat [threatType=" + threatType + ", targetCell=" + targetCell + ", plainCells=" + plainCells
+				+ ", blockingCells=" + blockingCells;
 	}
 	
 }

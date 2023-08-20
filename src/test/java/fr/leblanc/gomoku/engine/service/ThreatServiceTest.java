@@ -18,7 +18,7 @@ import fr.leblanc.gomoku.engine.model.messaging.GameDTO;
 import fr.leblanc.gomoku.engine.util.GomokuTestsHelper;
 
 @SpringBootTest
-public class ThreatServiceTest extends AbstractGomokuTest {
+class ThreatServiceTest extends AbstractGomokuTest {
 
 	@Autowired
 	private ThreatService threatService;
@@ -29,12 +29,12 @@ public class ThreatServiceTest extends AbstractGomokuTest {
 		
 		ThreatContext playingThreatContext = threatService.computeThreatContext(GameData.of(gameDto), GomokuColor.BLACK_COLOR);
 		assertEquals(1, playingThreatContext.getThreatsOfType(ThreatType.THREAT_5).size());
-		assertTrue(playingThreatContext.getThreatsOfType(ThreatType.THREAT_5).get(0).getEmptyCells().contains(new Cell(5, 10)));
+		assertEquals(new Cell(5, 10), playingThreatContext.getThreatsOfType(ThreatType.THREAT_5).get(0).getTargetCell());
 		
 		ThreatContext opponentThreatContext = threatService.computeThreatContext(GameData.of(gameDto), GomokuColor.WHITE_COLOR);
-		assertEquals(2, opponentThreatContext.getDoubleThreatsOfType(ThreatType.DOUBLE_THREAT_4).size());
-		assertTrue(opponentThreatContext.getDoubleThreatsOfType(ThreatType.DOUBLE_THREAT_4).stream().anyMatch(t -> t.getTargetCell().equals(new Cell(10, 6))));
-		assertTrue(opponentThreatContext.getDoubleThreatsOfType(ThreatType.DOUBLE_THREAT_4).stream().anyMatch(t -> t.getTargetCell().equals(new Cell(6, 10))));
+		assertEquals(2, opponentThreatContext.getThreatsOfType(ThreatType.DOUBLE_THREAT_4).size());
+		assertTrue(opponentThreatContext.getThreatsOfType(ThreatType.DOUBLE_THREAT_4).stream().anyMatch(t -> t.getTargetCell().equals(new Cell(10, 6))));
+		assertTrue(opponentThreatContext.getThreatsOfType(ThreatType.DOUBLE_THREAT_4).stream().anyMatch(t -> t.getTargetCell().equals(new Cell(6, 10))));
 	}
 	
 	@Test
@@ -42,18 +42,18 @@ public class ThreatServiceTest extends AbstractGomokuTest {
 		GameDTO gameDto = GomokuTestsHelper.readGameDto("threatDT3DT3.json");
 		
 		ThreatContext playingThreatContext = threatService.computeThreatContext(GameData.of(gameDto), GomokuColor.BLACK_COLOR);
-		assertEquals(4, playingThreatContext.getDoubleThreatsOfType(ThreatType.DOUBLE_THREAT_3).size());
-		assertTrue(playingThreatContext.getDoubleThreatsOfType(ThreatType.DOUBLE_THREAT_3).stream().anyMatch(t -> t.getTargetCell().equals(new Cell(10, 5))));
-		assertTrue(playingThreatContext.getDoubleThreatsOfType(ThreatType.DOUBLE_THREAT_3).stream().anyMatch(t -> t.getTargetCell().equals(new Cell(9, 6))));
-		assertTrue(playingThreatContext.getDoubleThreatsOfType(ThreatType.DOUBLE_THREAT_3).stream().anyMatch(t -> t.getTargetCell().equals(new Cell(6, 9))));
-		assertTrue(playingThreatContext.getDoubleThreatsOfType(ThreatType.DOUBLE_THREAT_3).stream().anyMatch(t -> t.getTargetCell().equals(new Cell(5, 10))));
+		assertEquals(4, playingThreatContext.getThreatsOfType(ThreatType.DOUBLE_THREAT_3).size());
+		assertTrue(playingThreatContext.getThreatsOfType(ThreatType.DOUBLE_THREAT_3).stream().anyMatch(t -> t.getTargetCell().equals(new Cell(10, 5))));
+		assertTrue(playingThreatContext.getThreatsOfType(ThreatType.DOUBLE_THREAT_3).stream().anyMatch(t -> t.getTargetCell().equals(new Cell(9, 6))));
+		assertTrue(playingThreatContext.getThreatsOfType(ThreatType.DOUBLE_THREAT_3).stream().anyMatch(t -> t.getTargetCell().equals(new Cell(6, 9))));
+		assertTrue(playingThreatContext.getThreatsOfType(ThreatType.DOUBLE_THREAT_3).stream().anyMatch(t -> t.getTargetCell().equals(new Cell(5, 10))));
 		
 		ThreatContext opponentThreatContext = threatService.computeThreatContext(GameData.of(gameDto), GomokuColor.WHITE_COLOR);
-		assertEquals(4, opponentThreatContext.getDoubleThreatsOfType(ThreatType.DOUBLE_THREAT_3).size());
-		assertTrue(opponentThreatContext.getDoubleThreatsOfType(ThreatType.DOUBLE_THREAT_3).stream().anyMatch(t -> t.getTargetCell().equals(new Cell(10, 6))));
-		assertTrue(opponentThreatContext.getDoubleThreatsOfType(ThreatType.DOUBLE_THREAT_3).stream().anyMatch(t -> t.getTargetCell().equals(new Cell(11, 5))));
-		assertTrue(opponentThreatContext.getDoubleThreatsOfType(ThreatType.DOUBLE_THREAT_3).stream().anyMatch(t -> t.getTargetCell().equals(new Cell(7, 9))));
-		assertTrue(opponentThreatContext.getDoubleThreatsOfType(ThreatType.DOUBLE_THREAT_3).stream().anyMatch(t -> t.getTargetCell().equals(new Cell(6, 10))));
+		assertEquals(4, opponentThreatContext.getThreatsOfType(ThreatType.DOUBLE_THREAT_3).size());
+		assertTrue(opponentThreatContext.getThreatsOfType(ThreatType.DOUBLE_THREAT_3).stream().anyMatch(t -> t.getTargetCell().equals(new Cell(10, 6))));
+		assertTrue(opponentThreatContext.getThreatsOfType(ThreatType.DOUBLE_THREAT_3).stream().anyMatch(t -> t.getTargetCell().equals(new Cell(11, 5))));
+		assertTrue(opponentThreatContext.getThreatsOfType(ThreatType.DOUBLE_THREAT_3).stream().anyMatch(t -> t.getTargetCell().equals(new Cell(7, 9))));
+		assertTrue(opponentThreatContext.getThreatsOfType(ThreatType.DOUBLE_THREAT_3).stream().anyMatch(t -> t.getTargetCell().equals(new Cell(6, 10))));
 	}
 	
 	@Test
@@ -61,9 +61,9 @@ public class ThreatServiceTest extends AbstractGomokuTest {
 		GameDTO gameDto = GomokuTestsHelper.readGameDto("threatDT2DT2.json");
 		
 		ThreatContext playingThreatContext = threatService.computeThreatContext(GameData.of(gameDto), GomokuColor.BLACK_COLOR);
-		assertEquals(18, playingThreatContext.getDoubleThreatsOfType(ThreatType.DOUBLE_THREAT_2).size());
+		assertEquals(18, playingThreatContext.getThreatsOfType(ThreatType.DOUBLE_THREAT_2).size());
 		
 		ThreatContext opponentThreatContext = threatService.computeThreatContext(GameData.of(gameDto), GomokuColor.WHITE_COLOR);
-		assertEquals(18, opponentThreatContext.getDoubleThreatsOfType(ThreatType.DOUBLE_THREAT_2).size());
+		assertEquals(18, opponentThreatContext.getThreatsOfType(ThreatType.DOUBLE_THREAT_2).size());
 	}
 }

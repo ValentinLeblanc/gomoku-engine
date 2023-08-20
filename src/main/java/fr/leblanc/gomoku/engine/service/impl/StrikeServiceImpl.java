@@ -20,7 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
 
 import fr.leblanc.gomoku.engine.model.Cell;
-import fr.leblanc.gomoku.engine.model.DoubleThreat;
 import fr.leblanc.gomoku.engine.model.EvaluationResult;
 import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.GomokuColor;
@@ -69,11 +68,10 @@ public class StrikeServiceImpl implements StrikeService {
 		}
 		
 		ThreatContext playingThreatContext = threatService.computeThreatContext(gameData, playingColor);
-//		Map<ThreatType, Set<DoubleThreat>> doubleThreatMap = playingThreatContext.getDoubleThreatTypeToThreatMap();
 	
 		// check for a threat5
 		if (!playingThreatContext.getThreatsOfType(ThreatType.THREAT_5).isEmpty()) {
-			Cell move = playingThreatContext.getThreatsOfType(ThreatType.THREAT_5).iterator().next().getEmptyCells().iterator().next();
+			Cell move = playingThreatContext.getThreatsOfType(ThreatType.THREAT_5).iterator().next().getTargetCell();
 			storeInDirectStrikeCache(gameData, strikeContext, playingColor, move);
 			return move;
 		}
@@ -85,7 +83,7 @@ public class StrikeServiceImpl implements StrikeService {
 			
 			Set<Cell> opponentThreats = new HashSet<>();
 			
-			opponentThreatContext.getThreatsOfType(ThreatType.THREAT_5).stream().forEach(t -> t.getEmptyCells().stream().forEach(opponentThreats::add));
+			opponentThreatContext.getThreatsOfType(ThreatType.THREAT_5).stream().map(Threat::getTargetCell).forEach(opponentThreats::add);
 			
 			if (opponentThreats.size() == 1) {
 				
@@ -99,7 +97,7 @@ public class StrikeServiceImpl implements StrikeService {
 					playingThreatContext = threatService.computeThreatContext(gameData, playingColor);
 					if (!playingThreatContext.getThreatsOfType(ThreatType.THREAT_5).isEmpty()) {
 						
-						Cell newThreat = playingThreatContext.getThreatsOfType(ThreatType.THREAT_5).iterator().next().getEmptyCells().iterator().next();
+						Cell newThreat = playingThreatContext.getThreatsOfType(ThreatType.THREAT_5).get(0).getTargetCell();
 						
 						// opponent defends
 						gameData.addMove(newThreat, -playingColor);
@@ -127,8 +125,8 @@ public class StrikeServiceImpl implements StrikeService {
 		}
 	
 		// check for a double threat4 move
-		if (!playingThreatContext.getDoubleThreatsOfType(ThreatType.DOUBLE_THREAT_4).isEmpty()) {
-			Cell targetCell = playingThreatContext.getDoubleThreatsOfType(ThreatType.DOUBLE_THREAT_4).iterator().next().getTargetCell();
+		if (!playingThreatContext.getThreatsOfType(ThreatType.DOUBLE_THREAT_4).isEmpty()) {
+			Cell targetCell = playingThreatContext.getThreatsOfType(ThreatType.DOUBLE_THREAT_4).iterator().next().getTargetCell();
 			storeInDirectStrikeCache(gameData, strikeContext, playingColor, targetCell);
 			return targetCell;
 		}
@@ -138,7 +136,7 @@ public class StrikeServiceImpl implements StrikeService {
 	
 		Set<Cell> cells = new HashSet<>();
 		
-		threat4List.stream().forEach(t -> cells.addAll(t.getEmptyCells()));
+		threat4List.stream().forEach(t -> cells.add(t.getTargetCell()));
 		
 		for (Cell threat4Move : cells) {
 			
@@ -146,7 +144,7 @@ public class StrikeServiceImpl implements StrikeService {
 			
 			// opponent defends
 			opponentThreatContext = threatService.computeThreatContext(gameData, playingColor);
-			Cell counterMove = opponentThreatContext.getThreatsOfType(ThreatType.THREAT_5).iterator().next().getEmptyCells().iterator().next();
+			Cell counterMove = opponentThreatContext.getThreatsOfType(ThreatType.THREAT_5).iterator().next().getTargetCell();
 
 			gameData.addMove(counterMove, -playingColor);
 			
@@ -180,7 +178,7 @@ public class StrikeServiceImpl implements StrikeService {
 		ThreatContext opponentThreatContext = threatService.computeThreatContext(gameData, -playingColor);
 		
 		if (!opponentThreatContext.getThreatsOfType(ThreatType.THREAT_5).isEmpty()) {
-			defendingMoves.add(opponentThreatContext.getThreatsOfType(ThreatType.THREAT_5).iterator().next().getEmptyCells().iterator().next());
+			defendingMoves.add(opponentThreatContext.getThreatsOfType(ThreatType.THREAT_5).iterator().next().getTargetCell());
 			storeInCounterStrikeCache(gameData, strikeContext, playingColor, defendingMoves);
 			return defendingMoves;
 		}
@@ -197,7 +195,7 @@ public class StrikeServiceImpl implements StrikeService {
 					
 					if (!newThreatContext.getThreatsOfType(ThreatType.THREAT_5).isEmpty()) {
 						
-						Cell counter = newThreatContext.getThreatsOfType(ThreatType.THREAT_5).iterator().next().getEmptyCells().iterator().next();
+						Cell counter = newThreatContext.getThreatsOfType(ThreatType.THREAT_5).iterator().next().getTargetCell();
 						
 						gameData.addMove(counter, -playingColor);
 						
@@ -385,7 +383,7 @@ public class StrikeServiceImpl implements StrikeService {
 		
 		ThreatContext threatContext = threatService.computeThreatContext(gameData, playingColor);
 
-		Set<Cell> newSet = threatContext.getThreatsOfType(ThreatType.THREAT_4).stream().flatMap(t -> t.getEmptyCells().stream()).collect(Collectors.toSet());
+		Set<Cell> newSet = threatContext.getThreatsOfType(ThreatType.THREAT_4).stream().map(t -> t.getTargetCell()).collect(Collectors.toSet());
 		
 		Cell retry = secondaryWithGivenSet(gameData, playingColor, newSet, depth, maxDepth, strikeContext);
 		if (retry != null) {
@@ -400,7 +398,7 @@ public class StrikeServiceImpl implements StrikeService {
 			}
 		}
 		
-		newSet = threatContext.getDoubleThreatsOfType(ThreatType.DOUBLE_THREAT_3).stream().map(DoubleThreat::getTargetCell).collect(Collectors.toSet());
+		newSet = threatContext.getThreatsOfType(ThreatType.DOUBLE_THREAT_3).stream().map(Threat::getTargetCell).collect(Collectors.toSet());
 		
 		retry = secondaryWithGivenSet(gameData, playingColor, newSet, depth, maxDepth, strikeContext);
 		
