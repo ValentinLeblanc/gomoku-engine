@@ -1,11 +1,15 @@
 package fr.leblanc.gomoku.engine.model;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import fr.leblanc.gomoku.engine.model.messaging.GameDTO;
 import fr.leblanc.gomoku.engine.model.messaging.MoveDTO;
 
 public class GameData {
 
 	private int[][] data;
+	private Map<Integer, ThreatContext> threatContextMap = new HashMap<>();
 	
 	public GameData(int[][] data) {
 		this.data = data;
@@ -30,8 +34,18 @@ public class GameData {
 		}
 	}
 
-	public void addMove(Cell cell, int value) {
-		data[cell.getColumn()][cell.getRow()] = value;
+	public Map<Integer, ThreatContext> getThreatContextMap() {
+		return threatContextMap;
+	}
+	
+	public void addMove(Cell cell, int color) {
+		data[cell.getColumn()][cell.getRow()] = color;
+		if (threatContextMap.get(color) != null) {
+			threatContextMap.get(color).update(cell, color);
+		}
+		if (threatContextMap.get(-color) != null) {
+			threatContextMap.get(-color).update(cell, color);
+		}
 	}
 	
 	public void removeMove(Cell cell) {
@@ -40,6 +54,12 @@ public class GameData {
 	
 	public int getValue(int columnIndex, int rowIndex) {
 		return data[columnIndex][rowIndex];
+	}
+	
+	public ThreatContext computeThreatContext(int color) {
+		ThreatContext value = new ThreatContext(data, color);
+		threatContextMap.put(color, value);
+		return value;
 	}
 	
 	public static GameData of(GameDTO game) {
@@ -61,9 +81,9 @@ public class GameData {
 		return new GameData(data);
 	}
 	
-	public static int extractPlayingColor(GameData dataWrapper) {
+	public static int extractPlayingColor(GameData gameData) {
 		
-		int[][] data = dataWrapper.getData();
+		int[][] data = gameData.getData();
 		
 		int moveCount = 0;
 		
@@ -78,12 +98,12 @@ public class GameData {
 		return moveCount % 2 == 0 ? GomokuColor.BLACK_COLOR : GomokuColor.WHITE_COLOR;
 	}
 	
-	public static int countEmptyCells(GameData dataWrapper) {
+	public static int countEmptyCells(GameData gameData) {
 		int emptyCellsCount = 0;
 		
-		for (int i = 0; i < dataWrapper.getData().length; i++) {
-			for (int j = 0; j < dataWrapper.getData().length; j++) {
-				if (dataWrapper.getData()[i][j] == GomokuColor.NONE_COLOR) {
+		for (int i = 0; i < gameData.getData().length; i++) {
+			for (int j = 0; j < gameData.getData().length; j++) {
+				if (gameData.getData()[i][j] == GomokuColor.NONE_COLOR) {
 					emptyCellsCount++;
 				}
 			}
@@ -91,12 +111,12 @@ public class GameData {
 		return emptyCellsCount;
 	}
 	
-	public static int countPlainCells(GameData dataWrapper) {
+	public static int countPlainCells(GameData gameData) {
 		int plainCellsCount = 0;
 		
-		for (int i = 0; i < dataWrapper.getData().length; i++) {
-			for (int j = 0; j < dataWrapper.getData().length; j++) {
-				if (dataWrapper.getData()[i][j] != GomokuColor.NONE_COLOR) {
+		for (int i = 0; i < gameData.getData().length; i++) {
+			for (int j = 0; j < gameData.getData().length; j++) {
+				if (gameData.getData()[i][j] != GomokuColor.NONE_COLOR) {
 					plainCellsCount++;
 				}
 			}

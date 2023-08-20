@@ -12,12 +12,10 @@ import fr.leblanc.gomoku.engine.model.ThreatType;
 import fr.leblanc.gomoku.engine.util.Pair;
 
 public interface ThreatService {
-
-	ThreatContext computeThreatContext(GameData dataWrapper, int playingColor);
 	
 	Set<Cell> findCombinedThreats(ThreatContext threatContext, ThreatType threatType1, ThreatType threatType2);
 
-	List<Cell> buildAnalyzedCells(GameData dataWrapper, int color);
+	List<Cell> buildAnalyzedCells(GameData gameData, int color);
 
 	List<Pair<Threat, Threat>> findCompositeThreats(ThreatContext context, CompoThreatType threatTryContext);
 

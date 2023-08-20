@@ -16,20 +16,20 @@ public class CheckWinServiceImpl implements CheckWinService {
 
 
 	@Override
-	public CheckWinResult checkWin(GameData dataWrapper) {
+	public CheckWinResult checkWin(GameData gameData) {
 		CheckWinResult checkWinResult = new CheckWinResult(GomokuColor.NONE_COLOR);
 		for (int color : COLORS) {
 			int[][] result = new int[5][2];
-			if (checkWin(dataWrapper, color, result)) {
+			if (checkWin(gameData, color, result)) {
 				return checkWinResult.build(result, color);
 			}
 		}
 		return checkWinResult;
 	}
 	
-	private boolean checkWin(GameData dataWrapper, int color, int[][] result) {
+	private boolean checkWin(GameData gameData, int color, int[][] result) {
 
-		int[][] data = dataWrapper.getData();
+		int[][] data = gameData.getData();
 		
 		for (int i = 0; i < data[0].length; i++) {
 			for (int j = 0; j < data.length; j++) {

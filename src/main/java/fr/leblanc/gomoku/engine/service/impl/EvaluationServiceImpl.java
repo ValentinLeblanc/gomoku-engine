@@ -86,8 +86,8 @@ public class EvaluationServiceImpl implements EvaluationService {
 		
 		EvaluationResult evaluationResult = new EvaluationResult();
 		
-		ThreatContext playingThreatContext = threatService.computeThreatContext(context.getGameData(), context.getPlayingColor());
-		ThreatContext opponentThreatContext = threatService.computeThreatContext(context.getGameData(), -context.getPlayingColor());
+		ThreatContext playingThreatContext = context.getGameData().computeThreatContext(context.getPlayingColor());
+		ThreatContext opponentThreatContext = context.getGameData().computeThreatContext(-context.getPlayingColor());
 
 		if (!playingThreatContext.getThreatsOfType(ThreatType.THREAT_5).isEmpty()) {
 			evaluationResult.setEvaluation(THREAT_5_POTENTIAL);

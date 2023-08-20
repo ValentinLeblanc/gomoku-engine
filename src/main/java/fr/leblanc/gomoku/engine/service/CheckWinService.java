@@ -5,6 +5,6 @@ import fr.leblanc.gomoku.engine.model.GameData;
 
 public interface CheckWinService {
 
-	CheckWinResult checkWin(GameData dataWrapper);
+	CheckWinResult checkWin(GameData gameData);
 
 }

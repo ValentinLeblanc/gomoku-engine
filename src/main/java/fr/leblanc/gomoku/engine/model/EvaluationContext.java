@@ -73,7 +73,7 @@ public class EvaluationContext {
 
 	@Override
 	public String toString() {
-		return "EvaluationContext [dataWrapper=" + gameData + ", playingColor=" + playingColor + ", external=" + internal + "]";
+		return "EvaluationContext [gameData=" + gameData + ", playingColor=" + playingColor + ", external=" + internal + "]";
 	}
 	
 }
