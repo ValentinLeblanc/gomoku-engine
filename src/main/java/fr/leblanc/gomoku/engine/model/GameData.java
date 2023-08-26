@@ -34,36 +34,36 @@ public class GameData {
 		}
 	}
 
-	public Map<Integer, ThreatContext> getThreatContextMap() {
-		return threatContextMap;
+	public ThreatContext getThreatContext(int color) {
+		return threatContextMap.get(color);
+	}
+
+	public void putThreatContext(int color, ThreatContext threatContext) {
+		threatContextMap.put(color, threatContext);
 	}
 	
 	public void addMove(Cell cell, int color) {
 		data[cell.getColumn()][cell.getRow()] = color;
 		if (threatContextMap.get(color) != null) {
-			threatContextMap.get(color).addMoveUpdate(cell, color);
+			threatContextMap.get(color).addMove(cell, color);
 		}
 		if (threatContextMap.get(-color) != null) {
-			threatContextMap.get(-color).addMoveUpdate(cell, color);
+			threatContextMap.get(-color).addMove(cell, color);
 		}
 	}
 	
 	public void removeMove(Cell cell) {
 		data[cell.getColumn()][cell.getRow()] = 0;
 		if (threatContextMap.get(GomokuColor.BLACK_COLOR) != null) {
-			threatContextMap.get(GomokuColor.BLACK_COLOR).removeMoveUpdate(cell);
+			threatContextMap.get(GomokuColor.BLACK_COLOR).removeMove(cell);
 		}
 		if (threatContextMap.get(GomokuColor.WHITE_COLOR) != null) {
-			threatContextMap.get(GomokuColor.WHITE_COLOR).removeMoveUpdate(cell);
+			threatContextMap.get(GomokuColor.WHITE_COLOR).removeMove(cell);
 		}
 	}
 	
 	public int getValue(int columnIndex, int rowIndex) {
 		return data[columnIndex][rowIndex];
-	}
-	
-	public ThreatContext getThreatContext(int color) {
-		return threatContextMap.computeIfAbsent(color, c -> new ThreatContext(data, color));
 	}
 	
 	public static GameData of(GameDTO game) {

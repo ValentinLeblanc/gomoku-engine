@@ -3,8 +3,8 @@ package fr.leblanc.gomoku.engine.service.impl;
 import org.springframework.stereotype.Service;
 
 import fr.leblanc.gomoku.engine.model.CheckWinResult;
-import fr.leblanc.gomoku.engine.model.GomokuColor;
 import fr.leblanc.gomoku.engine.model.GameData;
+import fr.leblanc.gomoku.engine.model.GomokuColor;
 import fr.leblanc.gomoku.engine.service.CheckWinService;
 
 @Service

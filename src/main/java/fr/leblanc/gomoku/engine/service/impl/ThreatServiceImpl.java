@@ -3,7 +3,9 @@ package fr.leblanc.gomoku.engine.service.impl;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
@@ -21,10 +23,326 @@ import fr.leblanc.gomoku.engine.util.Pair;
 public class ThreatServiceImpl implements ThreatService {
 	
 	@Override
+	public ThreatContext getOrUpdateThreatContext(GameData gameData, int color) {
+//		if (gameData.getThreatContext(color) != null) {
+//			updateThreatContext(gameData.getThreatContext(color));
+//		} else {
+			ThreatContext threatContext = new ThreatContext(gameData.getData(), color);
+			compute(threatContext);
+			gameData.putThreatContext(color, threatContext);
+//		}
+		return gameData.getThreatContext(color);
+	}
+	
+	private void updateThreatContext(ThreatContext threatContext) {
+		if (threatContext.isDirty()) {
+			for (Cell dirtyAddedCell : threatContext.getDirtyAddedCells()) {
+				clearEmptyCellMapping(threatContext, dirtyAddedCell);
+				computeHorizontalThreats(threatContext, dirtyAddedCell.getColumn(), dirtyAddedCell.getRow());
+				computeVerticalThreats(threatContext, dirtyAddedCell.getColumn(), dirtyAddedCell.getRow());
+				computeDiagonal1Threats(threatContext, dirtyAddedCell.getColumn(), dirtyAddedCell.getRow());
+				computeDiagonal2Threats(threatContext, dirtyAddedCell.getColumn(), dirtyAddedCell.getRow());
+			}
+			
+			for (Cell dirtyRemovedCell : threatContext.getDirtyRemovedCells()) {
+				clearPlainCellMapping(threatContext, dirtyRemovedCell);
+				computeHorizontalThreats(threatContext, dirtyRemovedCell.getColumn(), dirtyRemovedCell.getRow());
+				computeVerticalThreats(threatContext, dirtyRemovedCell.getColumn(), dirtyRemovedCell.getRow());
+				computeDiagonal1Threats(threatContext, dirtyRemovedCell.getColumn(), dirtyRemovedCell.getRow());
+				computeDiagonal2Threats(threatContext, dirtyRemovedCell.getColumn(), dirtyRemovedCell.getRow());
+			}
+			
+			computeDoubleThreats(threatContext, ThreatType.THREAT_4);
+			computeDoubleThreats(threatContext, ThreatType.THREAT_3);
+			computeDoubleThreats(threatContext, ThreatType.THREAT_2);
+			
+			threatContext.getDirtyAddedCells().clear();
+			threatContext.getDirtyRemovedCells().clear();
+		}
+	}
+	
+	private void clearEmptyCellMapping(ThreatContext threatContext, Cell cell) {
+		List<Threat> toRemove = new ArrayList<>();
+		
+		for (Threat threat : threatContext.getBlockingCellThreats(cell)) {
+			threatContext.getThreatsOfType(threat.getThreatType()).remove(threat);
+			toRemove.add(threat);
+		}
+		
+		for (Entry<ThreatType, List<Threat>> entry : threatContext.getThreatsOfTargetCell(cell).entrySet()) {
+			for (Threat threat : entry.getValue()) {
+				toRemove.add(threat);
+			}
+		}
+		
+		for (Threat threat : toRemove) {
+			removeThreat(threatContext ,threat);
+		}
+		
+		threatContext.getBlockingCellThreats(cell).clear();
+		
+	}
+
+	private void removeThreat(ThreatContext threatContext, Threat threat) {
+		threatContext.getThreatsOfType(threat.getThreatType()).remove(threat);
+		threatContext.getThreatsOfTargetCell(threat.getTargetCell()).get(threat.getThreatType()).remove(threat);
+		for (Cell blockingCell : threat.getBlockingCells()) {
+			threatContext.getBlockingCellThreats(blockingCell).remove(threat);
+		}
+		for (Cell plainCell : threat.getPlainCells()) {
+			threatContext.getPlainCellThreats(plainCell).remove(threat);
+		}
+	}
+	
+	private void clearPlainCellMapping(ThreatContext threatContext, Cell cell) {
+		List<Threat> toRemove = new ArrayList<>();
+		
+		for (Threat threat : threatContext.getPlainCellThreats(cell)) {
+			toRemove.add(threat);
+		}
+		
+		for (Threat threat : toRemove) {
+			removeThreat(threatContext, threat);
+		}
+		
+		threatContext.getPlainCellThreats(cell).clear();
+		
+	}
+
+	private void computeHorizontalThreats(ThreatContext threatContext, int centerX, int centerY) {
+	    int minX = Math.max(0, centerX - 4);
+	    int maxX = Math.min(threatContext.getData().length - 1, centerX + 4);
+	    for (int row = centerY; row >= 0 && row < threatContext.getData().length; row++) {
+	        int[][] horizontalStripe = new int[maxX - minX + 1][2];
+	        for (int col = minX; col <= maxX; col++) {
+	            horizontalStripe[col - minX][0] = col;
+	            horizontalStripe[col - minX][1] = row;
+	        }
+	        computeStripeThreats(threatContext, horizontalStripe);
+	    }
+	}
+
+	private void computeVerticalThreats(ThreatContext threatContext, int centerX, int centerY) {
+	    int minY = Math.max(0, centerY - 4);
+	    int maxY = Math.min(threatContext.getData().length - 1, centerY + 4);
+	    for (int col = centerX; col >= 0 && col < threatContext.getData().length; col++) {
+	        int[][] verticalStripe = new int[maxY - minY + 1][2];
+	        for (int row = minY; row <= maxY; row++) {
+	            verticalStripe[row - minY][0] = col;
+	            verticalStripe[row - minY][1] = row;
+	        }
+	        computeStripeThreats(threatContext, verticalStripe);
+	    }
+	}
+
+	private void computeDiagonal1Threats(ThreatContext threatContext, int centerX, int centerY) {
+	    int minX = Math.max(0, centerX - 4);
+	    int maxX = Math.min(threatContext.getData().length - 1, centerX + 4);
+	    int minY = Math.max(0, centerY - 4);
+	    int maxY = Math.min(threatContext.getData().length - 1, centerY + 4);
+	    
+	    for (int row = centerY, col = centerX; row >= minY && col >= minX; row--, col--) {
+	        int[][] diagonal1Stripe = new int[Math.min(maxX - col, maxY - row) + 1][2];
+	        for (int i = 0; i < diagonal1Stripe.length; i++) {
+	            diagonal1Stripe[i][0] = col + i;
+	            diagonal1Stripe[i][1] = row + i;
+	        }
+	        computeStripeThreats(threatContext, diagonal1Stripe);
+	    }
+	}
+
+	private void computeDiagonal2Threats(ThreatContext threatContext, int centerX, int centerY) {
+	    int minX = Math.max(0, centerX - 4);
+	    int maxX = Math.min(threatContext.getData().length - 1, centerX + 4);
+	    int minY = Math.max(0, centerY - 4);
+	    int maxY = Math.min(threatContext.getData().length - 1, centerY + 4);
+
+	    for (int row = centerY, col = centerX; row >= minY && col <= maxX; row--, col++) {
+	        int[][] diagonal2Stripe = new int[Math.min(col - minX, maxY - row) + 1][2];
+	        for (int i = 0; i < diagonal2Stripe.length; i++) {
+	            diagonal2Stripe[i][0] = col - i;
+	            diagonal2Stripe[i][1] = row + i;
+	        }
+	        computeStripeThreats(threatContext, diagonal2Stripe);
+	    }
+	}
+
+	
+	private void compute(ThreatContext threatContext) {
+		computeHorizontalThreats(threatContext);
+		computeVerticalThreats(threatContext);
+		computeDiagonal1Threats(threatContext);
+		computeDiagonal2Threats(threatContext);
+		computeDoubleThreats(threatContext, ThreatType.THREAT_4);
+		computeDoubleThreats(threatContext, ThreatType.THREAT_3);
+		computeDoubleThreats(threatContext, ThreatType.THREAT_2);
+	}
+
+	private void computeHorizontalThreats(ThreatContext threatContext) {
+		for (int row = 0; row < threatContext.getData().length; row++) {
+			int[][] horizontalStripe = new int[threatContext.getData().length][2];
+			for (int col = 0; col < threatContext.getData().length; col++) {
+				horizontalStripe[col][0] = col;
+				horizontalStripe[col][1] = row;
+			}
+			computeStripeThreats(threatContext, horizontalStripe);
+		}
+	}
+
+	private void computeVerticalThreats(ThreatContext threatContext) {
+		for (int col = 0; col < threatContext.getData().length; col++) {
+			int[][] verticalStripe = new int[threatContext.getData().length][2];
+			for (int row = 0; row < threatContext.getData().length; row++) {
+				verticalStripe[row][0] = col;
+				verticalStripe[row][1] = row;
+			}
+			computeStripeThreats(threatContext, verticalStripe);
+		}
+	}
+
+	private void computeDiagonal1Threats(ThreatContext threatContext) {
+		for (int row = 0; row < threatContext.getData().length; row++) {
+			int[][] diagonal1Stripe = new int[threatContext.getData().length - row][2];
+			for (int col = 0; col < threatContext.getData().length - row; col++) {
+				diagonal1Stripe[col][0] = col;
+				diagonal1Stripe[col][1] = row + col;
+			}
+			computeStripeThreats(threatContext, diagonal1Stripe);
+		}
+	
+		for (int col = 1; col < threatContext.getData().length; col++) {
+			int[][] diagonal1Stripe = new int[threatContext.getData().length - col][2];
+			for (int row = 0; row < threatContext.getData().length - col; row++) {
+				diagonal1Stripe[row][0] = col + row;
+				diagonal1Stripe[row][1] = row;
+			}
+			computeStripeThreats(threatContext, diagonal1Stripe);
+		}
+	}
+
+	private void computeDiagonal2Threats(ThreatContext threatContext) {
+		for (int col = 0; col < threatContext.getData().length; col++) {
+			int[][] diagonal2Stripe = new int[threatContext.getData().length - col][2];
+			for (int row = threatContext.getData().length - 1; row >= col; row--) {
+				diagonal2Stripe[threatContext.getData().length - 1 - row][0] = col - row + threatContext.getData().length - 1;
+				diagonal2Stripe[threatContext.getData().length - 1 - row][1] = row;
+			}
+			computeStripeThreats(threatContext, diagonal2Stripe);
+		}
+	
+		for (int row = threatContext.getData().length - 2; row >= 0; row--) {
+			int[][] diagonal2Stripe = new int[row + 1][2];
+			for (int col = 0; col <= row; col++) {
+				diagonal2Stripe[col][0] = col;
+				diagonal2Stripe[col][1] = row - col;
+			}
+			computeStripeThreats(threatContext, diagonal2Stripe);
+		}
+	}
+
+	private void computeStripeThreats(ThreatContext threatContext, int[][] stripe) {
+		int anchorIndex = 0;
+		while (anchorIndex < stripe.length - 4) {
+			anchorIndex = computeThreat(threatContext, stripe, anchorIndex);
+		}
+	}
+
+	private int computeThreat(ThreatContext threatContext, int[][] stripe, int anchorIndex) {
+		Set<Cell> plainCells = new HashSet<>();
+		Set<Cell> emptyCells = new HashSet<>();
+		
+		for (int h = 0; h < 5; h++) {
+			
+			int columnIndex = stripe[anchorIndex + h][0];
+			int rowIndex = stripe[anchorIndex + h][1];
+			int value = threatContext.getData()[columnIndex][rowIndex];
+			
+			if (value == threatContext.getColor()) {
+				plainCells.add(new Cell(columnIndex, rowIndex));
+			} else if (value == GomokuColor.NONE_COLOR) {
+				emptyCells.add(new Cell(columnIndex, rowIndex));
+			} else if (value == -threatContext.getColor()) {
+				break;
+			}
+		}
+		
+		if (!plainCells.isEmpty() && !emptyCells.isEmpty() && plainCells.size() + emptyCells.size() == 5) {
+			computeThreat(threatContext, plainCells, emptyCells);
+		}
+		
+		anchorIndex++;
+		return anchorIndex;
+	}
+
+	private void computeThreat(ThreatContext threatContext, Set<Cell> plainCells, Set<Cell> emptyCells) {
+		ThreatType threatType = ThreatType.valueOf(plainCells.size() + 1);
+		
+		for (Cell emptyCell : emptyCells) {
+			Set<Cell> blockingCells = emptyCells.stream().filter(c -> !c.equals(emptyCell)).collect(Collectors.toSet());
+			Threat newThreat = new Threat(emptyCell, plainCells, blockingCells, threatType);
+			addNewThreat(threatContext, newThreat);
+		}
+	}
+
+	private void computeDoubleThreats(ThreatContext threatContext, ThreatType threatType) {
+		Set<Threat> visitedThreats = new HashSet<>();
+		Set<Threat> toRemove = new HashSet<>();
+		for (Threat threat : threatContext.getThreatsOfType(threatType)) {
+			if (!visitedThreats.contains(threat)) {
+				List<Threat> sameTargetCellThreats = threatContext.getThreatsOfTargetCell(threat.getTargetCell()).get(threatType).stream().filter(t -> t.getPlainCells().containsAll(threat.getPlainCells())).toList();
+				if (sameTargetCellThreats.size() > 1) {
+					Set<Threat> doubleThreats = createDoubleThreats(threatContext, sameTargetCellThreats);
+					doubleThreats.stream().forEach(t -> addNewThreat(threatContext, t));
+					if (!doubleThreats.isEmpty()) {
+						visitedThreats.addAll(sameTargetCellThreats);
+						toRemove.addAll(sameTargetCellThreats);
+					}
+				}
+			}
+		}
+	}
+
+	private Set<Threat> createDoubleThreats(ThreatContext threatContext, List<Threat> threats) {
+		Set<Threat> doubleThreats = new HashSet<>();
+		Cell targetCell = threats.get(0).getTargetCell();
+		List<Threat> threatsContainingTargetCell = threats.stream().filter(t -> t.getKillingCells().contains(targetCell)).toList();
+		if (threatsContainingTargetCell.size() >= 2) {
+			doubleThreats.add(createDoubleThreat(threatContext, targetCell, threatsContainingTargetCell));
+		}
+		return doubleThreats;
+	}
+
+	private Threat createDoubleThreat(ThreatContext threatContext, Cell targetCell, List<Threat> threatsContaining) {
+		Set<Cell> blockingCells = new HashSet<>();
+		threatsContaining.forEach(t -> t.getBlockingCells().stream().filter(c -> threatsContaining.stream().filter(t2 -> t2.getKillingCells().contains(c)).count() >= threatsContaining.size() - 1).forEach(blockingCells::add));
+		return new Threat(targetCell, threatsContaining.get(0).getPlainCells(), blockingCells, threatsContaining.get(0).getThreatType().getDoubleThreatType());
+	}
+
+	private void addNewThreat(ThreatContext threatContext, Threat threat) {
+		if (!threatContext.getThreatsOfTargetCell(threat.getTargetCell()).get(threat.getThreatType()).contains(threat)) {
+			threatContext.getThreatsOfTargetCell(threat.getTargetCell()).get(threat.getThreatType()).add(threat);
+		}
+		if (!threatContext.getThreatsOfType(threat.getThreatType()).contains(threat)) {
+			threatContext.getThreatsOfType(threat.getThreatType()).add(threat);
+		}
+		
+		for (Cell blockingCell : threat.getBlockingCells()) {
+			if (!threatContext.getBlockingCellThreats(blockingCell).contains(threat)) {
+				threatContext.getBlockingCellThreats(blockingCell).add(threat);
+			}
+		}
+		for (Cell plainCell : threat.getPlainCells()) {
+			if (!threatContext.getPlainCellThreats(plainCell).contains(threat)) {
+				threatContext.getPlainCellThreats(plainCell).add(threat);
+			}
+		}
+	}
+		
+	@Override
 	public Set<Cell> findCombinedThreats(ThreatContext threatContext, ThreatType threatType1, ThreatType threatType2) {
 		Set<Cell> combinedThreats = new HashSet<>();
 		for (Threat threat1 : threatContext.getThreatsOfType(threatType1)) {
-			for (Threat threat2 : threatContext.getThreatsOfCell(threat1.getTargetCell()).get(threatType2)) {
+			for (Threat threat2 : threatContext.getThreatsOfTargetCell(threat1.getTargetCell()).get(threatType2)) {
 				if (!areAligned(threat1, threat2)) {
 					combinedThreats.add(threat1.getTargetCell());
 				}
@@ -38,8 +356,8 @@ public class ThreatServiceImpl implements ThreatService {
 
 		List<Cell> analysedMoves = new ArrayList<>();
 
-		ThreatContext playingThreatContext = gameData.getThreatContext(color);
-		ThreatContext opponentThreatContext = gameData.getThreatContext(-color);
+		ThreatContext playingThreatContext = getOrUpdateThreatContext(gameData, color);
+		ThreatContext opponentThreatContext = getOrUpdateThreatContext(gameData, -color);
 		
 		playingThreatContext.getThreatsOfType(ThreatType.THREAT_5).stream().map(Threat::getTargetCell).filter(c -> !analysedMoves.contains(c)).forEach(analysedMoves::add);
 		opponentThreatContext.getThreatsOfType(ThreatType.THREAT_5).stream().map(Threat::getTargetCell).filter(c -> !analysedMoves.contains(c)).forEach(analysedMoves::add);

@@ -48,7 +48,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 		
 		StopWatch stopWatch = null;
 		
-		if (logger.isDebugEnabled()) {
+		if (logger.isDebugEnabled() && !context.isInternal()) {
 			stopWatch = new StopWatch("computeEvaluation");
 			stopWatch.start();
 		}
@@ -70,7 +70,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 		
 		EvaluationResult evaluation =  evaluateThreats(gameId, context, 0);
 		
-		if (logger.isDebugEnabled() && stopWatch != null) {
+		if (logger.isDebugEnabled() && stopWatch != null && !context.isInternal()) {
 			stopWatch.stop();
 			logger.debug("computeEvaluation elapsed time: {} ms", stopWatch.getLastTaskTimeMillis());
 		}
@@ -81,13 +81,24 @@ public class EvaluationServiceImpl implements EvaluationService {
 	private EvaluationResult evaluateThreats(Long gameId, EvaluationContext context, int depth) {
 		
 		if (gameId != null && cacheService.isCacheEnabled() && cacheService.getEvaluationCache(gameId).get(context.getPlayingColor()).containsKey(context.getGameData())) {
-			return cacheService.getEvaluationCache(gameId).get(context.getPlayingColor()).get(context.getGameData());
+			EvaluationResult cachedResult = cacheService.getEvaluationCache(gameId).get(context.getPlayingColor()).get(context.getGameData());
+			
+			if (logger.isDebugEnabled() && !context.isInternal()) {
+				
+				for (Entry<CompoThreatType, Double> entry : cachedResult.getEvaluationMap().entrySet()) {
+					double threatEvaluation = entry.getValue();
+					if (threatEvaluation != 0d) {
+						logger.debug("{} FROM {}", threatEvaluation, entry.getKey());
+					}
+				}
+			}
+			return cachedResult;
 		}
 		
 		EvaluationResult evaluationResult = new EvaluationResult();
 		
-		ThreatContext playingThreatContext = context.getGameData().getThreatContext(context.getPlayingColor());
-		ThreatContext opponentThreatContext = context.getGameData().getThreatContext(-context.getPlayingColor());
+		ThreatContext playingThreatContext = threatService.getOrUpdateThreatContext(context.getGameData(), context.getPlayingColor());
+		ThreatContext opponentThreatContext = threatService.getOrUpdateThreatContext(context.getGameData(), -context.getPlayingColor());
 
 		if (!playingThreatContext.getThreatsOfType(ThreatType.THREAT_5).isEmpty()) {
 			evaluationResult.setEvaluation(THREAT_5_POTENTIAL);
@@ -242,7 +253,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 		Set<Cell> blockingCells = extractBlockingCells(threatPair);
 		
 		for (Cell blockingCell : blockingCells) {
-			for (Entry<ThreatType, List<Threat>> entry : opponentThreatContext.getThreatsOfCell(blockingCell).entrySet()) {
+			for (Entry<ThreatType, List<Threat>> entry : opponentThreatContext.getThreatsOfTargetCell(blockingCell).entrySet()) {
 				ThreatType opponentThreatType = entry.getKey();
 				List<Threat> oppponentThreats = entry.getValue();
 				
@@ -256,7 +267,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 								Set<Cell> reBlockingCells = opponentKillingThreat.getBlockingCells();
 								
 								for (Cell reblockingCell : reBlockingCells) {
-									for (Entry<ThreatType, List<Threat>> entry2 : playingThreatContext.getThreatsOfCell(reblockingCell).entrySet()) {
+									for (Entry<ThreatType, List<Threat>> entry2 : playingThreatContext.getThreatsOfTargetCell(reblockingCell).entrySet()) {
 										ThreatType newThreatType = entry2.getKey();
 										List<Threat> newThreats = entry2.getValue();
 										if (threatPair.getSecond() == null || !newThreats.isEmpty() && threatPair.getSecond().getThreatType().getBetterOrEqualThreatTypes().contains(newThreatType)) {
@@ -327,7 +338,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 		for (Cell killingCell : threatPair.getFirst().getKillingCells()) {
 			
 			for (ThreatType killingType : threatPair.getFirst().getThreatType().getKillingThreatTypes()) {
-				if (!playingThreatContext.getThreatsOfCell(killingCell).get(killingType).isEmpty()) {
+				if (!playingThreatContext.getThreatsOfTargetCell(killingCell).get(killingType).isEmpty()) {
 					return true;
 				}
 			}
@@ -337,7 +348,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 			for (Cell killingCell : threatPair.getSecond().getKillingCells()) {
 				
 				for (ThreatType killingType : threatPair.getSecond().getThreatType().getKillingThreatTypes()) {
-					if (!playingThreatContext.getThreatsOfCell(killingCell).get(killingType).isEmpty()) {
+					if (!playingThreatContext.getThreatsOfTargetCell(killingCell).get(killingType).isEmpty()) {
 						return true;
 					}
 				}

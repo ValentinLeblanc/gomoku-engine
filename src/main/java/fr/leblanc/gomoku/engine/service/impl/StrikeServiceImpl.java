@@ -67,7 +67,7 @@ public class StrikeServiceImpl implements StrikeService {
 			return cacheService.getDirectStrikeCache(strikeContext.getGameId()).get(playingColor).get(gameData).orElse(null);
 		}
 		
-		ThreatContext playingThreatContext = gameData.getThreatContext(playingColor);
+		ThreatContext playingThreatContext = threatService.getOrUpdateThreatContext(gameData, playingColor);
 	
 		// check for a threat5
 		if (!playingThreatContext.getThreatsOfType(ThreatType.THREAT_5).isEmpty()) {
@@ -76,7 +76,7 @@ public class StrikeServiceImpl implements StrikeService {
 			return move;
 		}
 	
-		ThreatContext opponentThreatContext = gameData.getThreatContext(-playingColor);
+		ThreatContext opponentThreatContext = threatService.getOrUpdateThreatContext(gameData, -playingColor);
 	
 		// check for an opponent threat5
 		if (!opponentThreatContext.getThreatsOfType(ThreatType.THREAT_5).isEmpty()) {
@@ -94,7 +94,7 @@ public class StrikeServiceImpl implements StrikeService {
 					gameData.addMove(opponentThreat, playingColor);
 					
 					// check for another threat5
-					playingThreatContext = gameData.getThreatContext(playingColor);
+					playingThreatContext = threatService.getOrUpdateThreatContext(gameData, playingColor);
 					if (!playingThreatContext.getThreatsOfType(ThreatType.THREAT_5).isEmpty()) {
 						
 						Cell newThreat = playingThreatContext.getThreatsOfType(ThreatType.THREAT_5).get(0).getTargetCell();
@@ -143,7 +143,7 @@ public class StrikeServiceImpl implements StrikeService {
 			gameData.addMove(threat4Move, playingColor);
 			
 			// opponent defends
-			opponentThreatContext = gameData.getThreatContext(playingColor);
+			opponentThreatContext = threatService.getOrUpdateThreatContext(gameData, playingColor);
 			Cell counterMove = opponentThreatContext.getThreatsOfType(ThreatType.THREAT_5).iterator().next().getTargetCell();
 
 			gameData.addMove(counterMove, -playingColor);
@@ -175,7 +175,7 @@ public class StrikeServiceImpl implements StrikeService {
 		
 		List<Cell> defendingMoves = new ArrayList<>();
 		
-		ThreatContext opponentThreatContext = gameData.getThreatContext(-playingColor);
+		ThreatContext opponentThreatContext = threatService.getOrUpdateThreatContext(gameData, -playingColor);
 		
 		if (!opponentThreatContext.getThreatsOfType(ThreatType.THREAT_5).isEmpty()) {
 			defendingMoves.add(opponentThreatContext.getThreatsOfType(ThreatType.THREAT_5).iterator().next().getTargetCell());
@@ -191,7 +191,7 @@ public class StrikeServiceImpl implements StrikeService {
 				gameData.addMove(analysedMove, playingColor);
 				if (directStrike(gameData, -playingColor, strikeContext) == null) {
 					
-					 ThreatContext newThreatContext = gameData.getThreatContext(playingColor);
+					 ThreatContext newThreatContext = threatService.getOrUpdateThreatContext(gameData, playingColor);
 					
 					if (!newThreatContext.getThreatsOfType(ThreatType.THREAT_5).isEmpty()) {
 						
@@ -381,7 +381,7 @@ public class StrikeServiceImpl implements StrikeService {
 			return defendThenSecondaryStrike(gameData, playingColor, depth, maxDepth, strikeContext);
 		}
 		
-		ThreatContext threatContext = gameData.getThreatContext(playingColor);
+		ThreatContext threatContext = threatService.getOrUpdateThreatContext(gameData, playingColor);
 
 		Set<Cell> newSet = threatContext.getThreatsOfType(ThreatType.THREAT_4).stream().map(t -> t.getTargetCell()).collect(Collectors.toSet());
 		

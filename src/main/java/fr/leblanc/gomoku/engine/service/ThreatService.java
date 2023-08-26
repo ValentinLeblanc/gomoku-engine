@@ -13,6 +13,8 @@ import fr.leblanc.gomoku.engine.util.Pair;
 
 public interface ThreatService {
 	
+	ThreatContext getOrUpdateThreatContext(GameData gameData, int color);
+	
 	Set<Cell> findCombinedThreats(ThreatContext threatContext, ThreatType threatType1, ThreatType threatType2);
 
 	List<Cell> buildAnalyzedCells(GameData gameData, int color);
