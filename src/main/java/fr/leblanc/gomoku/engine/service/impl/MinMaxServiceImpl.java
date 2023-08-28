@@ -2,15 +2,11 @@ package fr.leblanc.gomoku.engine.service.impl;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -37,14 +33,13 @@ import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.StrikeService;
 import fr.leblanc.gomoku.engine.service.ThreatService;
 import fr.leblanc.gomoku.engine.service.WebSocketService;
+import fr.leblanc.gomoku.engine.util.ThreadUtils;
 
 @Service
 public class MinMaxServiceImpl implements MinMaxService {
 	
 	private static final Logger logger = LoggerFactory.getLogger(MinMaxServiceImpl.class);
 	
-	private static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
-
 	@Autowired
 	private ThreatService threatService;
 	
@@ -137,29 +132,14 @@ public class MinMaxServiceImpl implements MinMaxService {
 	private MinMaxResult internalMinMax(GameData gameData, List<Cell> analysedMoves, MinMaxContext context) throws InterruptedException {
 		
 		context.setOptimumReference(context.isFindMax() ? new AtomicReference<>(Double.NEGATIVE_INFINITY) : new AtomicReference<>(Double.POSITIVE_INFINITY));
-
-		int threadsInvolved = context.getMaxDepth() > 2 ? MAX_THREADS : 1;
 		
-		ExecutorService multiThreadPoolExecutor = Executors.newFixedThreadPool(threadsInvolved);
+		int threadsInvolved = context.getMaxDepth() > 2 ? Runtime.getRuntime().availableProcessors() : 1;
 		
-		List<RecursiveMinMaxCommand> commands = new ArrayList<>();
-		
-		Map<Integer, List<Cell>> batchMap = new HashMap<>();
-		
-		Iterator<Cell> iterator = analysedMoves.iterator();
-		
-		while (iterator.hasNext()) {
-			for (int i = 0; i < threadsInvolved && iterator.hasNext(); i++) {
-				batchMap.computeIfAbsent(i, key -> new ArrayList<>()).add(iterator.next());
-			}
-		}
-		
-		for (List<Cell> cells : batchMap.values()) {
-			commands.add(new RecursiveMinMaxCommand(gameData, cells, context));
-		}
+		List<Future<MinMaxResult>> futures = ThreadUtils.invokeAll(analysedMoves, threadsInvolved, (cells) -> {
+			return new RecursiveMinMaxCommand(gameData, cells, context);
+		});
 		
 		try {
-			List<Future<MinMaxResult>> futures = multiThreadPoolExecutor.invokeAll(commands);
 			List<MinMaxResult> results = futures.stream().map(r -> {
 				try {
 					return r.get();
@@ -177,7 +157,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 			if (!results.isEmpty()) {
 				return results.get(0);
 			}
-		} catch (InterruptedException | ComputationStoppedException e) {
+		} catch (ComputationStoppedException e) {
 			Thread.currentThread().interrupt();
 			throw new InterruptedException();
 		}

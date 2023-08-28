@@ -10,8 +10,8 @@ public interface StrikeService {
 
 	Cell directStrike(GameData gameData, int i, StrikeContext strikeContext) throws InterruptedException;
 
-	List<Cell> defendFromDirectStrike(GameData gameData, int playingColor, StrikeContext strikeContext, boolean returnFirst) throws InterruptedException;
-
 	Cell secondaryStrike(GameData gameData, int playingColor, StrikeContext strikeContext) throws InterruptedException;
+
+	List<Cell> defendFromDirectStrike(GameData gameData, int playingColor, StrikeContext strikeContext, boolean returnFirst) throws InterruptedException;
 
 }

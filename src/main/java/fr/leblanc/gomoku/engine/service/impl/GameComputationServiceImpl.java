@@ -1,7 +1,7 @@
 package fr.leblanc.gomoku.engine.service.impl;
 
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import org.springframework.stereotype.Service;
 
@@ -11,9 +11,9 @@ import fr.leblanc.gomoku.engine.util.TypedAction;
 @Service
 public class GameComputationServiceImpl implements GameComputationService {
 	
-	private ConcurrentMap<Long, Boolean> gameComputingMap = new ConcurrentHashMap<>();
-	private ConcurrentMap<Long, Boolean> stopGameComputationMap = new ConcurrentHashMap<>();
-	private ConcurrentMap<Long, Boolean> displayAnalysisMap = new ConcurrentHashMap<>();
+	private Map<Long, Boolean> gameComputingMap = new ConcurrentHashMap<>();
+	private Map<Long, Boolean> stopGameComputationMap = new ConcurrentHashMap<>();
+	private Map<Long, Boolean> displayAnalysisMap = new ConcurrentHashMap<>();
 	
 	@Override
 	public <T> T startGameComputation(Long gameId, boolean displayAnalysis, TypedAction<T> action) throws InterruptedException {

@@ -1,9 +1,9 @@
 package fr.leblanc.gomoku.engine.util.cache;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.EvaluationResult;
@@ -15,23 +15,23 @@ public class GomokuCache {
 	
 	private boolean isCacheEnabled = false;
 	
-	private Map<Integer, Map<GameData, Optional<Cell>>> directStrikeCache = new HashMap<>();
-	private Map<Integer, Map<GameData, Optional<Cell>>> secondaryStrikeCache = new HashMap<>();
-	private Map<Integer, Map<GameData, List<Cell>>> counterStrikeCache = new HashMap<>();
-	private Map<Integer, Map<GameData, EvaluationResult>> evaluationCache = new HashMap<>();
-	private Map<Integer, Map<GameData, MinMaxResult>> minMaxCache = new HashMap<>();
+	private Map<Integer, Map<GameData, Optional<Cell>>> directStrikeCache = new ConcurrentHashMap<>();
+	private Map<Integer, Map<GameData, Optional<Cell>>> secondaryStrikeCache = new ConcurrentHashMap<>();
+	private Map<Integer, Map<GameData, List<Cell>>> counterStrikeCache = new ConcurrentHashMap<>();
+	private Map<Integer, Map<GameData, EvaluationResult>> evaluationCache = new ConcurrentHashMap<>();
+	private Map<Integer, Map<GameData, MinMaxResult>> minMaxCache = new ConcurrentHashMap<>();
 
 	public GomokuCache() {
-		directStrikeCache.put(GomokuColor.BLACK_COLOR, new HashMap<>());
-		directStrikeCache.put(GomokuColor.WHITE_COLOR, new HashMap<>());
-		secondaryStrikeCache.put(GomokuColor.BLACK_COLOR, new HashMap<>());
-		secondaryStrikeCache.put(GomokuColor.WHITE_COLOR, new HashMap<>());
-		counterStrikeCache.put(GomokuColor.BLACK_COLOR, new HashMap<>());
-		counterStrikeCache.put(GomokuColor.WHITE_COLOR, new HashMap<>());
-		evaluationCache.put(GomokuColor.BLACK_COLOR, new HashMap<>());
-		evaluationCache.put(GomokuColor.WHITE_COLOR, new HashMap<>());
-		minMaxCache.put(GomokuColor.BLACK_COLOR, new HashMap<>());
-		minMaxCache.put(GomokuColor.WHITE_COLOR, new HashMap<>());
+		directStrikeCache.put(GomokuColor.BLACK_COLOR, new ConcurrentHashMap<>());
+		directStrikeCache.put(GomokuColor.WHITE_COLOR, new ConcurrentHashMap<>());
+		secondaryStrikeCache.put(GomokuColor.BLACK_COLOR, new ConcurrentHashMap<>());
+		secondaryStrikeCache.put(GomokuColor.WHITE_COLOR, new ConcurrentHashMap<>());
+		counterStrikeCache.put(GomokuColor.BLACK_COLOR, new ConcurrentHashMap<>());
+		counterStrikeCache.put(GomokuColor.WHITE_COLOR, new ConcurrentHashMap<>());
+		evaluationCache.put(GomokuColor.BLACK_COLOR, new ConcurrentHashMap<>());
+		evaluationCache.put(GomokuColor.WHITE_COLOR, new ConcurrentHashMap<>());
+		minMaxCache.put(GomokuColor.BLACK_COLOR, new ConcurrentHashMap<>());
+		minMaxCache.put(GomokuColor.WHITE_COLOR, new ConcurrentHashMap<>());
 	}
 	
 	public Map<Integer, Map<GameData, Optional<Cell>>> getDirectStrikeCache() {
