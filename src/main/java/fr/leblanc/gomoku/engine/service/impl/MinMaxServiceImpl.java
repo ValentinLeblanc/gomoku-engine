@@ -6,8 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -130,25 +128,10 @@ public class MinMaxServiceImpl implements MinMaxService {
 	}
 
 	private MinMaxResult internalMinMax(GameData gameData, List<Cell> analysedMoves, MinMaxContext context) throws InterruptedException {
-		
 		context.setOptimumReference(context.isFindMax() ? new AtomicReference<>(Double.NEGATIVE_INFINITY) : new AtomicReference<>(Double.POSITIVE_INFINITY));
-		
-		List<Future<MinMaxResult>> futures = ThreadUtils.invokeAll(analysedMoves, cells -> new RecursiveMinMaxCommand(gameData, cells, context));
-		
+		List<MinMaxResult> results = ThreadUtils.invokeAll(analysedMoves, cells -> new RecursiveMinMaxCommand(gameData, cells, context), Runtime.getRuntime().availableProcessors());
 		try {
-			List<MinMaxResult> results = futures.stream().map(r -> {
-				try {
-					return r.get();
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-					throw new ComputationStoppedException(e);
-				} catch (ExecutionException e) {
-					if (e.getCause() instanceof InterruptedException) {
-						throw new ComputationStoppedException(e);
-					}
-					throw new IllegalStateException(e);
-				}
-			}).filter(r -> r.getFinalEvaluation() != null).collect(Collectors.toList());
+			results = results.stream().filter(r -> r.getFinalEvaluation() != null).collect(Collectors.toList());
 			results.sort(resultsComparator(context.isFindMax()));
 			if (!results.isEmpty()) {
 				return results.get(0);

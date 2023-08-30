@@ -1,13 +1,12 @@
 package fr.leblanc.gomoku.engine.service.impl;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -15,7 +14,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import fr.leblanc.gomoku.engine.exception.ComputationStoppedException;
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.EvaluationResult;
 import fr.leblanc.gomoku.engine.model.GameData;
@@ -145,21 +143,8 @@ public class StrikeServiceImpl implements StrikeService {
 			result.add(opponentThreatContext.getThreatsOfType(ThreatType.THREAT_5).iterator().next().getTargetCell());
 		} else {
 			List<Cell> analyzedCells =  threatService.buildAnalyzedCells(gameData, playingColor);
-			List<Future<List<Cell>>> futures = ThreadUtils.invokeAll(analyzedCells,
-					cells -> new DefendFromDirectStrikeCommand(gameData, playingColor, strikeContext, cells, returnFirst));
-			result = futures.stream().flatMap(r -> {
-				try {
-					return r.get().stream();
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-					throw new ComputationStoppedException(e);
-				} catch (ExecutionException e) {
-					if (e.getCause() instanceof InterruptedException) {
-						throw new ComputationStoppedException(e);
-					}
-					throw new IllegalStateException(e);
-				}
-			}).toList();
+			result = ThreadUtils.invokeAll(analyzedCells, cells -> new DefendFromDirectStrikeCommand(gameData,
+					playingColor, strikeContext, cells, returnFirst)).stream().flatMap(Collection::stream).toList();
 		}
 		storeInCounterStrikeCache(gameData, strikeContext, playingColor, result);
 		return result;
