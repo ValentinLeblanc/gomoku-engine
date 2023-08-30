@@ -136,22 +136,31 @@ public class StrikeServiceImpl implements StrikeService {
 	}
 	
 	private List<Cell> internalDefendFromDirectStrike(GameData gameData, int playingColor, StrikeContext strikeContext, boolean returnFirst) throws InterruptedException {
-		List<Cell> analyzedCells =  threatService.buildAnalyzedCells(gameData, playingColor);
-		List<Future<List<Cell>>> futures = ThreadUtils.invokeAll(analyzedCells,
-				cells -> new DefendFromDirectStrikeCommand(gameData, playingColor, strikeContext, cells, returnFirst));
-		List<Cell> result = futures.stream().flatMap(r -> {
-			try {
-				return r.get().stream();
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				throw new ComputationStoppedException(e);
-			} catch (ExecutionException e) {
-				if (e.getCause() instanceof InterruptedException) {
+		if (cacheService.isCacheEnabled() && cacheService.getCounterStrikeCache(strikeContext.getGameId()).containsKey(playingColor) && cacheService.getCounterStrikeCache(strikeContext.getGameId()).get(playingColor).containsKey(gameData)) {
+			return cacheService.getCounterStrikeCache(strikeContext.getGameId()).get(playingColor).get(gameData);
+		}
+		List<Cell> result = new ArrayList<>();
+		ThreatContext opponentThreatContext = threatService.getOrUpdateThreatContext(gameData, -playingColor);
+		if (!opponentThreatContext.getThreatsOfType(ThreatType.THREAT_5).isEmpty()) {
+			result.add(opponentThreatContext.getThreatsOfType(ThreatType.THREAT_5).iterator().next().getTargetCell());
+		} else {
+			List<Cell> analyzedCells =  threatService.buildAnalyzedCells(gameData, playingColor);
+			List<Future<List<Cell>>> futures = ThreadUtils.invokeAll(analyzedCells,
+					cells -> new DefendFromDirectStrikeCommand(gameData, playingColor, strikeContext, cells, returnFirst));
+			result = futures.stream().flatMap(r -> {
+				try {
+					return r.get().stream();
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
 					throw new ComputationStoppedException(e);
+				} catch (ExecutionException e) {
+					if (e.getCause() instanceof InterruptedException) {
+						throw new ComputationStoppedException(e);
+					}
+					throw new IllegalStateException(e);
 				}
-				throw new IllegalStateException(e);
-			}
-		}).toList();
+			}).toList();
+		}
 		storeInCounterStrikeCache(gameData, strikeContext, playingColor, result);
 		return result;
 	}
@@ -178,11 +187,6 @@ public class StrikeServiceImpl implements StrikeService {
 				return cacheService.getCounterStrikeCache(strikeContext.getGameId()).get(playingColor).get(gameData);
 			}
 			List<Cell> defendingMoves = new ArrayList<>();
-			ThreatContext opponentThreatContext = threatService.getOrUpdateThreatContext(gameData, -playingColor);
-			if (!opponentThreatContext.getThreatsOfType(ThreatType.THREAT_5).isEmpty()) {
-				defendingMoves.add(opponentThreatContext.getThreatsOfType(ThreatType.THREAT_5).iterator().next().getTargetCell());
-				return defendingMoves;
-			}
 			for (Cell analyzedCell : analyzedCells) {
 				try {
 					gameData.addMove(analyzedCell, playingColor);
@@ -221,6 +225,9 @@ public class StrikeServiceImpl implements StrikeService {
 		Cell result = null;
 		while (result == null && maxDepth < 3) {
 			maxDepth++;
+			if (logger.isDebugEnabled()) {
+				logger.debug("TRY NEXT DEPTH: {}", maxDepth);
+			}
 			strikeContext.setStrikeDepth(maxDepth);
 			result = internalSecondaryStrike(gameData, playingColor, strikeContext, 0);
 		}
@@ -228,6 +235,9 @@ public class StrikeServiceImpl implements StrikeService {
 	}
 
 	private Cell internalSecondaryStrike(GameData gameData, int playingColor, StrikeContext strikeContext, int depth) throws InterruptedException {
+		if (cacheService.isCacheEnabled() && cacheService.getSecondaryStrikeCache(strikeContext.getGameId()).containsKey(playingColor) && cacheService.getSecondaryStrikeCache(strikeContext.getGameId()).get(playingColor).containsKey(gameData)) {
+			return cacheService.getSecondaryStrikeCache(strikeContext.getGameId()).get(playingColor).get(gameData).orElse(null);
+		}
 		if (depth == strikeContext.getStrikeDepth()) {
 			return null;
 		}
@@ -282,10 +292,10 @@ public class StrikeServiceImpl implements StrikeService {
 				List<Cell> opponentDefendFromStrikes = internalDefendFromDirectStrike(gameData, -playingColor, strikeContext, false);
 				boolean hasDefense = false;
 				for (Cell opponentDefendFromStrike : opponentDefendFromStrikes) {
+					gameData.addMove(opponentDefendFromStrike, -playingColor);
 					if (logger.isDebugEnabled()) {
 						logger.debug("[{}] Try defense: {}", depth, opponentDefendFromStrike);
 					}
-					gameData.addMove(opponentDefendFromStrike, -playingColor);
 					Cell nextSecondaryStrike = internalSecondaryStrike(gameData, playingColor, strikeContext, depth + 1);
 					if (nextSecondaryStrike != null) {
 						if (logger.isDebugEnabled()) {
