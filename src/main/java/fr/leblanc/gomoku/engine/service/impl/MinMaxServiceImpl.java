@@ -133,11 +133,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 		
 		context.setOptimumReference(context.isFindMax() ? new AtomicReference<>(Double.NEGATIVE_INFINITY) : new AtomicReference<>(Double.POSITIVE_INFINITY));
 		
-		int threadsInvolved = context.getMaxDepth() > 2 ? Runtime.getRuntime().availableProcessors() : 1;
-		
-		List<Future<MinMaxResult>> futures = ThreadUtils.invokeAll(analysedMoves, threadsInvolved, (cells) -> {
-			return new RecursiveMinMaxCommand(gameData, cells, context);
-		});
+		List<Future<MinMaxResult>> futures = ThreadUtils.invokeAll(analysedMoves, cells -> new RecursiveMinMaxCommand(gameData, cells, context));
 		
 		try {
 			List<MinMaxResult> results = futures.stream().map(r -> {
@@ -218,7 +214,7 @@ public class MinMaxServiceImpl implements MinMaxService {
 		
 		for (Cell analysedMove : analysedMoves) {
 			
-			if (computationService.isGameComputationStopped(context.getGameId())) {
+			if (computationService.isGameComputationStopped(context.getGameId()) || Thread.interrupted()) {
 				throw new InterruptedException();
 			}
 			
