@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class ThreadUtils {
 	
-	private static final int THREAD_POOL_SIZE = 1;
+	private static final int THREAD_POOL_SIZE = 2;
 
 	private static final Logger logger = LoggerFactory.getLogger(ThreadUtils.class);
 
