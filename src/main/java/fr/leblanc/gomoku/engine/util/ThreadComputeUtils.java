@@ -19,20 +19,14 @@ import org.slf4j.LoggerFactory;
 
 import fr.leblanc.gomoku.engine.exception.ComputationStoppedException;
 
-public class ThreadUtils {
+public class ThreadComputeUtils {
 	
-	private static final int DEFAULT_THREAD_POOL_SIZE = 2;
+	private static final Logger logger = LoggerFactory.getLogger(ThreadComputeUtils.class);
 
-	private static final Logger logger = LoggerFactory.getLogger(ThreadUtils.class);
-
-	private ThreadUtils() {
+	private ThreadComputeUtils() {
 	}
 	
-	public static <T, R, U extends Callable<R>> R invokeAny(List<T> dataSet, Function<List<T>, U> commandSupplier, int timeout, Consumer<R> afterProcess) throws InterruptedException {
-		return invokeAny(dataSet, commandSupplier, timeout, afterProcess, DEFAULT_THREAD_POOL_SIZE);
-	}
-	
-	public static <T, R, U extends Callable<R>> R invokeAny(List<T> dataSet, Function<List<T>, U> commandSupplier, int timeout, Consumer<R> afterProcess, int threadPoolSize) throws InterruptedException {
+	public static <T, R, U extends Callable<R>> R computeFirst(List<T> dataSet, Function<List<T>, U> commandSupplier, int timeout, Consumer<R> afterComputeCallback, int threadPoolSize) throws InterruptedException {
 		try {
 			List<U> commands = createThreadedCommands(dataSet, commandSupplier, threadPoolSize);
 			if (timeout == -1) {
@@ -42,7 +36,7 @@ public class ThreadUtils {
 				ExecutorService newFixedThreadPool = Executors.newFixedThreadPool(threadPoolSize);
 				R result = newFixedThreadPool.invokeAny(commands, timeout, TimeUnit.SECONDS);
 				newFixedThreadPool.shutdownNow();
-				afterProcess.accept(result);
+				afterComputeCallback.accept(result);
 				return result;
 			}
 		} catch (ExecutionException e) {
@@ -51,16 +45,13 @@ public class ThreadUtils {
 			}
 		} catch (TimeoutException e) {
 			if (logger.isDebugEnabled()) {
-				logger.debug("ThreadUtils timeout ({}s)", timeout);
+				logger.debug("ThreadComputeUtils timeout ({}s)", timeout);
 			}
 		}
 		return null;
 	}
 	
-	public static <T, R, U extends Callable<R>> List<R> invokeAll(List<T> dataSet, Function<List<T>, U> commandSupplier) throws InterruptedException {
-		return invokeAll(dataSet, commandSupplier, DEFAULT_THREAD_POOL_SIZE);
-	}
-	public static <T, R, U extends Callable<R>> List<R> invokeAll(List<T> dataSet, Function<List<T>, U> commandSupplier, int threadPoolSize) throws InterruptedException {
+	public static <T, R, U extends Callable<R>> List<R> computeAll(List<T> dataSet, Function<List<T>, U> commandSupplier, int threadPoolSize) throws InterruptedException {
 		List<U> commands = createThreadedCommands(dataSet, commandSupplier, threadPoolSize);
 		ExecutorService newFixedThreadPool = Executors.newFixedThreadPool(threadPoolSize);
 		return newFixedThreadPool.invokeAll(commands).stream().map(r -> {

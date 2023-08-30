@@ -31,12 +31,14 @@ import fr.leblanc.gomoku.engine.service.MinMaxService;
 import fr.leblanc.gomoku.engine.service.StrikeService;
 import fr.leblanc.gomoku.engine.service.ThreatService;
 import fr.leblanc.gomoku.engine.service.WebSocketService;
-import fr.leblanc.gomoku.engine.util.ThreadUtils;
+import fr.leblanc.gomoku.engine.util.ThreadComputeUtils;
 
 @Service
 public class MinMaxServiceImpl implements MinMaxService {
 	
 	private static final Logger logger = LoggerFactory.getLogger(MinMaxServiceImpl.class);
+
+	private static final int MINMAX_THREAD_POOL_SIZE = Runtime.getRuntime().availableProcessors();
 	
 	@Autowired
 	private ThreatService threatService;
@@ -129,7 +131,9 @@ public class MinMaxServiceImpl implements MinMaxService {
 
 	private MinMaxResult internalMinMax(GameData gameData, List<Cell> analysedMoves, MinMaxContext context) throws InterruptedException {
 		context.setOptimumReference(context.isFindMax() ? new AtomicReference<>(Double.NEGATIVE_INFINITY) : new AtomicReference<>(Double.POSITIVE_INFINITY));
-		List<MinMaxResult> results = ThreadUtils.invokeAll(analysedMoves, cells -> new RecursiveMinMaxCommand(gameData, cells, context), Runtime.getRuntime().availableProcessors());
+		List<MinMaxResult> results = ThreadComputeUtils.computeAll(analysedMoves, 
+				cells -> new MinMaxCommand(gameData, cells, context), 
+				MINMAX_THREAD_POOL_SIZE);
 		try {
 			results = results.stream().filter(r -> r.getFinalEvaluation() != null).collect(Collectors.toList());
 			results.sort(resultsComparator(context.isFindMax()));
@@ -161,13 +165,13 @@ public class MinMaxServiceImpl implements MinMaxService {
 		};
 	}
 	
-	private class RecursiveMinMaxCommand implements Callable<MinMaxResult> {
+	private class MinMaxCommand implements Callable<MinMaxResult> {
 		
 		private MinMaxContext context;
 		private GameData gameData;
 		private List<Cell> cells;
 		
-		private RecursiveMinMaxCommand(GameData gameData, List<Cell> cells, MinMaxContext context) {
+		private MinMaxCommand(GameData gameData, List<Cell> cells, MinMaxContext context) {
 			this.context = new MinMaxContext(context);
 			this.gameData = new GameData(gameData);
 			this.cells = cells;

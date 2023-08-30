@@ -27,7 +27,7 @@ import fr.leblanc.gomoku.engine.service.EvaluationService;
 import fr.leblanc.gomoku.engine.service.GameComputationService;
 import fr.leblanc.gomoku.engine.service.StrikeService;
 import fr.leblanc.gomoku.engine.service.ThreatService;
-import fr.leblanc.gomoku.engine.util.ThreadUtils;
+import fr.leblanc.gomoku.engine.util.ThreadComputeUtils;
 
 @Service
 public class StrikeServiceImpl implements StrikeService {
@@ -49,6 +49,9 @@ public class StrikeServiceImpl implements StrikeService {
 		, { ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_3 }
 		, { ThreatType.THREAT_4, ThreatType.DOUBLE_THREAT_2 }
 		};
+	
+	private static final int SECONDARY_STRIKE_THREAD_POOL_SIZE = 2;
+	private static final int COUNTER_STRIKE_THREAD_POOL_SIZE = 3;
 
 	@Override
 	public Cell directStrike(GameData gameData, int playingColor, StrikeContext strikeContext) throws InterruptedException {
@@ -59,7 +62,7 @@ public class StrikeServiceImpl implements StrikeService {
 		if (computationService.isGameComputationStopped(strikeContext.getGameId()) || Thread.interrupted()) {
 			throw new InterruptedException();
 		}
-		if (cacheService.isCacheEnabled() && cacheService.getDirectStrikeCache(strikeContext.getGameId()).containsKey(playingColor) && cacheService.getDirectStrikeCache(strikeContext.getGameId()).get(playingColor).containsKey(gameData)) {
+		if (hasInDirectStrikeCache(gameData, playingColor, strikeContext)) {
 			return cacheService.getDirectStrikeCache(strikeContext.getGameId()).get(playingColor).get(gameData).orElse(null);
 		}
 		ThreatContext playingThreatContext = threatService.getOrUpdateThreatContext(gameData, playingColor);
@@ -134,20 +137,22 @@ public class StrikeServiceImpl implements StrikeService {
 	}
 	
 	private List<Cell> internalDefendFromDirectStrike(GameData gameData, int playingColor, StrikeContext strikeContext, boolean returnFirst) throws InterruptedException {
-		if (cacheService.isCacheEnabled() && cacheService.getCounterStrikeCache(strikeContext.getGameId()).containsKey(playingColor) && cacheService.getCounterStrikeCache(strikeContext.getGameId()).get(playingColor).containsKey(gameData)) {
+		if (hasInCounterStrikeCache(gameData, strikeContext, playingColor)) {
 			return cacheService.getCounterStrikeCache(strikeContext.getGameId()).get(playingColor).get(gameData);
 		}
-		List<Cell> result = new ArrayList<>();
+		List<Cell> results = new ArrayList<>();
 		ThreatContext opponentThreatContext = threatService.getOrUpdateThreatContext(gameData, -playingColor);
 		if (!opponentThreatContext.getThreatsOfType(ThreatType.THREAT_5).isEmpty()) {
-			result.add(opponentThreatContext.getThreatsOfType(ThreatType.THREAT_5).iterator().next().getTargetCell());
+			results.add(opponentThreatContext.getThreatsOfType(ThreatType.THREAT_5).iterator().next().getTargetCell());
 		} else {
 			List<Cell> analyzedCells =  threatService.buildAnalyzedCells(gameData, playingColor);
-			result = ThreadUtils.invokeAll(analyzedCells, cells -> new DefendFromDirectStrikeCommand(gameData,
-					playingColor, strikeContext, cells, returnFirst)).stream().flatMap(Collection::stream).toList();
+			results = ThreadComputeUtils.computeAll(analyzedCells, 
+					cells -> new DefendFromDirectStrikeCommand(gameData, playingColor, strikeContext, cells, returnFirst), 
+					COUNTER_STRIKE_THREAD_POOL_SIZE)
+					.stream().flatMap(Collection::stream).toList();
 		}
-		storeInCounterStrikeCache(gameData, strikeContext, playingColor, result);
-		return result;
+		storeInCounterStrikeCache(gameData, strikeContext, playingColor, results);
+		return results;
 	}
 
 	private class DefendFromDirectStrikeCommand implements Callable<List<Cell>> {
@@ -168,7 +173,7 @@ public class StrikeServiceImpl implements StrikeService {
 		
 		@Override
 		public List<Cell> call() throws Exception {
-			if (cacheService.isCacheEnabled() && cacheService.getCounterStrikeCache(strikeContext.getGameId()).containsKey(playingColor) && cacheService.getCounterStrikeCache(strikeContext.getGameId()).get(playingColor).containsKey(gameData)) {
+			if (hasInCounterStrikeCache(gameData, strikeContext, playingColor)) {
 				return cacheService.getCounterStrikeCache(strikeContext.getGameId()).get(playingColor).get(gameData);
 			}
 			List<Cell> defendingMoves = new ArrayList<>();
@@ -208,7 +213,7 @@ public class StrikeServiceImpl implements StrikeService {
 	public Cell secondaryStrike(GameData gameData, int playingColor, StrikeContext strikeContext) throws InterruptedException {
 		int maxDepth = 0;
 		Cell result = null;
-		while (result == null && maxDepth < 3) {
+		while (result == null && maxDepth < 4) {
 			maxDepth++;
 			if (logger.isDebugEnabled()) {
 				logger.debug("TRY NEXT DEPTH: {}", maxDepth);
@@ -220,18 +225,19 @@ public class StrikeServiceImpl implements StrikeService {
 	}
 
 	private Cell internalSecondaryStrike(GameData gameData, int playingColor, StrikeContext strikeContext, int depth) throws InterruptedException {
-		if (cacheService.isCacheEnabled() && cacheService.getSecondaryStrikeCache(strikeContext.getGameId()).containsKey(playingColor) && cacheService.getSecondaryStrikeCache(strikeContext.getGameId()).get(playingColor).containsKey(gameData)) {
+		if (hasInSecondaryCache(gameData, playingColor, strikeContext)) {
 			return cacheService.getSecondaryStrikeCache(strikeContext.getGameId()).get(playingColor).get(gameData).orElse(null);
 		}
 		if (depth == strikeContext.getStrikeDepth()) {
 			return null;
 		}
 		List<Cell> analyzedCells = extractAnalyzedCells(gameData, playingColor);
-		return ThreadUtils.invokeAny(analyzedCells,
-				cells -> new SecondaryStrikeCommand(depth, gameData, playingColor, strikeContext, cells),
-				strikeContext.getStrikeTimeout(), result -> storeInSecondaryStrikeCache(gameData, strikeContext, playingColor, result));
+		return ThreadComputeUtils.computeFirst(analyzedCells,
+				cells -> new SecondaryStrikeCommand(depth, gameData, playingColor, strikeContext, cells), strikeContext.getStrikeTimeout(),
+				result -> storeInSecondaryStrikeCache(gameData, strikeContext, playingColor, result), 
+				SECONDARY_STRIKE_THREAD_POOL_SIZE);
 	}
-	
+
 	private class SecondaryStrikeCommand implements Callable<Cell> {
 
 		private int depth;
@@ -253,7 +259,7 @@ public class StrikeServiceImpl implements StrikeService {
 			if (computationService.isGameComputationStopped(strikeContext.getGameId()) || Thread.interrupted()) {
 				throw new InterruptedException();
 			}
-			if (cacheService.isCacheEnabled() && cacheService.getSecondaryStrikeCache(strikeContext.getGameId()).containsKey(playingColor) && cacheService.getSecondaryStrikeCache(strikeContext.getGameId()).get(playingColor).containsKey(gameData)) {
+			if (hasInSecondaryCache(gameData, playingColor, strikeContext)) {
 				return cacheService.getSecondaryStrikeCache(strikeContext.getGameId()).get(playingColor).get(gameData).orElse(null);
 			}
 			// check for a strike
@@ -313,6 +319,10 @@ public class StrikeServiceImpl implements StrikeService {
 		}
 	}
 	
+	private boolean hasInDirectStrikeCache(GameData gameData, int playingColor, StrikeContext strikeContext) {
+		return cacheService.isCacheEnabled() && cacheService.getDirectStrikeCache(strikeContext.getGameId()).containsKey(playingColor) && cacheService.getDirectStrikeCache(strikeContext.getGameId()).get(playingColor).containsKey(gameData);
+	}
+
 	private void storeInDirectStrikeCache(GameData gameData, StrikeContext strikeContext, int playingColor, Cell move) {
 		if (cacheService.isCacheEnabled()) {
 			if (move != null) {
@@ -331,6 +341,10 @@ public class StrikeServiceImpl implements StrikeService {
 		}
 	}
 	
+	private boolean hasInCounterStrikeCache(GameData gameData, StrikeContext strikeContext, int playingColor) {
+		return cacheService.isCacheEnabled() && cacheService.getCounterStrikeCache(strikeContext.getGameId()).containsKey(playingColor) && cacheService.getCounterStrikeCache(strikeContext.getGameId()).get(playingColor).containsKey(gameData);
+	}
+
 	private void storeInCounterStrikeCache(GameData gameData, StrikeContext strikeContext, int playingColor, List<Cell> defendingMoves) {
 		if (cacheService.isCacheEnabled()) {
 			cacheService.getCounterStrikeCache(strikeContext.getGameId()).get(playingColor).put(new GameData(gameData), defendingMoves);
@@ -384,6 +398,10 @@ public class StrikeServiceImpl implements StrikeService {
 			}
 		}
 		return null;
+	}
+
+	private boolean hasInSecondaryCache(GameData gameData, int playingColor, StrikeContext strikeContext) {
+		return cacheService.isCacheEnabled() && cacheService.getSecondaryStrikeCache(strikeContext.getGameId()).containsKey(playingColor) && cacheService.getSecondaryStrikeCache(strikeContext.getGameId()).get(playingColor).containsKey(gameData);
 	}
 
 	private void storeInSecondaryStrikeCache(GameData gameData, StrikeContext strikeContext, int playingColor, Cell move) {
