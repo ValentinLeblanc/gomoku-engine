@@ -33,7 +33,7 @@ class EngineControllerTest {
 		Gson gson = new Gson();
 		String json = gson.toJson(gameDto);
 
-		MvcResult result = mockMvc.perform(post("/checkWin")
+		MvcResult result = mockMvc.perform(post("/engine/checkWin")
 				.content(json)
 				.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isOk())
