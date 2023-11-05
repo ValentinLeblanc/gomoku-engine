@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import fr.leblanc.gomoku.engine.model.Cell;
@@ -25,6 +26,7 @@ import fr.leblanc.gomoku.engine.service.EvaluationService;
 import fr.leblanc.gomoku.engine.service.GameComputationService;
 
 @RestController
+@RequestMapping("/engine")
 public class EngineController {
 
 	private static final Logger logger = LoggerFactory.getLogger(EngineController.class);
@@ -44,7 +46,7 @@ public class EngineController {
 	@Autowired
 	private CacheService cacheService;
 	
-	@GetMapping("isComputing/{gameId}")
+	@GetMapping("/isComputing/{gameId}")
 	public Boolean isComputing(@PathVariable Long gameId) {
 		return computationService.isGameComputing(gameId);
 	}
