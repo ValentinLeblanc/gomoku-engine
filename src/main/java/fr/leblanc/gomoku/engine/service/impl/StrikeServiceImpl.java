@@ -51,7 +51,7 @@ public class StrikeServiceImpl implements StrikeService {
 		};
 	
 	private static final int SECONDARY_STRIKE_THREAD_POOL_SIZE = 2;
-	private static final int COUNTER_STRIKE_THREAD_POOL_SIZE = 3;
+	private static final int COUNTER_STRIKE_THREAD_POOL_SIZE = 2;
 
 	@Override
 	public Cell directStrike(GameData gameData, int playingColor, StrikeContext strikeContext) throws InterruptedException {
@@ -211,17 +211,7 @@ public class StrikeServiceImpl implements StrikeService {
 	}
 	@Override
 	public Cell secondaryStrike(GameData gameData, int playingColor, StrikeContext strikeContext) throws InterruptedException {
-		int maxDepth = 0;
-		Cell result = null;
-		while (result == null && maxDepth < 4) {
-			maxDepth++;
-			if (logger.isDebugEnabled()) {
-				logger.debug("TRY NEXT DEPTH: {}", maxDepth);
-			}
-			strikeContext.setStrikeDepth(maxDepth);
-			result = internalSecondaryStrike(gameData, playingColor, strikeContext, 0);
-		}
-		return result;
+		return internalSecondaryStrike(gameData, playingColor, strikeContext, 0);
 	}
 
 	private Cell internalSecondaryStrike(GameData gameData, int playingColor, StrikeContext strikeContext, int depth) throws InterruptedException {

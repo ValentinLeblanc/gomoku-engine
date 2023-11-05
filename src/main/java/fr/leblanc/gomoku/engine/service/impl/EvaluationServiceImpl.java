@@ -133,25 +133,6 @@ public class EvaluationServiceImpl implements EvaluationService {
 		
 		double deepEvaluation = Double.NEGATIVE_INFINITY;
 		
-//		if (depth < 1) {
-//			List<Threat> threat4List = playingThreatContext.getThreatsOfType(ThreatType.THREAT_4);
-//			for (Threat threat4 : threat4List) {
-//				for (Cell threatCell : threat4.getEmptyCells()) {
-//					if (!opponentHasThreat5Counter(opponentThreatContext, threatCell)) {
-//						context.getGameData().addMove(threatCell, context.getPlayingColor());
-//						Cell blockingCell = threat4.getEmptyCells().stream().filter(c -> !c.equals(threatCell)).findFirst().get();
-//						context.getGameData().addMove(blockingCell, -context.getPlayingColor());
-//						double temp = evaluateThreats(gameId, context, depth + 1).getEvaluation();
-//						context.getGameData().removeMove(blockingCell);
-//						context.getGameData().removeMove(threatCell);
-//						if (temp > deepEvaluation) {
-//							deepEvaluation = temp;
-//						}
-//					}
-//				}
-//			}
-//		}
-		
 		if (deepEvaluation > evaluation) {
 			evaluation = deepEvaluation;
 		}
@@ -165,10 +146,6 @@ public class EvaluationServiceImpl implements EvaluationService {
 		return evaluationResult;
 	}
 
-	private boolean opponentHasThreat5Counter(ThreatContext opponentThreatContext, Cell threatCell) {
-		return opponentThreatContext.getThreatsOfType(ThreatType.THREAT_5).stream().anyMatch(t -> !t.getTargetCell().equals(threatCell));
-	}
-	
 	private Map<CompoThreatType, List<Pair<Threat, Threat>>> getCompositeThreats(ThreatContext playingThreatContext, ThreatContext opponentThreatContext) {
 		Map<CompoThreatType, List<Pair<Threat, Threat>>> compositeThreatMap = new HashMap<>();
 		for (CompoThreatType tryContext : CompoThreatType.COMPO_THREAT_TYPES) {
