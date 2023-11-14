@@ -4,14 +4,14 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.6.10</version>
+		<version>3.2.1</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>fr.leblanc</groupId>
-	<artifactId>gomoku-engine-3</artifactId>
-	<version>1.0.0</version>
-	<name>Gomoku Engine Application</name>
-	<description>Artificial Intelligence engine for Gomoku</description>
+		<groupId>fr.leblanc</groupId>
+		<artifactId>gomoku-engine</artifactId>
+		<version>1.0.0</version>
+		<name>Gomoku Engine Application</name>
+		<description>Artificial Intelligence engine for Gomoku</description>
 
 	<properties>
 		<java.version>17</java.version>
@@ -19,12 +19,12 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-web</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-security</artifactId>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-starter-web</artifactId>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -80,7 +80,7 @@
 			<plugin>
 				<groupId>com.spotify</groupId>
 				<artifactId>dockerfile-maven-plugin</artifactId>
-				<version>1.4.13</version>
+				<version>1.4.10</version>
 				<configuration>
 					<repository>${project.artifactId}</repository>
 					<tag>${project.version}</tag>

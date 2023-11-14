@@ -72,7 +72,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 		
 		if (logger.isDebugEnabled() && stopWatch != null && !context.isInternal()) {
 			stopWatch.stop();
-			logger.debug("computeEvaluation elapsed time: {} ms", stopWatch.getLastTaskTimeMillis());
+			logger.debug("computeEvaluation elapsed time: {} ms", stopWatch.lastTaskInfo().getTimeMillis());
 		}
 		
 		return evaluation;

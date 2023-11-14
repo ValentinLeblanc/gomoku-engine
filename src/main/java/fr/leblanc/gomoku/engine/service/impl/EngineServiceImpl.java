@@ -64,7 +64,7 @@ public class EngineServiceImpl implements EngineService {
 			if (strikeOrCounterStrike != null) {
 				stopWatch.stop();
 				if (logger.isInfoEnabled()) {
-					logger.info("strikeService processed in {} ms", stopWatch.getLastTaskTimeMillis());
+					logger.info("strikeService processed in {} ms", stopWatch.lastTaskInfo().getTimeMillis());
 				}
 				return strikeOrCounterStrike;
 			}
@@ -77,7 +77,7 @@ public class EngineServiceImpl implements EngineService {
 		
 		stopWatch.stop();
 		if (logger.isInfoEnabled()) {
-			logger.info("minMaxService processed in {} ms", stopWatch.getLastTaskTimeMillis());
+			logger.info("minMaxService processed in {} ms", stopWatch.lastTaskInfo().getTimeMillis());
 		}
 		
 		if (gameSettings.isDisplayAnalysis()) {
