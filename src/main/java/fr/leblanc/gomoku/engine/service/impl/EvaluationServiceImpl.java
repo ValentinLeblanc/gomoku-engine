@@ -200,7 +200,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 
 	private int opponentAttackCount(Map<CompoThreatType, List<Pair<Threat, Threat>>> compositeThreatMap, CompoThreatType compoThreatType, Cell threatPosition) {
 		
-		List<Pair<Threat, Threat>> notBlockedPendingPairs = new ArrayList<>();
+		Set<Pair<Threat, Threat>> notBlockedPendingPairs = new HashSet<>();
 		
 		for (CompoThreatType pendingType : compoThreatType.getSimilarOrBetterCompoThreatTypes(false, false)) {
 			for (Pair<Threat, Threat> pendingPair : compositeThreatMap.get(pendingType)) {
@@ -211,7 +211,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 			}
 		}
 		
-		List<Set<Cell>> setsOfBlocking = new ArrayList<>();
+		Set<Set<Cell>> setsOfBlocking = new HashSet<>();
 		
 		for (Pair<Threat, Threat> notBlockedPendingPair1 : notBlockedPendingPairs) {
 			Set<Cell> killingCells = getKillingCells(notBlockedPendingPair1);
@@ -223,6 +223,9 @@ public class EvaluationServiceImpl implements EvaluationService {
 			}
 			if (!isPresent) {
 				setsOfBlocking.add(new HashSet<>(killingCells));
+				if (setsOfBlocking.size() > 1) {
+					return setsOfBlocking.size();
+				}
 			}
 		}
 		

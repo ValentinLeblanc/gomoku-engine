@@ -68,7 +68,7 @@ public class GameData {
 	
 	public static GameData of(GameDTO game) {
 
-		int boardSize = game.getBoardSize();
+		int boardSize = game.boardSize();
 
 		int[][] data = new int[boardSize][boardSize];
 
@@ -78,7 +78,7 @@ public class GameData {
 			}
 		}
 
-		for (MoveDTO move : game.getMoves()) {
+		for (MoveDTO move : game.moves()) {
 			data[move.getColumnIndex()][move.getRowIndex()] = move.getColor();
 		}
 

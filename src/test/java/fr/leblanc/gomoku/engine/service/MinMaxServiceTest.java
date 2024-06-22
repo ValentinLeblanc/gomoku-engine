@@ -4,6 +4,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
+import java.util.Set;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -31,9 +33,7 @@ class MinMaxServiceTest extends AbstractGomokuTest {
 	
 	@Test
 	void testMinMaxExtent() throws InterruptedException {
-		GameDTO gameDto = new GameDTO();
-		gameDto.setBoardSize(15);
-		gameDto.getMoves().add(new MoveDTO(7, 7, GomokuColor.BLACK_COLOR));
+		GameDTO gameDto = new GameDTO(15, Set.of(new MoveDTO(7, 7, GomokuColor.BLACK_COLOR)));
 		
 		MinMaxResult minMaxResult = minMaxService.computeMinMax(GameData.of(gameDto), new MinMaxContext(TEST_GAME_ID, 2, 2));
 		
@@ -75,9 +75,9 @@ class MinMaxServiceTest extends AbstractGomokuTest {
 
 			MoveDTO newMove = new MoveDTO(move, color);
 
-			newMove.setNumber(gameDto.getMoves().size());
+			newMove.setNumber(gameDto.moves().size());
 
-			gameDto.getMoves().add(newMove);
+			gameDto.moves().add(newMove);
 			color = -color;
 		}
 
@@ -102,9 +102,9 @@ class MinMaxServiceTest extends AbstractGomokuTest {
 
 		MoveDTO newMove = new MoveDTO(minMaxResult.getOptimalMoves().get(0), playingColor);
 
-		newMove.setNumber(gameDto.getMoves().size());
+		newMove.setNumber(gameDto.moves().size());
 
-		gameDto.getMoves().add(newMove);
+		gameDto.moves().add(newMove);
 		
 		minMaxResult = minMaxService.computeMinMax(GameData.of(gameDto), new MinMaxContext(TEST_GAME_ID, 3, 0, false));
 
@@ -116,9 +116,9 @@ class MinMaxServiceTest extends AbstractGomokuTest {
 
 		newMove = new MoveDTO(minMaxResult.getOptimalMoves().get(0), -playingColor);
 
-		newMove.setNumber(gameDto.getMoves().size());
+		newMove.setNumber(gameDto.moves().size());
 
-		gameDto.getMoves().add(newMove);
+		gameDto.moves().add(newMove);
 
 		minMaxResult = minMaxService.computeMinMax(GameData.of(gameDto), new MinMaxContext(TEST_GAME_ID, 2, 0, false));
 

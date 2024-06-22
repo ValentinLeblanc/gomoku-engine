@@ -28,7 +28,7 @@ class EngineControllerTest {
 	@Test
 	void checkWinRequestTest() throws Exception {
 
-		GameDTO gameDto = new GameDTO(null, 15, new HashSet<>(), null);
+		GameDTO gameDto = new GameDTO(null, 15, new HashSet<>(), null, null, null, null, null, null, null);
 
 		Gson gson = new Gson();
 		String json = gson.toJson(gameDto);

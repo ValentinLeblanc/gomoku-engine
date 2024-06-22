@@ -14,9 +14,9 @@ import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.CheckWinResult;
 import fr.leblanc.gomoku.engine.model.EvaluationContext;
 import fr.leblanc.gomoku.engine.model.GameData;
+import fr.leblanc.gomoku.engine.model.GameSettings;
 import fr.leblanc.gomoku.engine.model.GomokuColor;
 import fr.leblanc.gomoku.engine.model.messaging.GameDTO;
-import fr.leblanc.gomoku.engine.model.messaging.GameSettings;
 import fr.leblanc.gomoku.engine.model.messaging.MoveDTO;
 import fr.leblanc.gomoku.engine.service.CacheService;
 import fr.leblanc.gomoku.engine.service.CheckWinService;
@@ -29,17 +29,17 @@ import fr.leblanc.gomoku.engine.service.GameComputationService;
 public class EngineController {
 
 	private static final Logger logger = LoggerFactory.getLogger(EngineController.class);
-	
+
 	private EngineService engineService;
-	
+
 	private CheckWinService checkWinService;
-	
+
 	private EvaluationService evaluationService;
 
 	private GameComputationService computationService;
-	
+
 	private CacheService cacheService;
-	
+
 	public EngineController(EngineService engineService, CheckWinService checkWinService,
 			EvaluationService evaluationService, GameComputationService computationService, CacheService cacheService) {
 		super();
@@ -49,7 +49,7 @@ public class EngineController {
 		this.computationService = computationService;
 		this.cacheService = cacheService;
 	}
-	
+
 	@GetMapping("/isComputing/{gameId}")
 	public Boolean isComputing(@PathVariable Long gameId) {
 		return computationService.isGameComputing(gameId);
@@ -60,13 +60,16 @@ public class EngineController {
 		GameData gameData = GameData.of(gameDTO);
 		return checkWinService.checkWin(gameData);
 	}
-	
+
 	@PostMapping("/computeMove")
 	public MoveDTO computeMove(@RequestBody GameDTO gameDTO) {
 		try {
 			GameData gameData = GameData.of(gameDTO);
-			GameSettings gameSettings = gameDTO.getSettings();
-			Cell computedMove = computationService.startGameComputation(gameDTO.getId(), gameSettings.isDisplayAnalysis(), () -> engineService.computeMove(gameDTO.getId(), gameData, gameSettings));
+			GameSettings settingsData = new GameSettings(gameDTO.strikeEnabled(), gameDTO.minMaxEnabled(),
+					gameDTO.displayAnalysis(), gameDTO.minMaxExtent(), gameDTO.minMaxDepth(), gameDTO.strikeDepth(),
+					gameDTO.strikeTimeout());
+			Cell computedMove = computationService.startGameComputation(gameDTO.id(), gameDTO.displayAnalysis(),
+					() -> engineService.computeMove(gameDTO.id(), gameData, settingsData));
 			return new MoveDTO(computedMove.getColumn(), computedMove.getRow(), GameData.extractPlayingColor(gameData));
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
@@ -74,29 +77,33 @@ public class EngineController {
 		}
 		return null;
 	}
-	
+
 	@PostMapping("/computeEvaluation")
 	public Double computeEvaluation(@RequestBody GameDTO gameDTO) throws InterruptedException {
 		GameData gameData = GameData.of(gameDTO);
 		int playingColor = GameData.extractPlayingColor(gameData);
-		
+
 		if (playingColor == GomokuColor.BLACK_COLOR) {
-			return evaluationService.computeEvaluation(gameDTO.getId(), new EvaluationContext(gameData).useStrikeService()).getEvaluation();
+			return evaluationService
+					.computeEvaluation(gameDTO.id(), new EvaluationContext(gameData).useStrikeService())
+					.getEvaluation();
 		} else if (playingColor == GomokuColor.WHITE_COLOR) {
-			return -evaluationService.computeEvaluation(gameDTO.getId(), new EvaluationContext(gameData).useStrikeService()).getEvaluation();
+			return -evaluationService
+					.computeEvaluation(gameDTO.id(), new EvaluationContext(gameData).useStrikeService())
+					.getEvaluation();
 		}
-		
+
 		throw new IllegalArgumentException("Game has no valid playing color");
 	}
-	
+
 	@PostMapping("/stop/{gameId}")
 	public void stopComputation(@PathVariable Long gameId) {
 		computationService.stopGameComputation(gameId);
 	}
-	
+
 	@DeleteMapping("/clearGame")
 	public void clearGame(@RequestBody Long gameId) {
 		cacheService.clearCache(gameId);
 	}
-	
+
 }
