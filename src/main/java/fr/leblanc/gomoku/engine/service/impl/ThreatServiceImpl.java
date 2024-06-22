@@ -152,7 +152,7 @@ public class ThreatServiceImpl implements ThreatService {
 			if (!visitedThreats.contains(threat)) {
 				List<Threat> sameTargetCellThreats = threatContext.getThreatsOfTargetCell(threat.getTargetCell()).get(threatType).stream().filter(t -> t.getPlainCells().containsAll(threat.getPlainCells())).toList();
 				if (sameTargetCellThreats.size() > 1) {
-					Set<Threat> doubleThreats = createDoubleThreats(threatContext, sameTargetCellThreats);
+					Set<Threat> doubleThreats = createDoubleThreats(sameTargetCellThreats);
 					doubleThreats.stream().forEach(t -> addNewThreat(threatContext, t));
 					if (!doubleThreats.isEmpty()) {
 						visitedThreats.addAll(sameTargetCellThreats);
@@ -163,17 +163,17 @@ public class ThreatServiceImpl implements ThreatService {
 		}
 	}
 
-	private Set<Threat> createDoubleThreats(ThreatContext threatContext, List<Threat> threats) {
+	private Set<Threat> createDoubleThreats(List<Threat> threats) {
 		Set<Threat> doubleThreats = new HashSet<>();
 		Cell targetCell = threats.get(0).getTargetCell();
 		List<Threat> threatsContainingTargetCell = threats.stream().filter(t -> t.getKillingCells().contains(targetCell)).toList();
 		if (threatsContainingTargetCell.size() >= 2) {
-			doubleThreats.add(createDoubleThreat(threatContext, targetCell, threatsContainingTargetCell));
+			doubleThreats.add(createDoubleThreat(targetCell, threatsContainingTargetCell));
 		}
 		return doubleThreats;
 	}
 
-	private Threat createDoubleThreat(ThreatContext threatContext, Cell targetCell, List<Threat> threatsContaining) {
+	private Threat createDoubleThreat(Cell targetCell, List<Threat> threatsContaining) {
 		Set<Cell> blockingCells = new HashSet<>();
 		threatsContaining.forEach(t -> t.getBlockingCells().stream().filter(c -> threatsContaining.stream().filter(t2 -> t2.getKillingCells().contains(c)).count() >= threatsContaining.size() - 1).forEach(blockingCells::add));
 		return new Threat(targetCell, threatsContaining.get(0).getPlainCells(), blockingCells, threatsContaining.get(0).getThreatType().getDoubleThreatType());

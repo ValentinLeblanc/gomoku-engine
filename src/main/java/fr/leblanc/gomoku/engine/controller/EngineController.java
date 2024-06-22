@@ -2,7 +2,6 @@ package fr.leblanc.gomoku.engine.controller;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,20 +30,25 @@ public class EngineController {
 
 	private static final Logger logger = LoggerFactory.getLogger(EngineController.class);
 	
-	@Autowired
 	private EngineService engineService;
 	
-	@Autowired
 	private CheckWinService checkWinService;
 	
-	@Autowired
 	private EvaluationService evaluationService;
 
-	@Autowired
 	private GameComputationService computationService;
 	
-	@Autowired
 	private CacheService cacheService;
+	
+	public EngineController(EngineService engineService, CheckWinService checkWinService,
+			EvaluationService evaluationService, GameComputationService computationService, CacheService cacheService) {
+		super();
+		this.engineService = engineService;
+		this.checkWinService = checkWinService;
+		this.evaluationService = evaluationService;
+		this.computationService = computationService;
+		this.cacheService = cacheService;
+	}
 	
 	@GetMapping("/isComputing/{gameId}")
 	public Boolean isComputing(@PathVariable Long gameId) {

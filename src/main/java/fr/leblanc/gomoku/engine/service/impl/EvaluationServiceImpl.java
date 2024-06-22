@@ -10,7 +10,6 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
 
@@ -34,15 +33,20 @@ public class EvaluationServiceImpl implements EvaluationService {
 
 	private static final Logger logger = LoggerFactory.getLogger(EvaluationServiceImpl.class);
 	
-	@Autowired
 	private ThreatService threatService;
 	
-	@Autowired
 	private CheckWinService checkWinService;
 	
-	@Autowired
 	private CacheService cacheService;
 	
+	public EvaluationServiceImpl(ThreatService threatService, CheckWinService checkWinService,
+			CacheService cacheService) {
+		super();
+		this.threatService = threatService;
+		this.checkWinService = checkWinService;
+		this.cacheService = cacheService;
+	}
+
 	@Override
 	public EvaluationResult computeEvaluation(Long gameId, EvaluationContext context) throws InterruptedException {
 		

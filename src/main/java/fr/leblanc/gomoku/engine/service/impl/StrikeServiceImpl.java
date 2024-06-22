@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import fr.leblanc.gomoku.engine.model.Cell;
@@ -34,15 +33,20 @@ public class StrikeServiceImpl implements StrikeService {
 
 	private static final Logger logger = LoggerFactory.getLogger(StrikeServiceImpl.class);
 	
-	@Autowired
 	private ThreatService threatService;
 	
-	@Autowired
 	private GameComputationService computationService;
 	
-	@Autowired
 	private CacheService cacheService;
 	
+	public StrikeServiceImpl(ThreatService threatService, GameComputationService computationService,
+			CacheService cacheService) {
+		super();
+		this.threatService = threatService;
+		this.computationService = computationService;
+		this.cacheService = cacheService;
+	}
+
 	private static final ThreatType[][] SECONDARY_THREAT_PAIRS = { { ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_3 }
 		, { ThreatType.DOUBLE_THREAT_3, ThreatType.DOUBLE_THREAT_2 }
 		, { ThreatType.DOUBLE_THREAT_3, ThreatType.THREAT_3 }
@@ -413,7 +417,7 @@ public class StrikeServiceImpl implements StrikeService {
 	private List<Cell> extractAnalyzedCells(GameData gameData, int playingColor) {
 		ThreatContext threatContext = threatService.getOrUpdateThreatContext(gameData, playingColor);
 		List<Cell> analyzedCells = new ArrayList<>();
-		analyzedCells.addAll(threatContext.getThreatsOfType(ThreatType.THREAT_4).stream().map(t -> t.getTargetCell()).collect(Collectors.toSet()));
+		analyzedCells.addAll(threatContext.getThreatsOfType(ThreatType.THREAT_4).stream().map(Threat::getTargetCell).collect(Collectors.toSet()));
 		for (ThreatType[] secondaryThreatTypePair : SECONDARY_THREAT_PAIRS) {
 			Set<Cell> threats = threatService.findCombinedThreats(threatContext, secondaryThreatTypePair[0], secondaryThreatTypePair[1]);
 			for (Cell threat : threats) {

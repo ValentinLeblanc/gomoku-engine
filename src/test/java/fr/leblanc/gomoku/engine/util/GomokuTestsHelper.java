@@ -22,12 +22,15 @@ public class GomokuTestsHelper {
 	public static GameDTO readGameDto(String resourceName) throws JsonProcessingException {
 		InputStream inputStream = GomokuTestsHelper.class.getClassLoader().getResourceAsStream(resourceName);
 
-		String jsonGame = new BufferedReader(new InputStreamReader(inputStream)).lines()
-				.collect(Collectors.joining("\n"));
-
-		ObjectMapper objectMapper = new ObjectMapper();
-
-		return objectMapper.readValue(jsonGame, GameDTO.class);
+		try (BufferedReader reader =  new BufferedReader(new InputStreamReader(inputStream))) {
+			String jsonGame = reader.lines().collect(Collectors.joining("\n"));
+			
+			ObjectMapper objectMapper = new ObjectMapper();
+			
+			return objectMapper.readValue(jsonGame, GameDTO.class);
+		} catch (IOException e) {
+			throw new IllegalStateException("Error while reading test file");
+		}
 	}
 	
 	public static void writeGameDto(GameDTO game, String fileName) {

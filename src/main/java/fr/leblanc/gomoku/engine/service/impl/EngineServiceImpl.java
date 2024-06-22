@@ -7,7 +7,6 @@ import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
 
@@ -31,20 +30,25 @@ public class EngineServiceImpl implements EngineService {
 
 	private static final Logger logger = LoggerFactory.getLogger(EngineServiceImpl.class);
 
-	@Autowired
 	private CheckWinService checkWinService;
 
-	@Autowired
 	private StrikeService strikeService;
 	
-	@Autowired
 	private MinMaxService minMaxService;
 	
-	@Autowired
 	private WebSocketService webSocketService;
 	
-	@Autowired
 	private CacheService cacheService;
+	
+	public EngineServiceImpl(CheckWinService checkWinService, StrikeService strikeService, MinMaxService minMaxService,
+			WebSocketService webSocketService, CacheService cacheService) {
+		super();
+		this.checkWinService = checkWinService;
+		this.strikeService = strikeService;
+		this.minMaxService = minMaxService;
+		this.webSocketService = webSocketService;
+		this.cacheService = cacheService;
+	}
 	
 	@Override
 	public Cell computeMove(Long gameId, GameData gameData, GameSettings gameSettings) throws InterruptedException {

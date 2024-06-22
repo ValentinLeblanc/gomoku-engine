@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
 
@@ -40,21 +39,26 @@ public class MinMaxServiceImpl implements MinMaxService {
 
 	private static final int MINMAX_THREAD_POOL_SIZE = Runtime.getRuntime().availableProcessors();
 	
-	@Autowired
 	private ThreatService threatService;
 	
-	@Autowired
 	private EvaluationService evaluationService;
 
-	@Autowired
 	private WebSocketService webSocketService;
 	
-	@Autowired
 	private GameComputationService computationService;
 	
-	@Autowired
 	private StrikeService strikeService;
 	
+	public MinMaxServiceImpl(ThreatService threatService, EvaluationService evaluationService,
+			WebSocketService webSocketService, GameComputationService computationService, StrikeService strikeService) {
+		super();
+		this.threatService = threatService;
+		this.evaluationService = evaluationService;
+		this.webSocketService = webSocketService;
+		this.computationService = computationService;
+		this.strikeService = strikeService;
+	}
+
 	@Override
 	public MinMaxResult computeMinMax(GameData gameData, MinMaxContext context) throws InterruptedException {
 		return computeMinMax(gameData, null, context);
