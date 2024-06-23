@@ -1,12 +1,16 @@
 package fr.leblanc.gomoku.engine.model;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import fr.leblanc.gomoku.engine.service.EvaluationService;
 
 public class CompoThreatType {
 
+	private static final Map<Integer, List<CompoThreatType>> internalCache = new HashMap<>();
+	
 	public static final List<CompoThreatType> COMPO_THREAT_TYPES = List.of(
 			CompoThreatType.of(ThreatType.THREAT_5, null, true),
 			CompoThreatType.of(ThreatType.THREAT_5, null, false),
@@ -86,8 +90,14 @@ public class CompoThreatType {
 	}
 
 	public List<CompoThreatType> getSimilarOrBetterCompoThreatTypes(boolean isMember, boolean withSimilar) {
+		int hash = Objects.hash(isMember, withSimilar, this);
+		if (internalCache.containsKey(hash)) {
+			return internalCache.get(hash);
+		}
 		boolean isThreatPlaying = isMember ? isPlaying : !isPlaying;
-		return COMPO_THREAT_TYPES.stream().filter(t -> t.isPlaying == isThreatPlaying).filter(t -> withSimilar ? t.level <= this.level : t.level < this.level).toList();
+		List<CompoThreatType> list = COMPO_THREAT_TYPES.stream().filter(t -> t.isPlaying == isThreatPlaying).filter(t -> withSimilar ? t.level <= this.level : t.level < this.level).toList();
+		internalCache.put(hash, list);
+		return list;
 	}
 
 	public ThreatType getThreatType1() {

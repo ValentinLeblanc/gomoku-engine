@@ -1,9 +1,9 @@
 package fr.leblanc.gomoku.engine.service.impl;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.stereotype.Service;
 
@@ -17,7 +17,7 @@ import fr.leblanc.gomoku.engine.util.cache.GomokuCache;
 @Service
 public class CacheServiceImpl implements CacheService {
 
-	private final Map<Long, GomokuCache> cacheIdMap = new HashMap<>();
+	private final Map<Long, GomokuCache> cacheIdMap = new ConcurrentHashMap<>();
 	
 	@Override
 	public void clearCache(Long gameId) {
