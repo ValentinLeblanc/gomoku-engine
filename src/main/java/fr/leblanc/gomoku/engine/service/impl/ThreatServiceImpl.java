@@ -1,8 +1,10 @@
 package fr.leblanc.gomoku.engine.service.impl;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -164,36 +166,58 @@ public class ThreatServiceImpl implements ThreatService {
 	}
 
 	private Set<Threat> createDoubleThreats(List<Threat> threats) {
-		Set<Threat> doubleThreats = new HashSet<>();
-		Cell targetCell = threats.get(0).getTargetCell();
-		List<Threat> threatsContainingTargetCell = threats.stream().filter(t -> t.getKillingCells().contains(targetCell)).toList();
-		if (threatsContainingTargetCell.size() >= 2) {
-			doubleThreats.add(createDoubleThreat(targetCell, threatsContainingTargetCell));
-		}
-		return doubleThreats;
+	    Set<Threat> doubleThreats = new HashSet<>();
+	    if (threats.isEmpty()) {
+	        return doubleThreats;
+	    }
+	    Cell targetCell = threats.get(0).getTargetCell();
+	    List<Threat> threatsContainingTargetCell = new ArrayList<>();
+	    for (Threat threat : threats) {
+	        if (threat.getKillingCells().contains(targetCell)) {
+	            threatsContainingTargetCell.add(threat);
+	        }
+	    }
+	    if (threatsContainingTargetCell.size() >= 2) {
+	        doubleThreats.add(createDoubleThreat(targetCell, threatsContainingTargetCell));
+	    }
+	    return doubleThreats;
 	}
 
 	private Threat createDoubleThreat(Cell targetCell, List<Threat> threatsContaining) {
-		Set<Cell> blockingCells = new HashSet<>();
-		threatsContaining.forEach(t -> t.getBlockingCells().stream().filter(c -> threatsContaining.stream().filter(t2 -> t2.getKillingCells().contains(c)).count() >= threatsContaining.size() - 1).forEach(blockingCells::add));
-		return new Threat(targetCell, threatsContaining.get(0).getPlainCells(), blockingCells, threatsContaining.get(0).getThreatType().getDoubleThreatType());
+	    Set<Cell> blockingCells = new HashSet<>();
+	    Map<Cell, Long> blockingCellCountMap = new HashMap<>();
+	    for (Threat threat : threatsContaining) {
+	        for (Cell cell : threat.getBlockingCells()) {
+	            blockingCellCountMap.put(cell, blockingCellCountMap.getOrDefault(cell, 0L) + 1);
+	        }
+	    }
+	    int threshold = threatsContaining.size() - 1;
+	    for (Map.Entry<Cell, Long> entry : blockingCellCountMap.entrySet()) {
+	        if (entry.getValue() >= threshold) {
+	            blockingCells.add(entry.getKey());
+	        }
+	    }
+	    Threat referenceThreat = threatsContaining.get(0);
+	    return new Threat(targetCell, referenceThreat.getPlainCells(), blockingCells, referenceThreat.getThreatType().getDoubleThreatType());
 	}
 
 	private void addNewThreat(ThreatContext threatContext, Threat threat) {
-		if (!threatContext.getThreatsOfTargetCell(threat.getTargetCell()).get(threat.getThreatType()).contains(threat)) {
-			threatContext.getThreatsOfTargetCell(threat.getTargetCell()).get(threat.getThreatType()).add(threat);
+		ThreatType threatType = threat.getThreatType();
+		Cell targetCell = threat.getTargetCell();
+		Map<ThreatType, List<Threat>> threatsOfTargetCell = threatContext.getThreatsOfTargetCell(targetCell);
+		if (!threatsOfTargetCell.get(threatType).contains(threat)) {
+			threatsOfTargetCell.get(threatType).add(threat);
 		}
-		if (!threatContext.getThreatsOfType(threat.getThreatType()).contains(threat)) {
-			threatContext.getThreatsOfType(threat.getThreatType()).add(threat);
+		if (!threatContext.getThreatsOfType(threatType).contains(threat)) {
+			threatContext.getThreatsOfType(threatType).add(threat);
 		}
-		
 		for (Cell blockingCell : threat.getBlockingCells()) {
 			if (!threatContext.getBlockingCellThreats(blockingCell).contains(threat)) {
 				threatContext.getBlockingCellThreats(blockingCell).add(threat);
 			}
 		}
 		for (Cell plainCell : threat.getPlainCells()) {
-			if (!threatContext.getPlainCellThreats(plainCell).contains(threat)) {
+			if (!threatContext.getPlainCellThreats(plainCell).contains(threat)) {	
 				threatContext.getPlainCellThreats(plainCell).add(threat);
 			}
 		}
