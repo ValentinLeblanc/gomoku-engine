@@ -130,6 +130,8 @@ public class EvaluationServiceImpl implements EvaluationService {
 				if (logger.isDebugEnabled() && threatEvaluation != 0 && !context.isInternal()) {
 					logger.debug("{} AT {} FROM {}", threatEvaluation, threatPair.getFirst().getTargetCell(), compoThreatType);
 				}
+				Double previousCellEvaluation = evaluationResult.getCellEvaluationMap().computeIfAbsent(threatPair.getFirst().getTargetCell(), k -> 0d);
+				evaluationResult.getCellEvaluationMap().put(threatPair.getFirst().getTargetCell(), previousCellEvaluation + threatEvaluation);
 			}
 			
 			evaluationResult.getEvaluationMap().put(compoThreatType, threatTypeEvaluation);

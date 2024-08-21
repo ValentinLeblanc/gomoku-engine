@@ -1,15 +1,15 @@
 package fr.leblanc.gomoku.engine.model;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 import fr.leblanc.gomoku.engine.service.EvaluationService;
 
 public class CompoThreatType {
 
-	private static final Map<Integer, List<CompoThreatType>> internalCache = new HashMap<>();
+	private static final Map<Integer, List<CompoThreatType>> internalCache = new ConcurrentHashMap<>();
 	
 	public static final List<CompoThreatType> COMPO_THREAT_TYPES = List.of(
 			CompoThreatType.of(ThreatType.THREAT_5, null, true),

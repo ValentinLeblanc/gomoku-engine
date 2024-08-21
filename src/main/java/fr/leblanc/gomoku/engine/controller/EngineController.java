@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RestController;
 import fr.leblanc.gomoku.engine.model.Cell;
 import fr.leblanc.gomoku.engine.model.CheckWinResult;
 import fr.leblanc.gomoku.engine.model.EvaluationContext;
+import fr.leblanc.gomoku.engine.model.EvaluationDTO;
+import fr.leblanc.gomoku.engine.model.EvaluationResult;
 import fr.leblanc.gomoku.engine.model.GameData;
 import fr.leblanc.gomoku.engine.model.GameSettings;
 import fr.leblanc.gomoku.engine.model.GomokuColor;
@@ -79,18 +81,15 @@ public class EngineController {
 	}
 
 	@PostMapping("/computeEvaluation")
-	public Double computeEvaluation(@RequestBody GameDTO gameDTO) throws InterruptedException {
+	public EvaluationDTO computeEvaluation(@RequestBody GameDTO gameDTO) throws InterruptedException {
 		GameData gameData = GameData.of(gameDTO);
 		int playingColor = GameData.extractPlayingColor(gameData);
 
+		EvaluationResult eval = evaluationService.computeEvaluation(gameDTO.id(), new EvaluationContext(gameData).useStrikeService());
 		if (playingColor == GomokuColor.BLACK_COLOR) {
-			return evaluationService
-					.computeEvaluation(gameDTO.id(), new EvaluationContext(gameData).useStrikeService())
-					.getEvaluation();
+			return new EvaluationDTO(eval.getEvaluation(), eval.getCellEvaluationMap());
 		} else if (playingColor == GomokuColor.WHITE_COLOR) {
-			return -evaluationService
-					.computeEvaluation(gameDTO.id(), new EvaluationContext(gameData).useStrikeService())
-					.getEvaluation();
+			return new EvaluationDTO(-eval.getEvaluation(), eval.getCellEvaluationMap());
 		}
 
 		throw new IllegalArgumentException("Game has no valid playing color");
